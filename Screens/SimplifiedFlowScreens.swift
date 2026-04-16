@@ -9,7 +9,7 @@ struct HomeView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(spacing: 28) {
-                    MellorityLogoImage(maxHeight: 140)
+                    MellorityLogoImage(maxHeight: 420)
                         .frame(maxWidth: .infinity)
 
                     FadeInTitle(text: "Mellority", delay: 0.05)

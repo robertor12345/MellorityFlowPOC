@@ -13,7 +13,7 @@ struct SplashScreenView: View {
             BrandBackground()
 
             VStack(spacing: 20) {
-                MellorityLogoImage(maxHeight: 150)
+                MellorityLogoImage(maxHeight: 450)
                     .scaleEffect(logoIn ? 1 : 0.78)
                     .opacity(logoIn ? 1 : 0)
 

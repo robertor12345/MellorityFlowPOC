@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Mellority mark from asset catalog — `original` mode keeps PNG transparency (no template tint, no box).
 struct MellorityLogoImage: View {
-    var maxHeight: CGFloat = 140
+    var maxHeight: CGFloat = 420
 
     var body: some View {
         Image("MellorityLogo")
