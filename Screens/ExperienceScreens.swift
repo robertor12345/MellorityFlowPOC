@@ -67,39 +67,10 @@ struct ImmersiveSessionView: View {
 
     var body: some View {
         ZStack {
-            TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
-                let t = timeline.date.timeIntervalSinceReferenceDate
-                ZStack {
-                    BrandTheme.etherealGradient
-                        .ignoresSafeArea()
-                    ForEach(0..<6, id: \.self) { i in
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        Color.white.opacity(0.15 + 0.05 * sin(t + Double(i))),
-                                        Color.clear,
-                                    ],
-                                    center: .center,
-                                    startRadius: 0,
-                                    endRadius: 120 + CGFloat(i * 20)
-                                )
-                            )
-                            .frame(width: 200 + CGFloat(i * 30), height: 200 + CGFloat(i * 30))
-                            .offset(
-                                x: CGFloat(sin(t * 0.4 + Double(i)) * 40),
-                                y: CGFloat(cos(t * 0.35 + Double(i)) * 50)
-                            )
-                            .blur(radius: 20)
-                    }
-                }
-            }
-            .ignoresSafeArea()
-
-            LeafBreezeLayer()
+            NatureSessionImagery()
                 .ignoresSafeArea()
 
-            VStack {
+            VStack(spacing: 0) {
                 HStack {
                     Button {
                         ambientAudio.isMuted.toggle()
@@ -125,59 +96,71 @@ struct ImmersiveSessionView: View {
                     }
                 }
                 .padding()
-                Spacer()
+
+                Spacer(minLength: 0)
+
                 VStack(spacing: 12) {
                     if showCopy {
                         Text("Immersive space")
                             .font(BrandTheme.title(.title2))
-                            .foregroundStyle(BrandTheme.cream.opacity(0.95))
-                            .shadow(radius: 4)
+                            .foregroundStyle(BrandTheme.brown)
                             .transition(.opacity.combined(with: .offset(y: 8)))
                         Text("Real-time adaptation — the core magic")
                             .font(.caption)
-                            .foregroundStyle(BrandTheme.cream.opacity(0.88))
+                            .foregroundStyle(BrandTheme.brownMuted)
                             .multilineTextAlignment(.center)
                             .transition(.opacity)
                     }
-                    Text("Streaming ambient · leaf motion · gentle HR (mock)")
+                    Text("Streaming ambient · leaves, water & mountains · gentle HR (mock)")
                         .font(.caption2)
-                        .foregroundStyle(BrandTheme.cream.opacity(0.75))
+                        .foregroundStyle(BrandTheme.brownMuted)
                         .multilineTextAlignment(.center)
 
                     HStack(spacing: 24) {
-                        VStack {
+                        VStack(spacing: 4) {
                             Text("HR")
                                 .font(.caption2)
+                                .foregroundStyle(BrandTheme.brownMuted)
                             Text("\(Int(state.mockHeartRateCurrent))")
                                 .font(.title2.monospacedDigit())
+                                .foregroundStyle(BrandTheme.brown)
                         }
-                        .foregroundStyle(BrandTheme.cream)
-                        VStack {
+                        VStack(spacing: 4) {
                             Text("Calm")
                                 .font(.caption2)
+                                .foregroundStyle(BrandTheme.brownMuted)
                             Text("\(Int(state.calmScore * 100))%")
                                 .font(.title2.monospacedDigit())
+                                .foregroundStyle(BrandTheme.brown)
                         }
-                        .foregroundStyle(BrandTheme.cream)
                     }
                     .padding()
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(BrandTheme.cream.opacity(0.92))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+                    )
                 }
-                .padding(.bottom, 40)
-                .onAppear {
-                    withAnimation(.easeOut(duration: 0.8).delay(0.15)) {
-                        showCopy = true
-                    }
-                }
-            }
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
 
-            VStack {
-                Spacer()
                 PrimaryButton(title: "End session") {
                     state.endSession()
                     state.phase = .insight
                 }
-                .padding(24)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 8)
+                .safeAreaPadding(.bottom, 16)
+            }
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.8).delay(0.15)) {
+                    showCopy = true
+                }
             }
         }
         .onAppear {

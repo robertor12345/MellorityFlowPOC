@@ -31,7 +31,7 @@ Soft **fade-in** animations (`FadeInTitle`, `FadeInLine`, `ScreenFadeIn`) run on
 
 ## Immersive session — audio & visuals
 
-- **Leaves:** `LeafBreezeLayer` animates SF Symbol leaves drifting with wind-like motion and gold gradients.
+- **Nature imagery:** `NatureSessionImagery` stacks sky/mist, tinted light orbs, **mountain** silhouettes, animated **water** bands, subtle drifting symbols (water, waves, mountains, trees, leaves, clouds), and `LeafBreezeLayer` for gold **leaf** motion.
 - **Streaming bed:** `AVPlayer` loads **[SoundHelix Song 8](https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3)** (chill-out example on their [audio examples](https://www.soundhelix.com/audio-examples) page) over HTTPS. Loops until you leave the screen. Credit SoundHelix + artist per their terms.
 - **High frequency:** A quiet **~9.2 kHz sine** is synthesized with `AVAudioEngine` + `AVAudioSourceNode`. Use the **speaker** button to mute.
 - **Why not only a remote HF file?** Many royalty-free CDNs return **403** to app user-agents; the split (streamed bed + local HF) matches the brief.

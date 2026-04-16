@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Drifting leaves with wind-like motion (visual only).
 struct LeafBreezeLayer: View {
-    private let count = 22
+    /// How many leaves to draw (fewer if other nature layers are busy).
+    var leafCount: Int = 18
 
     var body: some View {
         GeometryReader { geo in
@@ -11,7 +12,7 @@ struct LeafBreezeLayer: View {
             TimelineView(.animation(minimumInterval: 1.0 / 45)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 ZStack {
-                    ForEach(0 ..< count, id: \.self) { i in
+                    ForEach(0 ..< leafCount, id: \.self) { i in
                         leafView(i: i, t: t, w: w, h: h)
                     }
                 }

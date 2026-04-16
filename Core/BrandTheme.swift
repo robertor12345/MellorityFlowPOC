@@ -27,6 +27,18 @@ enum BrandTheme {
         endPoint: .bottomTrailing
     )
 
+    /// Immersive session: sky, water, forest hints (used with layered mountains + leaves).
+    static let sessionNatureSkyGradient = LinearGradient(
+        colors: [
+            Color(red: 0.68, green: 0.80, blue: 0.93),
+            Color(red: 0.80, green: 0.88, blue: 0.90).opacity(0.92),
+            Color(red: 0.72, green: 0.83, blue: 0.78).opacity(0.65),
+            Color(red: 0.88, green: 0.90, blue: 0.82).opacity(0.85),
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
     static func title(_ style: Font.TextStyle = .title) -> Font {
         .system(style, design: .serif)
     }
