@@ -30,6 +30,56 @@ final class SessionPOCState: ObservableObject {
     /// Session toggle: sync calm scenes with home lights (Hue / HomeKit style).
     @Published var sessionHomeLightsSyncEnabled = false
 
+    // MARK: - Replay last session (visuals + audio)
+
+    /// Set when a session ends; cleared when a new session begins or on full reset.
+    @Published var replayExperienceAvailable = false
+    @Published var replayMoodSnapshot: String?
+    @Published var replayCalmPercentSnapshot: Int = 0
+    @Published var replayHeartRateSnapshot: Int = 72
+
+    // MARK: - Connected device detail (mock settings)
+
+    enum HealthDataProvider: String, CaseIterable, Identifiable {
+        case appleHealth = "Apple Health"
+        case whoop = "WHOOP"
+        case fitbit = "Fitbit"
+        case garmin = "Garmin"
+        var id: String { rawValue }
+    }
+
+    @Published var healthShareHeartRate = true
+    @Published var healthShareRestingHR = true
+    @Published var healthShareSleepStages = true
+    @Published var healthShareActivity = false
+    @Published var healthPreferredProvider: HealthDataProvider = .appleHealth
+
+    @Published var iotPhilipsHueEnabled = false
+    @Published var iotHomeKitEnabled = false
+    @Published var iotMatterEnabled = false
+    @Published var iotFollowSessionBreath = true
+    @Published var iotMaxSceneBrightness: Double = 0.88
+
+    @Published var personalisationSessionMemory = true
+    @Published var personalisationAdaptationSpeed: Double = 0.5
+    @Published var personalisationPreferGentleStarts = true
+
+    @Published var snippetsAutoCapturePeaks = true
+    @Published var snippetsKeepDays: SnippetRetention = .thirty
+    @Published var snippetsExportMarkdown = false
+
+    enum SnippetRetention: Int, CaseIterable, Identifiable {
+        case seven = 7
+        case thirty = 30
+        case ninety = 90
+        var id: Int { rawValue }
+        var label: String { "\(rawValue) days" }
+    }
+
+    @Published var replayOfferOnInsight = true
+    @Published var replayRestoreVolume = true
+    @Published var replayShowMetricsOverlay = true
+
     private var sessionStart: Date?
 
     struct SnippetHighlight: Identifiable {
@@ -48,6 +98,8 @@ final class SessionPOCState: ObservableObject {
         mockHeartRateCurrent = mockHeartRateStart
         snippets = []
         sessionHomeLightsSyncEnabled = false
+        replayExperienceAvailable = false
+        replayMoodSnapshot = nil
     }
 
     func addSnippet() {
@@ -62,12 +114,18 @@ final class SessionPOCState: ObservableObject {
     func endSession() {
         mockHeartRateCurrent = max(58, mockHeartRateStart - Double.random(in: 4 ... 12))
         calmScore = min(0.98, calmScore + 0.05)
+        replayMoodSnapshot = selectedMood
+        replayCalmPercentSnapshot = Int(calmScore * 100)
+        replayHeartRateSnapshot = Int(mockHeartRateCurrent)
+        replayExperienceAvailable = true
     }
 
     func resetToHome() {
         phase = .home
         capturedImage = nil
         selectedMood = nil
+        replayExperienceAvailable = false
+        replayMoodSnapshot = nil
     }
 
     func exitPostSignInSlidesToHome() {
@@ -93,6 +151,31 @@ final class SessionPOCState: ObservableObject {
         calmScore = 0.82
         snippets = []
         sessionHomeLightsSyncEnabled = false
+        replayExperienceAvailable = false
+        replayMoodSnapshot = nil
+        resetConnectedDeviceSettingsToDefaults()
+    }
+
+    private func resetConnectedDeviceSettingsToDefaults() {
+        healthShareHeartRate = true
+        healthShareRestingHR = true
+        healthShareSleepStages = true
+        healthShareActivity = false
+        healthPreferredProvider = .appleHealth
+        iotPhilipsHueEnabled = false
+        iotHomeKitEnabled = false
+        iotMatterEnabled = false
+        iotFollowSessionBreath = true
+        iotMaxSceneBrightness = 0.88
+        personalisationSessionMemory = true
+        personalisationAdaptationSpeed = 0.5
+        personalisationPreferGentleStarts = true
+        snippetsAutoCapturePeaks = true
+        snippetsKeepDays = .thirty
+        snippetsExportMarkdown = false
+        replayOfferOnInsight = true
+        replayRestoreVolume = true
+        replayShowMetricsOverlay = true
     }
 }
 
@@ -107,6 +190,7 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case insight = 7
     case unlockFeatures = 8
     case connectedDevices = 9
+    case replayCalmSession = 10
 
     var id: Int { rawValue }
 }

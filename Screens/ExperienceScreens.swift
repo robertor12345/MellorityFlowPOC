@@ -195,3 +195,124 @@ struct ImmersiveSessionView: View {
         }
     }
 }
+
+// MARK: - Replay last session (same video + ambient audio pipeline)
+
+struct ReplayCalmSessionView: View {
+    @ObservedObject var state: SessionPOCState
+    @StateObject private var ambientAudio = AmbientAudioSession()
+
+    var body: some View {
+        ZStack {
+            NatureVideoCompilationView()
+
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.18), location: 0),
+                    .init(color: .clear, location: 0.38),
+                    .init(color: .clear, location: 0.62),
+                    .init(color: .black.opacity(0.26), location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    Button {
+                        ambientAudio.isMuted.toggle()
+                    } label: {
+                        Image(systemName: ambientAudio.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.body)
+                            .foregroundStyle(BrandTheme.cream)
+                            .padding(10)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .accessibilityLabel(ambientAudio.isMuted ? "Unmute audio" : "Mute audio")
+
+                    Spacer()
+                }
+                .padding()
+
+                Spacer(minLength: 0)
+
+                VStack(spacing: 10) {
+                    Text("Replay your calm")
+                        .font(BrandTheme.title(.title2))
+                        .foregroundStyle(BrandTheme.cream)
+                        .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
+                    if let mood = state.replayMoodSnapshot {
+                        Text(mood)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(BrandTheme.cream.opacity(0.95))
+                            .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
+                    }
+                    Text("Same nature visuals and meditation audio as your session.")
+                        .font(.caption)
+                        .foregroundStyle(BrandTheme.cream.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
+
+                    if state.replayShowMetricsOverlay {
+                        HStack(spacing: 24) {
+                            VStack(spacing: 4) {
+                                Text("HR")
+                                    .font(.caption2)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                Text("\(state.replayHeartRateSnapshot)")
+                                    .font(.title2.monospacedDigit())
+                                    .foregroundStyle(BrandTheme.brown)
+                            }
+                            VStack(spacing: 4) {
+                                Text("Calm")
+                                    .font(.caption2)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                Text("\(state.replayCalmPercentSnapshot)%")
+                                    .font(.title2.monospacedDigit())
+                                    .foregroundStyle(BrandTheme.brown)
+                            }
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(BrandTheme.cream.opacity(0.92))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+                        )
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+
+                SessionBottomConfigMenu(state: state)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 10)
+
+                PrimaryButton(title: "End replay") {
+                    ambientAudio.stop()
+                    state.phase = .insight
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 8)
+                .safeAreaPadding(.bottom, 16)
+            }
+        }
+        .onAppear {
+            if !state.replayExperienceAvailable {
+                state.phase = .insight
+                return
+            }
+            ambientAudio.volumeMultiplier = state.replayRestoreVolume ? 1 : 0.72
+            ambientAudio.start()
+        }
+        .onDisappear {
+            ambientAudio.stop()
+        }
+    }
+}

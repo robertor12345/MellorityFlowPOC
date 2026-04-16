@@ -11,6 +11,9 @@ final class AmbientAudioSession: ObservableObject {
 
     private static let streamVolume: Float = 0.22
 
+    /// Applied to stream volume (e.g. replay vs live session).
+    var volumeMultiplier: Float = 1
+
     @Published var isMuted = false {
         didSet { applyMute() }
     }
@@ -42,13 +45,17 @@ final class AmbientAudioSession: ObservableObject {
     private func startStream() {
         let item = AVPlayerItem(url: Self.streamURL)
         let qp = AVQueuePlayer()
-        qp.volume = isMuted ? 0 : Self.streamVolume
+        qp.volume = effectiveVolume
         audioLooper = AVPlayerLooper(player: qp, templateItem: item)
         qp.play()
         queuePlayer = qp
     }
 
+    private var effectiveVolume: Float {
+        isMuted ? 0 : Self.streamVolume * volumeMultiplier
+    }
+
     private func applyMute() {
-        queuePlayer?.volume = isMuted ? 0 : Self.streamVolume
+        queuePlayer?.volume = effectiveVolume
     }
 }

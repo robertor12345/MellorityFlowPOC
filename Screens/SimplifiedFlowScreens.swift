@@ -324,22 +324,35 @@ struct InsightView: View {
                         delay: 0.22
                     )
 
-                    BrandCard {
-                        VStack(alignment: .center, spacing: 8) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "play.circle.fill")
-                                Text("Replay your calm")
+                    if state.replayOfferOnInsight {
+                        Button {
+                            state.phase = .replayCalmSession
+                        } label: {
+                            BrandCard {
+                                VStack(alignment: .center, spacing: 8) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "play.circle.fill")
+                                        Text("Replay your calm")
+                                    }
+                                    .font(.headline)
+                                    .foregroundStyle(BrandTheme.brown)
+                                    Text(
+                                        state.replayExperienceAvailable
+                                            ? "Same nature visuals and meditation audio as the session you just finished."
+                                            : "Finish a session first — then you can replay it here."
+                                    )
+                                    .font(.caption)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
                             }
-                            .font(.headline)
-                            .foregroundStyle(BrandTheme.brown)
-                            Text("Snippets and memory — revisit this tone anytime.")
-                                .font(.caption)
-                                .foregroundStyle(BrandTheme.brownMuted)
-                                .multilineTextAlignment(.center)
+                            .opacity(state.replayExperienceAvailable ? 1 : 0.5)
                         }
-                        .frame(maxWidth: .infinity)
+                        .buttonStyle(.plain)
+                        .disabled(!state.replayExperienceAvailable)
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
 
                     PrimaryButton(title: "Unlock deeper features") {
                         state.phase = .unlockFeatures

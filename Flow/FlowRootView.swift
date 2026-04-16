@@ -28,6 +28,8 @@ struct FlowRootView: View {
                     UnlockFeaturesView(state: state)
                 case .connectedDevices:
                     ConnectedDevicesView(state: state)
+                case .replayCalmSession:
+                    ReplayCalmSessionView(state: state)
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))
