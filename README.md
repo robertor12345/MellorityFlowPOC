@@ -23,7 +23,7 @@ Set your **Development Team**, pick an **iPhone**, build and run.
 | 2 | **Entry mode** — **Camera** (photo) or **Quick Start** (skip to mood) |
 | 3 | **Mood select** |
 | 4 | **Starting session** — progress + rotating subtle AI lines (&lt; ~5s) |
-| 5 | **Immersive** — ethereal layers, leaf breeze, streaming ambient audio, mock HR; **End session** → insight |
+| 5 | **Immersive** — ethereal layers, leaf breeze, streaming **meditation-style** calm audio, mock HR; **End session** → insight |
 | 6 | **Insight** — minimal visual calm ring + mood; **Replay your calm** teaser |
 | 7 | **Unlock features** — health sync, IoT, personalisation, snippets + memory; another session or sign-in |
 
@@ -32,7 +32,7 @@ Soft **fade-in** animations (`FadeInTitle`, `FadeInLine`, `ScreenFadeIn`) run on
 ## Immersive session — audio & visuals
 
 - **Nature imagery:** `NatureSessionImagery` stacks sky/mist, tinted light orbs, **mountain** silhouettes, animated **water** bands, subtle drifting symbols (water, waves, mountains, trees, leaves, clouds), and `LeafBreezeLayer` for gold **leaf** motion.
-- **Streaming bed:** `AVPlayer` loads **[SoundHelix Song 8](https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3)** (chill-out example on their [audio examples](https://www.soundhelix.com/audio-examples) page) over HTTPS. Loops until you leave the screen. Use the **speaker** button to mute. Credit SoundHelix + artist per their terms.
+- **Streaming bed:** `AVPlayer` loops **[CC0 calm music](https://opengameart.org/content/calm-music)** (`song_2.mp3` by [Morsi](https://opengameart.org/users/morsi), hosted on OpenGameArt). Meditation / relaxation vibe. Use the **speaker** button to mute. For offline or a different track, add an MP3 to the target and point `AmbientAudioSession.streamURL` at `Bundle.main.url(forResource:withExtension:)` instead.
 
 ## Requirements
 

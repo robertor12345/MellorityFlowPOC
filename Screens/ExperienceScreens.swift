@@ -111,7 +111,7 @@ struct ImmersiveSessionView: View {
                             .multilineTextAlignment(.center)
                             .transition(.opacity)
                     }
-                    Text("Streaming ambient · leaves, water & mountains · gentle HR (mock)")
+                    Text("Meditation music · leaves, water & mountains · gentle HR (mock)")
                         .font(.caption2)
                         .foregroundStyle(BrandTheme.brownMuted)
                         .multilineTextAlignment(.center)

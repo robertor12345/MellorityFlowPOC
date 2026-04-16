@@ -1,14 +1,15 @@
 import AVFoundation
 import Combine
 
-/// Streams calm ambient audio from the internet (SoundHelix chill-out example — see README).
+/// Streams meditation-style ambient music (see README for license / fallback).
 /// No extra synthesized layer — a previous ~9 kHz “air” sine read as an unpleasant whine on device speakers.
 final class AmbientAudioSession: ObservableObject {
     private var didStart = false
-    /// SoundHelix Song 8 — “Spy vs. Spy - Chill-out Acid Squeeze Mix” (calmer bed than Song 1).
-    static let streamURL = URL(string: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3")!
 
-    private static let streamVolume: Float = 0.26
+    /// CC0 calm bed — Morsi, [OpenGameArt](https://opengameart.org/content/calm-music) (`song_2.mp3`). Replace with a bundled asset for offline / production if you prefer.
+    static let streamURL = URL(string: "https://opengameart.org/sites/default/files/song_2.mp3")!
+
+    private static let streamVolume: Float = 0.22
 
     @Published var isMuted = false {
         didSet { applyMute() }
