@@ -24,7 +24,7 @@ Set your **Development Team**, pick an **iPhone**, build and run.
 | 2 | **Entry mode** — **Camera** (photo) or **Quick Start** (skip to mood) |
 | 3 | **Mood select** |
 | 4 | **Starting session** — progress + rotating subtle AI lines (&lt; ~5s) |
-| 5 | **Immersive** — **royalty-free nature video** compilation (Mixkit) + **meditation-style** streamed audio, mock HR; **End session** → insight |
+| 5 | **Immersive** — **royalty-free nature video** (Mixkit) + **meditation-style** audio, mock HR; collapsed **Session options** menu (home lights sync · share to social); **End session** → insight |
 | 6 | **Insight** — minimal visual calm ring + mood; **Replay your calm** teaser |
 | 7 | **Unlock features** — health sync, IoT, personalisation, snippets + memory; another session or sign-in |
 
@@ -34,6 +34,7 @@ Soft **fade-in** animations (`FadeInTitle`, `FadeInLine`, `ScreenFadeIn`) run on
 
 - **Nature video (royalty-free):** Full-screen **AVPlayerLayer** uses an **`AVQueuePlayer`** that plays four **[Mixkit](https://mixkit.co/free-stock-video/nature/)** clips in order (forest lake → park → meadow → water), then **re-queues** the same set so the compilation **loops until the session ends** (muted; music is separate). Jumps between *different* files may show a brief decode gap; within a single file, the pipeline is continuous. Licensed under the **[Mixkit Stock Video Free License](https://mixkit.co/license/#videoFree)**.
 - **Meditation audio:** **`AVPlayerLooper`** + **`AVQueuePlayer`** loops **[CC0 calm music](https://opengameart.org/content/calm-music)** (`song_2.mp3` by [Morsi](https://opengameart.org/users/morsi), hosted on OpenGameArt) with **gapless** repeats until `AmbientAudioSession.stop()`. Use the **speaker** button to mute. For offline or another file, point `AmbientAudioSession.streamURL` at `Bundle.main.url(forResource:withExtension:)` instead.
+- **Session options (bottom):** Collapsible **`SessionBottomConfigMenu`** — mock **home lighting sync** toggle (Philips Hue / HomeKit–style, no real bridge) and **Share visuals** via the system share sheet (text placeholder; no screen capture in POC).
 - **Optional legacy canvas:** Procedural layers from `NatureSessionImagery.swift` are **not** shown during immersive anymore (video replaces them); file kept if you want to reuse elsewhere.
 
 ## Requirements

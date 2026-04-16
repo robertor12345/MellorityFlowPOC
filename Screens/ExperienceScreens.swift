@@ -160,6 +160,10 @@ struct ImmersiveSessionView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
 
+                SessionBottomConfigMenu(state: state)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 10)
+
                 PrimaryButton(title: "End session") {
                     state.endSession()
                     state.phase = .insight

@@ -27,6 +27,9 @@ final class SessionPOCState: ObservableObject {
 
     @Published var snippets: [SnippetHighlight] = []
 
+    /// Immersive session: mock “sync with home lights” (Hue / HomeKit style — no real bridge in POC).
+    @Published var sessionHomeLightsSyncEnabled = false
+
     private var sessionStart: Date?
 
     struct SnippetHighlight: Identifiable {
@@ -43,6 +46,7 @@ final class SessionPOCState: ObservableObject {
         mockHeartRateStart = Double.random(in: 72 ... 88)
         mockHeartRateCurrent = mockHeartRateStart
         snippets = []
+        sessionHomeLightsSyncEnabled = false
     }
 
     func addSnippet() {
