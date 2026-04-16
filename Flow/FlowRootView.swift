@@ -72,7 +72,7 @@ struct PrimaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.headline)
+                .font(BrandTheme.buttonLabel(.headline))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(
@@ -95,7 +95,7 @@ struct SecondaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.subheadline.weight(.semibold))
+                .font(BrandTheme.buttonLabel(.subheadline))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(BrandTheme.cream.opacity(0.6))

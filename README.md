@@ -2,7 +2,7 @@
 
 **iPhone demo** of a simplified Mellority journey: open the app → **Start Session** (no login) → optional sign-in → **Camera** or **Quick Start** → **mood** → fast session load (**under ~5s**) with subtle AI lines → **immersive** space with real-time adaptation → **insight** (simple, visual) → **unlock deeper features** (health sync, IoT, personalisation, snippets + memory, “replay your calm”).
 
-- **Brand:** cream / chocolate brown / gold (`BrandTheme`), aligned with Mellority logo asset.
+- **Brand:** cream / chocolate brown / gold (`BrandTheme`), aligned with Mellority logo asset. Typography: **SF** with **rounded** design app-wide for a simple modern look.
 - **Integrations:** All **simulated** except **Camera** and **photo library** (real pickers when you grant permission). Optional sign-in is mock.
 
 ## Run
@@ -23,7 +23,7 @@ Set your **Development Team**, pick an **iPhone**, build and run.
 | 2 | **Entry mode** — **Camera** (photo) or **Quick Start** (skip to mood) |
 | 3 | **Mood select** |
 | 4 | **Starting session** — progress + rotating subtle AI lines (&lt; ~5s) |
-| 5 | **Immersive** — ethereal layers, leaf breeze, streaming **meditation-style** calm audio, mock HR; **End session** → insight |
+| 5 | **Immersive** — **royalty-free nature video** compilation (Mixkit) + **meditation-style** streamed audio, mock HR; **End session** → insight |
 | 6 | **Insight** — minimal visual calm ring + mood; **Replay your calm** teaser |
 | 7 | **Unlock features** — health sync, IoT, personalisation, snippets + memory; another session or sign-in |
 
@@ -31,11 +31,12 @@ Soft **fade-in** animations (`FadeInTitle`, `FadeInLine`, `ScreenFadeIn`) run on
 
 ## Immersive session — audio & visuals
 
-- **Nature imagery:** `NatureSessionImagery` stacks sky/mist, tinted light orbs, **mountain** silhouettes, animated **water** bands, subtle drifting symbols (water, waves, mountains, trees, leaves, clouds), and `LeafBreezeLayer` for gold **leaf** motion.
+- **Nature video (royalty-free):** Full-screen **AVPlayerLayer** cycles through four **[Mixkit](https://mixkit.co/free-stock-video/nature/)** clips (forest lake, park, meadow, water) — `NatureVideoCompilation.mixkitClipURLs`. Clips stream from `assets.mixkit.co` (muted; music is separate). Licensed under the **[Mixkit Stock Video Free License](https://mixkit.co/license/#videoFree)** (free for commercial and personal use; do not resell unmodified clips as stock per their terms).
+- **Optional legacy canvas:** Procedural layers from `NatureSessionImagery.swift` are **not** shown during immersive anymore (video replaces them); file kept if you want to reuse elsewhere.
 - **Streaming bed:** `AVPlayer` loops **[CC0 calm music](https://opengameart.org/content/calm-music)** (`song_2.mp3` by [Morsi](https://opengameart.org/users/morsi), hosted on OpenGameArt). Meditation / relaxation vibe. Use the **speaker** button to mute. For offline or a different track, add an MP3 to the target and point `AmbientAudioSession.streamURL` at `Bundle.main.url(forResource:withExtension:)` instead.
 
 ## Requirements
 
 - iOS **17+**, Xcode **15+**
 - Physical device recommended for **camera**
-- **Network** required on first immersive session for the streamed MP3 (then cached by the system).
+- **Network** required on first immersive session for **streamed nature video** and **streamed MP3** (AVFoundation may cache segments afterward).

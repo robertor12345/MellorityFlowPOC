@@ -17,6 +17,7 @@ struct AppRootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.45), value: showSplash)
+        .environment(\.font, Font.system(.body, design: .rounded))
         .preferredColorScheme(.light)
     }
 }

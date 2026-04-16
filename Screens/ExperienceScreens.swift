@@ -67,8 +67,20 @@ struct ImmersiveSessionView: View {
 
     var body: some View {
         ZStack {
-            NatureSessionImagery()
-                .ignoresSafeArea()
+            NatureVideoCompilationView()
+
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.14), location: 0),
+                    .init(color: .clear, location: 0.38),
+                    .init(color: .clear, location: 0.62),
+                    .init(color: .black.opacity(0.22), location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HStack {
@@ -111,7 +123,7 @@ struct ImmersiveSessionView: View {
                             .multilineTextAlignment(.center)
                             .transition(.opacity)
                     }
-                    Text("Meditation music · leaves, water & mountains · gentle HR (mock)")
+                    Text("Meditation music · Mixkit nature video · gentle HR (mock)")
                         .font(.caption2)
                         .foregroundStyle(BrandTheme.brownMuted)
                         .multilineTextAlignment(.center)

@@ -39,7 +39,12 @@ enum BrandTheme {
         endPoint: .bottom
     )
 
+    /// Rounded system — simple, modern UI (replaces previous serif titles).
     static func title(_ style: Font.TextStyle = .title) -> Font {
-        .system(style, design: .serif)
+        .system(style, design: .rounded)
+    }
+
+    static func buttonLabel(_ style: Font.TextStyle = .headline) -> Font {
+        .system(style, design: .rounded, weight: .semibold)
     }
 }
