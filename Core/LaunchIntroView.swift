@@ -11,16 +11,9 @@ struct LaunchIntroView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    BrandTheme.cream.opacity(0.92),
-                    BrandTheme.creamMid.opacity(0.88),
-                    BrandTheme.creamDeep.opacity(0.85),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // Clear so parent `AppRootView` gradient + gold sparkles stay visible (no cream sheet hiding them).
+            Color.clear
+                .ignoresSafeArea()
 
             TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
                 let elapsed = timeline.date.timeIntervalSince(anchor)
@@ -35,8 +28,8 @@ struct LaunchIntroView: View {
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 1, green: 0.96, blue: 0.82),
-                                    Color(red: 0.88, green: 0.72, blue: 0.28),
+                                    BrandTheme.brown,
+                                    BrandTheme.goldDeep,
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing

@@ -4,18 +4,27 @@ import SwiftUI
 import UIKit
 
 /// Plays a **royalty-free nature “compilation”** — sequenced HD clips from [Mixkit](https://mixkit.co/license/#videoFree).
-/// Clip **order is shuffled per `mediaSessionID`** so each session (especially with a photo anchor) gets a fresh visual sequence.
+/// **Quick Start** and **photo-anchored** sessions use **different clip pools** so the POC clearly varies visuals by entry path.
 enum NatureVideoCompilation {
-    static let mixkitClipURLs: [URL] = [
+    /// Mood / Quick Start path — forests, lakes, drone nature (shuffle still varies per session id).
+    static let mixkitQuickStartClipURLs: [URL] = [
         URL(string: "https://assets.mixkit.co/videos/5038/5038-720.mp4")!,
         URL(string: "https://assets.mixkit.co/videos/2363/2363-720.mp4")!,
         URL(string: "https://assets.mixkit.co/videos/40657/40657-720.mp4")!,
         URL(string: "https://assets.mixkit.co/videos/1164/1164-720.mp4")!,
     ]
 
-    /// Deterministic shuffle from session id — same id ⇒ same order (used for replay).
-    static func clipPlaylist(seed: UUID) -> [URL] {
-        var urls = mixkitClipURLs
+    /// Photo anchor path — alternate Mixkit set (coast, mist, mountains, trees) so it never matches the Quick Start reel.
+    static let mixkitPhotoAnchorClipURLs: [URL] = [
+        URL(string: "https://assets.mixkit.co/videos/5171/5171-720.mp4")!,
+        URL(string: "https://assets.mixkit.co/videos/4862/4862-720.mp4")!,
+        URL(string: "https://assets.mixkit.co/videos/2382/2382-720.mp4")!,
+        URL(string: "https://assets.mixkit.co/videos/4489/4489-720.mp4")!,
+    ]
+
+    /// Deterministic shuffle from session id — same id + same path ⇒ same order (replay).
+    static func clipPlaylist(seed: UUID, photoAnchored: Bool) -> [URL] {
+        var urls = photoAnchored ? mixkitPhotoAnchorClipURLs : mixkitQuickStartClipURLs
         var rng = SeededRandomNumberGenerator(seed: seed)
         urls.shuffle(using: &rng)
         return urls
@@ -50,7 +59,7 @@ final class NatureCompilationSession: ObservableObject {
     private var endObserver: NSObjectProtocol?
 
     init(clipURLs: [URL]) {
-        self.clipURLs = clipURLs.isEmpty ? NatureVideoCompilation.mixkitClipURLs : clipURLs
+        self.clipURLs = clipURLs.isEmpty ? NatureVideoCompilation.mixkitQuickStartClipURLs : clipURLs
     }
 
     func prepareAndPlay() {
@@ -110,12 +119,14 @@ final class NatureCompilationSession: ObservableObject {
 
 struct NatureVideoCompilationView: View {
     let mediaSessionID: UUID
+    let photoAnchored: Bool
 
     @StateObject private var session: NatureCompilationSession
 
-    init(mediaSessionID: UUID) {
+    init(mediaSessionID: UUID, photoAnchored: Bool) {
         self.mediaSessionID = mediaSessionID
-        let clips = NatureVideoCompilation.clipPlaylist(seed: mediaSessionID)
+        self.photoAnchored = photoAnchored
+        let clips = NatureVideoCompilation.clipPlaylist(seed: mediaSessionID, photoAnchored: photoAnchored)
         _session = StateObject(wrappedValue: NatureCompilationSession(clipURLs: clips))
     }
 

@@ -88,6 +88,8 @@ final class SessionPOCState: ObservableObject {
     @Published private(set) var sessionAnchoredWithPhoto = false
     /// Snapshot of `immersiveMediaSessionID` when the session ended — used to rebuild the same clip order for **Replay**.
     @Published private(set) var replaySnapshotMediaID: UUID?
+    /// Whether the ended session used the **photo-anchor** visuals + audio path (vs Quick Start).
+    @Published private(set) var replaySessionPhotoAnchored = false
 
     struct SnippetHighlight: Identifiable {
         let id = UUID()
@@ -110,6 +112,7 @@ final class SessionPOCState: ObservableObject {
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
         replaySnapshotMediaID = nil
+        replaySessionPhotoAnchored = false
     }
 
     func addSnippet() {
@@ -128,6 +131,7 @@ final class SessionPOCState: ObservableObject {
         replayCalmPercentSnapshot = Int(calmScore * 100)
         replayHeartRateSnapshot = Int(mockHeartRateCurrent)
         replaySnapshotMediaID = immersiveMediaSessionID
+        replaySessionPhotoAnchored = sessionAnchoredWithPhoto
         replayExperienceAvailable = true
     }
 
@@ -138,6 +142,7 @@ final class SessionPOCState: ObservableObject {
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
         replaySnapshotMediaID = nil
+        replaySessionPhotoAnchored = false
     }
 
     func exitPostSignInSlidesToHome() {
@@ -166,6 +171,7 @@ final class SessionPOCState: ObservableObject {
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
         replaySnapshotMediaID = nil
+        replaySessionPhotoAnchored = false
         immersiveMediaSessionID = UUID()
         sessionAnchoredWithPhoto = false
         resetConnectedDeviceSettingsToDefaults()

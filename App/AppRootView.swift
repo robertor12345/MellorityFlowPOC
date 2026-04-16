@@ -11,7 +11,7 @@ struct AppRootView: View {
                     BrandTheme.backgroundGradient
                         .ignoresSafeArea()
 
-                    GoldAmbientSparklesView(intensity: 1.22, lightBackdrop: true)
+                    GoldAmbientSparklesView(intensity: 1.38, lightBackdrop: true)
                         .ignoresSafeArea()
 
                     LaunchIntroView {

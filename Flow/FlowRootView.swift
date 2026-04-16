@@ -3,6 +3,11 @@ import SwiftUI
 struct FlowRootView: View {
     @StateObject private var state = SessionPOCState()
 
+    /// Phases where a sparkle layer on top of cards/scroll content makes sense (not over raw video).
+    private static let sparkleOverlayPhases: Set<FlowPhase> = Set(
+        FlowPhase.allCases.filter { $0 != .immersive && $0 != .replayCalmSession }
+    )
+
     var body: some View {
         ZStack {
             BrandBackground()
@@ -33,6 +38,13 @@ struct FlowRootView: View {
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))
+            // Ambient gold sparkles above UI chrome (hidden for full-screen video phases).
+            if Self.sparkleOverlayPhases.contains(state.phase) {
+                GoldAmbientSparklesView(intensity: 0.56, lightBackdrop: true)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
+            }
         }
         .animation(.easeInOut(duration: 0.35), value: state.phase)
         .onAppear {
@@ -46,8 +58,8 @@ struct BrandBackground: View {
         ZStack {
             BrandTheme.backgroundGradient
                 .ignoresSafeArea()
-            // PS5-style gold ambient sparkles (subtle on cream; matches launch intro language).
-            GoldAmbientSparklesView(intensity: 0.42)
+            // Light base wash only — primary sparkles sit in `FlowRootView` above content.
+            GoldAmbientSparklesView(intensity: 0.28, lightBackdrop: true)
                 .ignoresSafeArea()
             RadialGradient(
                 colors: [BrandTheme.goldSoft.opacity(0.15), Color.clear],

@@ -68,7 +68,10 @@ struct ImmersiveSessionView: View {
 
     var body: some View {
         ZStack {
-            NatureVideoCompilationView(mediaSessionID: state.immersiveMediaSessionID)
+            NatureVideoCompilationView(
+                mediaSessionID: state.immersiveMediaSessionID,
+                photoAnchored: state.sessionAnchoredWithPhoto
+            )
 
             LinearGradient(
                 stops: [
@@ -182,8 +185,8 @@ struct ImmersiveSessionView: View {
         }
         .onAppear {
             ambientAudio.volumeMultiplier = 1
-            // New `AVPlayerLooper` + items each time; photo-anchored sessions always get a clean pass.
-            ambientAudio.startFresh()
+            // Distinct Mixkit reel + ambient stream when session is photo-anchored vs Quick Start.
+            ambientAudio.startFresh(photoAnchored: state.sessionAnchoredWithPhoto)
             hrTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
                 withAnimation(.easeInOut(duration: 1.0)) {
                     state.mockHeartRateCurrent = max(58, state.mockHeartRateCurrent - Double.random(in: 0.2 ... 0.8))
@@ -206,7 +209,10 @@ struct ReplayCalmSessionView: View {
 
     var body: some View {
         ZStack {
-            NatureVideoCompilationView(mediaSessionID: state.replaySnapshotMediaID ?? state.immersiveMediaSessionID)
+            NatureVideoCompilationView(
+                mediaSessionID: state.replaySnapshotMediaID ?? state.immersiveMediaSessionID,
+                photoAnchored: state.replaySessionPhotoAnchored
+            )
 
             LinearGradient(
                 stops: [
@@ -311,7 +317,7 @@ struct ReplayCalmSessionView: View {
                 return
             }
             ambientAudio.volumeMultiplier = state.replayRestoreVolume ? 1 : 0.72
-            ambientAudio.startFresh()
+            ambientAudio.startFresh(photoAnchored: state.replaySessionPhotoAnchored)
         }
         .onDisappear {
             ambientAudio.stop()

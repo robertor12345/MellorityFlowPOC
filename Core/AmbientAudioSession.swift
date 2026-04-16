@@ -3,16 +3,23 @@ import Combine
 
 /// Streams meditation-style ambient music (see README for license / fallback).
 /// Uses `AVPlayerLooper` for **gapless** looping until `stop()` — no seek-to-zero hitch at loop points.
+///
+/// **POC:** Photo-anchored sessions use a different stream than Quick Start so audio clearly differs by path.
 final class AmbientAudioSession: ObservableObject {
     private var didStart = false
 
-    /// CC0 calm bed — Morsi / OpenGameArt “calm music” (`song_2.mp3`). Replace with a bundled asset for offline or production if you prefer.
-    static let streamURL = URL(string: "https://opengameart.org/sites/default/files/song_2.mp3")!
+    /// Quick Start / mood-only path — Morsi / OpenGameArt “calm music” (`song_2.mp3`).
+    static let quickStartStreamURL = URL(string: "https://opengameart.org/sites/default/files/song_2.mp3")!
+
+    /// Photo-anchor path — Mixkit preview bed (distinct tone from Quick Start).
+    static let photoAnchorStreamURL = URL(string: "https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3")!
 
     private static let streamVolume: Float = 0.22
 
     /// Applied to stream volume (e.g. replay vs live session).
     var volumeMultiplier: Float = 1
+
+    private var activeStreamURL: URL = Self.quickStartStreamURL
 
     @Published var isMuted = false {
         didSet { applyMute() }
@@ -28,9 +35,10 @@ final class AmbientAudioSession: ObservableObject {
         startStream()
     }
 
-    /// Tears down the looper and starts a **new** stream (new `AVPlayerItem` chain) — use for a clean audio pass each session.
-    func startFresh() {
+    /// Tears down the looper and starts a **new** stream — `photoAnchored` picks the POC’s alternate ambience.
+    func startFresh(photoAnchored: Bool = false) {
         stop()
+        activeStreamURL = photoAnchored ? Self.photoAnchorStreamURL : Self.quickStartStreamURL
         start()
     }
 
@@ -49,7 +57,7 @@ final class AmbientAudioSession: ObservableObject {
     }
 
     private func startStream() {
-        let item = AVPlayerItem(url: Self.streamURL)
+        let item = AVPlayerItem(url: activeStreamURL)
         let qp = AVQueuePlayer()
         qp.volume = effectiveVolume
         audioLooper = AVPlayerLooper(player: qp, templateItem: item)
