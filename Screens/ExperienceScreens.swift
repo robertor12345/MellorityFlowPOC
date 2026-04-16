@@ -48,6 +48,7 @@ struct ProcessingView: View {
 
 struct ImmersiveSessionView: View {
     @ObservedObject var state: SessionPOCState
+    @StateObject private var ambientAudio = AmbientAudioSession()
     @State private var hrTimer: Timer?
 
     var body: some View {
@@ -81,8 +82,22 @@ struct ImmersiveSessionView: View {
             }
             .ignoresSafeArea()
 
+            LeafBreezeLayer()
+                .ignoresSafeArea()
+
             VStack {
                 HStack {
+                    Button {
+                        ambientAudio.isMuted.toggle()
+                    } label: {
+                        Image(systemName: ambientAudio.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.body)
+                            .foregroundStyle(BrandTheme.cream)
+                            .padding(10)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .accessibilityLabel(ambientAudio.isMuted ? "Unmute audio" : "Mute audio")
+
                     Spacer()
                     Button {
                         state.addSnippet()
@@ -102,9 +117,10 @@ struct ImmersiveSessionView: View {
                         .font(BrandTheme.title(.title2))
                         .foregroundStyle(BrandTheme.cream.opacity(0.95))
                         .shadow(radius: 4)
-                    Text("3D spatial audio · nature-inspired motion")
+                    Text("Streaming ambient + high-frequency air · leaf motion · mock HR")
                         .font(.caption)
                         .foregroundStyle(BrandTheme.cream.opacity(0.85))
+                        .multilineTextAlignment(.center)
                     HStack(spacing: 24) {
                         VStack {
                             Text("HR")
@@ -137,6 +153,7 @@ struct ImmersiveSessionView: View {
             }
         }
         .onAppear {
+            ambientAudio.start()
             hrTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
                 withAnimation(.easeInOut(duration: 1.0)) {
                     state.mockHeartRateCurrent = max(58, state.mockHeartRateCurrent - Double.random(in: 0.2 ... 0.8))
@@ -146,6 +163,7 @@ struct ImmersiveSessionView: View {
         .onDisappear {
             hrTimer?.invalidate()
             hrTimer = nil
+            ambientAudio.stop()
         }
     }
 }
