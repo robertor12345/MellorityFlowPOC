@@ -4,8 +4,7 @@ import SwiftUI
 struct MellorityFlowPOCApp: App {
     var body: some Scene {
         WindowGroup {
-            FlowRootView()
-                .preferredColorScheme(.light)
+            AppRootView()
         }
     }
 }
