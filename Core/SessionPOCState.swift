@@ -11,6 +11,13 @@ final class SessionPOCState: ObservableObject {
     @Published var password = ""
     @Published var isSignedIn = false
 
+    /// Mock opt-ins chosen on post–sign-in integration slides (POC only).
+    @Published var wantsHealthSync = false
+    @Published var wantsIoT = false
+    @Published var wantsPersonalisation = false
+    @Published var wantsSnippetsMemory = false
+    @Published var wantsReplayCalm = false
+
     @Published var capturedImage: UIImage?
     @Published var selectedMood: String?
 
@@ -57,10 +64,15 @@ final class SessionPOCState: ObservableObject {
         capturedImage = nil
         selectedMood = nil
     }
+
+    func exitPostSignInSlidesToHome() {
+        phase = .home
+    }
 }
 
 enum FlowPhase: Int, CaseIterable, Identifiable {
     case home
+    case postSignInFeatureSlides
     case entryMode
     case captureMoment
     case moodSelect

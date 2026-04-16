@@ -75,6 +75,8 @@ struct OptionalSignInSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Continue") {
                         state.isSignedIn = true
+                        state.showSignInSheet = false
+                        state.phase = .postSignInFeatureSlides
                         dismiss()
                     }
                     .fontWeight(.semibold)

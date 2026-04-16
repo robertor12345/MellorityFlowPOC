@@ -1,6 +1,6 @@
 # Mellority Flow POC
 
-**iPhone demo** of a simplified Mellority journey: open the app → **Start Session** (no login) → optional sign-in → **Camera** or **Quick Start** → **mood** → fast session load (**under ~5s**) with subtle AI lines → **immersive** space with real-time adaptation → **insight** (simple, visual) → **unlock deeper features** (health sync, IoT, personalisation, snippets + memory, “replay your calm”).
+**iPhone demo** of a simplified Mellority journey: open the app → **Start Session** (no login) → optional sign-in → **optional integration slides** (after a successful sign-in, with per-feature **Connect** / **Skip** and **Skip all**) → **Camera** or **Quick Start** → **mood** → fast session load (**under ~5s**) with subtle AI lines → **immersive** space with real-time adaptation → **insight** (simple, visual) → **unlock deeper features** (health sync, IoT, personalisation, snippets + memory, “replay your calm”).
 
 - **Brand:** cream / chocolate brown / gold (`BrandTheme`), aligned with Mellority logo asset. Typography: **SF** with **rounded** design app-wide for a simple modern look.
 - **Integrations:** All **simulated** except **Camera** and **photo library** (real pickers when you grant permission). Optional sign-in is mock.
@@ -20,6 +20,7 @@ Set your **Development Team**, pick an **iPhone**, build and run.
 | Step | Screen |
 |------|--------|
 | 1 | **Home** — “Start Session”; **Sign in (optional)** in a sheet |
+| 1b | **Post–sign-in slides** (only if user continues sign-in) — Health, IoT, personalisation, snippets + memory, replay; mock **Connect** / **Skip**; **Skip all** or **Continue** to home |
 | 2 | **Entry mode** — **Camera** (photo) or **Quick Start** (skip to mood) |
 | 3 | **Mood select** |
 | 4 | **Starting session** — progress + rotating subtle AI lines (&lt; ~5s) |

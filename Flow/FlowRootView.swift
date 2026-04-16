@@ -10,6 +10,8 @@ struct FlowRootView: View {
                 switch state.phase {
                 case .home:
                     HomeView(state: state)
+                case .postSignInFeatureSlides:
+                    PostSignInIntegrationSlidesView(state: state)
                 case .entryMode:
                     EntryModeView(state: state)
                 case .captureMoment:
