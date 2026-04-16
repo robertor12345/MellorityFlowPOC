@@ -2,7 +2,7 @@ import AVFoundation
 import Combine
 
 /// Streams meditation-style ambient music (see README for license / fallback).
-/// No extra synthesized layer — a previous ~9 kHz “air” sine read as an unpleasant whine on device speakers.
+/// Uses `AVPlayerLooper` for **gapless** looping until `stop()` — no seek-to-zero hitch at loop points.
 final class AmbientAudioSession: ObservableObject {
     private var didStart = false
 
@@ -15,8 +15,8 @@ final class AmbientAudioSession: ObservableObject {
         didSet { applyMute() }
     }
 
-    private var streamPlayer: AVPlayer?
-    private var loopObserver: Any?
+    private var queuePlayer: AVQueuePlayer?
+    private var audioLooper: AVPlayerLooper?
 
     func start() {
         guard !didStart else { return }
@@ -27,12 +27,9 @@ final class AmbientAudioSession: ObservableObject {
 
     func stop() {
         didStart = false
-        if let loopObserver {
-            NotificationCenter.default.removeObserver(loopObserver)
-        }
-        loopObserver = nil
-        streamPlayer?.pause()
-        streamPlayer = nil
+        audioLooper = nil
+        queuePlayer?.pause()
+        queuePlayer = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
@@ -44,22 +41,14 @@ final class AmbientAudioSession: ObservableObject {
 
     private func startStream() {
         let item = AVPlayerItem(url: Self.streamURL)
-        let player = AVPlayer(playerItem: item)
-        player.volume = isMuted ? 0 : Self.streamVolume
-        player.actionAtItemEnd = .none
-        loopObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: item,
-            queue: .main
-        ) { [weak player] _ in
-            player?.seek(to: .zero)
-            player?.play()
-        }
-        player.play()
-        streamPlayer = player
+        let qp = AVQueuePlayer()
+        qp.volume = isMuted ? 0 : Self.streamVolume
+        audioLooper = AVPlayerLooper(player: qp, templateItem: item)
+        qp.play()
+        queuePlayer = qp
     }
 
     private func applyMute() {
-        streamPlayer?.volume = isMuted ? 0 : Self.streamVolume
+        queuePlayer?.volume = isMuted ? 0 : Self.streamVolume
     }
 }

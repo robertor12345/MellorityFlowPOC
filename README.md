@@ -31,9 +31,9 @@ Soft **fade-in** animations (`FadeInTitle`, `FadeInLine`, `ScreenFadeIn`) run on
 
 ## Immersive session — audio & visuals
 
-- **Nature video (royalty-free):** Full-screen **AVPlayerLayer** cycles through four **[Mixkit](https://mixkit.co/free-stock-video/nature/)** clips (forest lake, park, meadow, water) — `NatureVideoCompilation.mixkitClipURLs`. Clips stream from `assets.mixkit.co` (muted; music is separate). Licensed under the **[Mixkit Stock Video Free License](https://mixkit.co/license/#videoFree)** (free for commercial and personal use; do not resell unmodified clips as stock per their terms).
+- **Nature video (royalty-free):** Full-screen **AVPlayerLayer** uses an **`AVQueuePlayer`** that plays four **[Mixkit](https://mixkit.co/free-stock-video/nature/)** clips in order (forest lake → park → meadow → water), then **re-queues** the same set so the compilation **loops until the session ends** (muted; music is separate). Jumps between *different* files may show a brief decode gap; within a single file, the pipeline is continuous. Licensed under the **[Mixkit Stock Video Free License](https://mixkit.co/license/#videoFree)**.
+- **Meditation audio:** **`AVPlayerLooper`** + **`AVQueuePlayer`** loops **[CC0 calm music](https://opengameart.org/content/calm-music)** (`song_2.mp3` by [Morsi](https://opengameart.org/users/morsi), hosted on OpenGameArt) with **gapless** repeats until `AmbientAudioSession.stop()`. Use the **speaker** button to mute. For offline or another file, point `AmbientAudioSession.streamURL` at `Bundle.main.url(forResource:withExtension:)` instead.
 - **Optional legacy canvas:** Procedural layers from `NatureSessionImagery.swift` are **not** shown during immersive anymore (video replaces them); file kept if you want to reuse elsewhere.
-- **Streaming bed:** `AVPlayer` loops **[CC0 calm music](https://opengameart.org/content/calm-music)** (`song_2.mp3` by [Morsi](https://opengameart.org/users/morsi), hosted on OpenGameArt). Meditation / relaxation vibe. Use the **speaker** button to mute. For offline or a different track, add an MP3 to the target and point `AmbientAudioSession.streamURL` at `Bundle.main.url(forResource:withExtension:)` instead.
 
 ## Requirements
 

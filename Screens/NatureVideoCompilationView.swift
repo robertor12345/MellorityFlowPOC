@@ -2,10 +2,10 @@ import AVFoundation
 import Combine
 import SwiftUI
 
-/// Plays a **royalty-free nature “compilation”** — sequenced HD clips from [Mixkit](https://mixkit.co/license/#videoFree) (free for personal & commercial use per their license).
-/// Video is **muted**; session music comes from `AmbientAudioSession`.
+/// Plays a **royalty-free nature “compilation”** — sequenced HD clips from [Mixkit](https://mixkit.co/license/#videoFree).
+/// Uses `AVQueuePlayer`: when the round finishes, the same clips are **re-queued** so playback **loops until the session ends** (video is **muted**; music is `AmbientAudioSession`).
 enum NatureVideoCompilation {
-    /// Forest lake, park trees, sunlit meadow, water ripples — loops as a playlist.
+    /// Forest lake, park trees, sunlit meadow, water ripples — cycles repeatedly.
     static let mixkitClipURLs: [URL] = [
         URL(string: "https://assets.mixkit.co/videos/5038/5038-720.mp4")!, // Beautiful lake in a quiet forest
         URL(string: "https://assets.mixkit.co/videos/2363/2363-720.mp4")!, // Nature in the park
@@ -15,45 +15,52 @@ enum NatureVideoCompilation {
 }
 
 final class NatureCompilationSession: ObservableObject {
-    private(set) var player = AVPlayer()
+    /// Subclass of `AVPlayer` — same layer binding, better queue control.
+    private(set) var queuePlayer = AVQueuePlayer()
+
+    /// Exposed for `AVPlayerLayer` (`AVQueuePlayer` is an `AVPlayer`).
+    var player: AVPlayer { queuePlayer }
+
     private var endObserver: NSObjectProtocol?
-    private var index = 0
 
     func prepareAndPlay() {
-        player.isMuted = true
-        index = 0
-        playClip(at: 0)
+        queuePlayer.isMuted = true
+        queuePlayer.actionAtItemEnd = .advance
+        enqueueRound()
+        queuePlayer.play()
     }
 
     func pause() {
-        player.pause()
+        queuePlayer.pause()
     }
 
-    func resume() {
-        player.play()
-    }
-
-    private func playClip(at i: Int) {
+    /// Inserts one full compilation after any current queued items; wires loop when the **last** clip ends.
+    private func enqueueRound() {
         if let endObserver {
             NotificationCenter.default.removeObserver(endObserver)
             self.endObserver = nil
         }
 
-        let url = NatureVideoCompilation.mixkitClipURLs[i]
-        let item = AVPlayerItem(url: url)
-        player.replaceCurrentItem(with: item)
+        let items = NatureVideoCompilation.mixkitClipURLs.map { AVPlayerItem(url: $0) }
+        guard let last = items.last else { return }
+
+        for item in items {
+            queuePlayer.insert(item, after: nil)
+        }
 
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
-            object: item,
+            object: last,
             queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            self.index = (self.index + 1) % NatureVideoCompilation.mixkitClipURLs.count
-            self.playClip(at: self.index)
+            self?.onCompilationRoundEnded()
         }
+    }
 
-        player.play()
+    /// When the final clip in this round ends, `AVQueuePlayer` has drained — enqueue another seamless **cycle**.
+    private func onCompilationRoundEnded() {
+        enqueueRound()
+        queuePlayer.play()
     }
 
     deinit {
