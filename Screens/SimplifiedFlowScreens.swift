@@ -228,36 +228,31 @@ struct MoodSelectView: View {
                     FadeInTitle(text: "How do you feel?", delay: 0)
                     FadeInLine(text: "We’ll adapt sound and motion to this — in seconds.", delay: 0.06)
                     FadeInLine(
-                        text: "There’s no wrong answer — pick what fits closest right now.",
+                        text: "There’s no wrong answer — tap the word that fits closest right now.",
                         font: .caption,
                         color: BrandTheme.brownMuted.opacity(0.95),
                         delay: 0.14
                     )
 
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        ForEach(Array(state.moodOptions.enumerated()), id: \.offset) { i, mood in
-                            let selected = state.selectedMood == mood
-                            Button {
-                                state.selectedMood = mood
-                            } label: {
-                                Text(mood)
-                                    .font(.subheadline.weight(.semibold))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(selected ? BrandTheme.goldSoft.opacity(0.85) : BrandTheme.cream.opacity(0.9))
-                                    .foregroundStyle(BrandTheme.brown)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .stroke(selected ? BrandTheme.gold : BrandTheme.gold.opacity(0.25), lineWidth: selected ? 2 : 1)
-                                    )
+                    TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+                        let t = timeline.date.timeIntervalSinceReferenceDate
+                        VStack(spacing: 26) {
+                            ForEach(Array(state.moodOptions.enumerated()), id: \.offset) { index, mood in
+                                FloatingMoodLabel(
+                                    title: mood,
+                                    index: index,
+                                    phase: t,
+                                    isSelected: state.selectedMood == mood
+                                ) {
+                                    state.selectedMood = mood
+                                }
+                                .animation(.spring(response: 0.4, dampingFraction: 0.78), value: state.selectedMood)
                             }
-                            .buttonStyle(.plain)
-                            .opacity(1)
-                            .animation(.easeOut(duration: 0.35).delay(Double(i) * 0.05), value: state.selectedMood)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 12)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 8)
 
                     PrimaryButton(title: "Begin") {
                         state.beginSession()
@@ -275,6 +270,87 @@ struct MoodSelectView: View {
                 .padding(.vertical, 28)
             }
         }
+    }
+}
+
+// MARK: - Floating mood label (typography + glow when selected)
+
+private struct FloatingMoodLabel: View {
+    let title: String
+    let index: Int
+    let phase: TimeInterval
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    private var floatY: CGFloat {
+        CGFloat(
+            sin(phase * 0.82 + Double(index) * 0.61) * 3.8
+                + sin(phase * 0.37 + Double(index) * 1.1) * 1.6
+        )
+    }
+
+    private var sway: Double {
+        sin(phase * 0.48 + Double(index) * 0.94) * 0.55
+    }
+
+    private var fontSize: CGFloat { isSelected ? 30 : 25 }
+
+    var body: some View {
+        Button(action: onSelect) {
+            ZStack {
+                if isSelected {
+                    Text(title)
+                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
+                        .foregroundStyle(BrandTheme.gold.opacity(0.55))
+                        .blur(radius: 18)
+                    Text(title)
+                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
+                        .foregroundStyle(BrandTheme.gold.opacity(0.85))
+                        .blur(radius: 7)
+                    Text(title)
+                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
+                        .foregroundStyle(BrandTheme.goldDeep.opacity(0.5))
+                        .blur(radius: 3)
+                }
+
+                Text(title)
+                    .font(.system(size: fontSize, weight: isSelected ? .semibold : .regular, design: .rounded))
+                    .tracking(isSelected ? 1 : 0.2)
+                    .foregroundStyle(isSelected ? BrandTheme.brown : BrandTheme.brown.opacity(0.72))
+                    .shadow(
+                        color: isSelected ? BrandTheme.gold.opacity(0.98) : .clear,
+                        radius: isSelected ? 2 : 0,
+                        x: 0,
+                        y: 0
+                    )
+                    .shadow(
+                        color: isSelected ? BrandTheme.gold.opacity(0.85) : .clear,
+                        radius: isSelected ? 8 : 0,
+                        x: 0,
+                        y: 0
+                    )
+                    .shadow(
+                        color: isSelected ? BrandTheme.gold.opacity(0.55) : .clear,
+                        radius: isSelected ? 18 : 0,
+                        x: 0,
+                        y: 0
+                    )
+                    .shadow(
+                        color: isSelected ? BrandTheme.goldDeep.opacity(0.45) : .clear,
+                        radius: isSelected ? 26 : 0,
+                        x: 0,
+                        y: 1
+                    )
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+        .offset(y: floatY)
+        .rotationEffect(.degrees(sway))
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
