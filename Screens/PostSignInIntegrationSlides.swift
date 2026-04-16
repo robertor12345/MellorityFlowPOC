@@ -89,12 +89,6 @@ struct PostSignInIntegrationSlidesView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 8)
 
-                Text(stock.attribution)
-                    .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted.opacity(0.88))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 4)
-
                 VStack(spacing: 12) {
                     PrimaryButton(title: "Connect") {
                         onConnect()

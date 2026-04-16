@@ -31,6 +31,11 @@ struct HomeView: View {
                         PrimaryButton(title: "Start Session") {
                             state.phase = .entryMode
                         }
+                        if state.isSignedIn {
+                            SecondaryButton(title: "Connected devices") {
+                                state.phase = .connectedDevices
+                            }
+                        }
                         if !state.isSignedIn {
                             SecondaryButton(title: "Sign in") {
                                 state.showSignInSheet = true
@@ -351,6 +356,7 @@ struct InsightView: View {
 
 struct UnlockFeaturesView: View {
     @ObservedObject var state: SessionPOCState
+    @State private var openFeaturePanel: UnlockFeaturePanel?
 
     private let rows: [(ConnectedFeatureStock, String, String)] = [
         (.health, "Health sync", "Wearables and resting signals, when you choose."),
@@ -365,23 +371,34 @@ struct UnlockFeaturesView: View {
             CenteredScrollScreen {
                 VStack(alignment: .center, spacing: 18) {
                     FadeInTitle(text: "Unlock Deeper Features", delay: 0)
-                    FadeInLine(text: "Optional — add when you’re ready.", delay: 0.08)
+                    FadeInLine(text: "Tap a feature to learn more — add when you’re ready.", delay: 0.08)
 
                     ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
-                        BrandCard {
-                            HStack(alignment: .top, spacing: 14) {
-                                ConnectedFeatureThumbnail(stock: row.0)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(row.1)
-                                        .font(.headline)
-                                        .foregroundStyle(BrandTheme.brown)
-                                    Text(row.2)
-                                        .font(.caption)
-                                        .foregroundStyle(BrandTheme.brownMuted)
+                        Button {
+                            openFeaturePanel = UnlockFeaturePanel(stockId: row.0.id)
+                        } label: {
+                            BrandCard {
+                                HStack(alignment: .top, spacing: 14) {
+                                    ConnectedFeatureThumbnail(stock: row.0)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack(spacing: 6) {
+                                            Text(row.1)
+                                                .font(.headline)
+                                                .foregroundStyle(BrandTheme.brown)
+                                            Image(systemName: "chevron.right.circle.fill")
+                                                .font(.caption)
+                                                .foregroundStyle(BrandTheme.gold.opacity(0.85))
+                                        }
+                                        Text(row.2)
+                                            .font(.caption)
+                                            .foregroundStyle(BrandTheme.brownMuted)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                    Spacer(minLength: 0)
                                 }
-                                Spacer(minLength: 0)
                             }
                         }
+                        .buttonStyle(.plain)
                         .opacity(1)
                         .offset(y: 0)
                         .animation(.easeOut(duration: 0.45).delay(0.06 * Double(i)), value: state.phase)
@@ -401,6 +418,9 @@ struct UnlockFeaturesView: View {
                 }
                 .padding(24)
             }
+        }
+        .sheet(item: $openFeaturePanel) { panel in
+            UnlockFeatureDetailSheet(panel: panel)
         }
         .sheet(isPresented: $state.showSignInSheet) {
             OptionalSignInSheet(state: state)

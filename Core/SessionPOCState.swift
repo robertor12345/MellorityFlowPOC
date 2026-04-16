@@ -97,15 +97,16 @@ final class SessionPOCState: ObservableObject {
 }
 
 enum FlowPhase: Int, CaseIterable, Identifiable {
-    case home
-    case postSignInFeatureSlides
-    case entryMode
-    case captureMoment
-    case moodSelect
-    case processingFast
-    case immersive
-    case insight
-    case unlockFeatures
+    case home = 0
+    case postSignInFeatureSlides = 1
+    case entryMode = 2
+    case captureMoment = 3
+    case moodSelect = 4
+    case processingFast = 5
+    case immersive = 6
+    case insight = 7
+    case unlockFeatures = 8
+    case connectedDevices = 9
 
     var id: Int { rawValue }
 }

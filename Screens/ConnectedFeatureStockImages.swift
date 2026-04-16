@@ -1,21 +1,17 @@
 import SwiftUI
 
-/// Remote stock imagery for “connected feature” surfaces (Wikimedia Commons). Used by post-sign-in slides and unlock list.
+/// Stock imagery for connected-feature surfaces. Used by post-sign-in slides, unlock list, and detail sheets.
 struct ConnectedFeatureStock: Identifiable {
     let id: String
     let imageURL: URL
     /// Short label on the hero image (e.g. product category).
     let badge: String
-    /// One-line attribution / license for the slide footer.
-    let attribution: String
     let fallbackSystemImage: String
 
     static let health = ConnectedFeatureStock(
         id: "health",
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/0/0b/Fitbit_Alta_HR.jpg")!,
         badge: "Wearable",
-        attribution:
-            "Image: Fitbit Alta HR (heart-rate display) — Wikimedia Commons (CC BY-SA 4.0, PamD). Not affiliated with Fitbit.",
         fallbackSystemImage: "heart.fill"
     )
 
@@ -23,8 +19,6 @@ struct ConnectedFeatureStock: Identifiable {
         id: "iot",
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/8/84/Philips_Hue_hub_and_2_bulbs.jpg")!,
         badge: "Philips Hue",
-        attribution:
-            "Image: Philips Hue hub and bulbs — Wikimedia Commons (CC BY 2.0, Sho Hashimoto). Not affiliated with Signify.",
         fallbackSystemImage: "lightbulb.led.fill"
     )
 
@@ -32,7 +26,6 @@ struct ConnectedFeatureStock: Identifiable {
         id: "personalisation",
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/2/29/DJ_Mixer.JPG")!,
         badge: "Mix & tune",
-        attribution: "Image: DJ mixer — Wikimedia Commons (public domain, Jana C.).",
         fallbackSystemImage: "slider.horizontal.3"
     )
 
@@ -40,8 +33,6 @@ struct ConnectedFeatureStock: Identifiable {
         id: "snippetsMemory",
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/0/0a/Woman_writing_on_a_notebook_with_a_pen.jpg")!,
         badge: "Notes",
-        attribution:
-            "Image: writing in a notebook — Wikimedia Commons (CC0, Kristin Hardwick; ISO Republic).",
         fallbackSystemImage: "bookmark.fill"
     )
 
@@ -49,8 +40,6 @@ struct ConnectedFeatureStock: Identifiable {
         id: "replayCalm",
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/e/e8/Deep_meditation_in_forest.jpg")!,
         badge: "Calm",
-        attribution:
-            "Image: meditation in forest — Wikimedia Commons (CC BY-SA 4.0, intergalactic Passenger).",
         fallbackSystemImage: "play.circle.fill"
     )
 }

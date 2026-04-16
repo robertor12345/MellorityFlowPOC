@@ -26,6 +26,8 @@ struct FlowRootView: View {
                     InsightView(state: state)
                 case .unlockFeatures:
                     UnlockFeaturesView(state: state)
+                case .connectedDevices:
+                    ConnectedDevicesView(state: state)
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))
