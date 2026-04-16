@@ -1,6 +1,7 @@
 import AVFoundation
 import Combine
 import SwiftUI
+import UIKit
 
 /// Plays a **royalty-free nature “compilation”** — sequenced HD clips from [Mixkit](https://mixkit.co/license/#videoFree).
 /// Clip **order is shuffled per `mediaSessionID`** so each session (especially with a photo anchor) gets a fresh visual sequence.
@@ -21,20 +22,22 @@ enum NatureVideoCompilation {
     }
 }
 
-/// Seeded shuffle so replay can reproduce the same sequence.
+/// Seeded shuffle so replay can reproduce the same sequence (stable across launches for a given `UUID`).
 private struct SeededRandomNumberGenerator: RandomNumberGenerator {
     private var state: UInt64
 
     init(seed: UUID) {
-        var h = Hasher()
-        seed.hash(into: &h)
-        let v = Int(truncatingIfNeeded: h.finalize())
-        state = UInt64(bitPattern: Int64(v))
+        var tuple = seed.uuid
+        state = withUnsafeMutablePointer(to: &tuple) { ptr in
+            ptr.withMemoryRebound(to: UInt64.self, capacity: 2) { p in
+                p[0] ^ p[1]
+            }
+        }
         if state == 0 { state = 0x9E37_79B9_7F4A_7C15 }
     }
 
     mutating func next() -> UInt64 {
-        state = state &* 6364136223846793005 &+ 1
+        state = state &* 6_364_136_223_846_793_005 &+ 1
         return state
     }
 }
@@ -51,7 +54,7 @@ final class NatureCompilationSession: ObservableObject {
     }
 
     func prepareAndPlay() {
-        queuePlayer.removeAllItems()
+        clearQueue()
         queuePlayer.isMuted = true
         queuePlayer.actionAtItemEnd = .advance
         enqueueRound()
@@ -62,10 +65,19 @@ final class NatureCompilationSession: ObservableObject {
         queuePlayer.pause()
     }
 
+    /// Clears the queue without relying on `removeAllItems()` (added in iOS 16.4).
+    private func clearQueue() {
+        queuePlayer.pause()
+        let snapshot = queuePlayer.items()
+        for item in snapshot {
+            queuePlayer.remove(item)
+        }
+    }
+
     private func enqueueRound() {
-        if let endObserver {
+        if let endObserver = endObserver {
             NotificationCenter.default.removeObserver(endObserver)
-            endObserver = nil
+            self.endObserver = nil
         }
 
         let items = clipURLs.map { AVPlayerItem(url: $0) }
@@ -90,7 +102,7 @@ final class NatureCompilationSession: ObservableObject {
     }
 
     deinit {
-        if let endObserver {
+        if let endObserver = endObserver {
             NotificationCenter.default.removeObserver(endObserver)
         }
     }
