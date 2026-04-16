@@ -162,12 +162,12 @@ struct EntryModeView: View {
             CenteredScrollScreen {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "Choose Entry Mode", delay: 0)
-                    FadeInLine(text: "Camera or Quick Start, then mood.", delay: 0.12)
+                    FadeInLine(text: "Camera: pick or take a photo, confirm, then session — or Quick Start for mood only.", delay: 0.12)
 
                     VStack(spacing: 14) {
                         entryCard(
                             title: "Camera",
-                            subtitle: "One photo to colour the experience.",
+                            subtitle: "Upload or take a photo, confirm, then your session starts.",
                             systemImage: "camera.fill",
                             delay: 0.2
                         ) {
@@ -315,9 +315,6 @@ struct InsightView: View {
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
 
-                    if let mood = state.selectedMood {
-                        FadeInLine(text: mood, font: BrandTheme.title(.title2), color: BrandTheme.brown, delay: 0.15)
-                    }
                     FadeInLine(
                         text: "Sound and space eased with your breath — real-time adaptation, gently.",
                         font: .subheadline,

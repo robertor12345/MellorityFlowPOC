@@ -8,10 +8,10 @@ struct AppRootView: View {
         Group {
             if showLaunchIntro {
                 ZStack {
-                    Color(red: 0.04, green: 0.04, blue: 0.05)
+                    BrandTheme.backgroundGradient
                         .ignoresSafeArea()
 
-                    GoldAmbientSparklesView(intensity: 1.22)
+                    GoldAmbientSparklesView(intensity: 1.22, lightBackdrop: true)
                         .ignoresSafeArea()
 
                     LaunchIntroView {
@@ -26,7 +26,7 @@ struct AppRootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.95), value: showLaunchIntro)
-        .preferredColorScheme(showLaunchIntro ? .dark : .light)
+        .preferredColorScheme(.light)
         .environment(\.font, Font.system(.body, design: .rounded))
     }
 }

@@ -68,7 +68,7 @@ struct ImmersiveSessionView: View {
 
     var body: some View {
         ZStack {
-            NatureVideoCompilationView()
+            NatureVideoCompilationView(mediaSessionID: state.immersiveMediaSessionID)
 
             LinearGradient(
                 stops: [
@@ -181,7 +181,9 @@ struct ImmersiveSessionView: View {
             }
         }
         .onAppear {
-            ambientAudio.start()
+            ambientAudio.volumeMultiplier = 1
+            // New `AVPlayerLooper` + items each time; photo-anchored sessions always get a clean pass.
+            ambientAudio.startFresh()
             hrTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
                 withAnimation(.easeInOut(duration: 1.0)) {
                     state.mockHeartRateCurrent = max(58, state.mockHeartRateCurrent - Double.random(in: 0.2 ... 0.8))
@@ -204,7 +206,7 @@ struct ReplayCalmSessionView: View {
 
     var body: some View {
         ZStack {
-            NatureVideoCompilationView()
+            NatureVideoCompilationView(mediaSessionID: state.replaySnapshotMediaID ?? state.immersiveMediaSessionID)
 
             LinearGradient(
                 stops: [
@@ -309,7 +311,7 @@ struct ReplayCalmSessionView: View {
                 return
             }
             ambientAudio.volumeMultiplier = state.replayRestoreVolume ? 1 : 0.72
-            ambientAudio.start()
+            ambientAudio.startFresh()
         }
         .onDisappear {
             ambientAudio.stop()

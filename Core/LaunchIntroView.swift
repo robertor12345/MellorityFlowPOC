@@ -13,9 +13,9 @@ struct LaunchIntroView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color.black.opacity(0.28),
-                    Color.black.opacity(0.52),
-                    Color.black.opacity(0.68),
+                    BrandTheme.cream.opacity(0.92),
+                    BrandTheme.creamMid.opacity(0.88),
+                    BrandTheme.creamDeep.opacity(0.85),
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -47,14 +47,14 @@ struct LaunchIntroView: View {
 
                     Text("Wellness audio, refined.")
                         .font(.title3.weight(.medium))
-                        .foregroundStyle(Color.white.opacity(0.82))
+                        .foregroundStyle(BrandTheme.brown)
                         .opacity(subtitleOpacity(elapsed: elapsed))
                         .offset(y: subtitleOffset(elapsed: elapsed))
 
                     if elapsed > 4.2 {
                         Text("Settle in. Your space is preparing.")
                             .font(.subheadline)
-                            .foregroundStyle(Color.white.opacity(0.45))
+                            .foregroundStyle(BrandTheme.brownMuted)
                             .opacity(lineOpacity(elapsed: elapsed))
                             .padding(.top, 6)
                     }
@@ -138,7 +138,7 @@ struct LaunchIntroView: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.white.opacity(0.12))
+                    .fill(BrandTheme.brown.opacity(0.12))
                 Capsule()
                     .fill(
                         LinearGradient(

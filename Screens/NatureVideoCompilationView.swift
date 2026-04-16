@@ -3,27 +3,55 @@ import Combine
 import SwiftUI
 
 /// Plays a **royalty-free nature “compilation”** — sequenced HD clips from [Mixkit](https://mixkit.co/license/#videoFree).
-/// Uses `AVQueuePlayer`: when the round finishes, the same clips are **re-queued** so playback **loops until the session ends** (video is **muted**; music is `AmbientAudioSession`).
+/// Clip **order is shuffled per `mediaSessionID`** so each session (especially with a photo anchor) gets a fresh visual sequence.
 enum NatureVideoCompilation {
-    /// Forest lake, park trees, sunlit meadow, water ripples — cycles repeatedly.
     static let mixkitClipURLs: [URL] = [
-        URL(string: "https://assets.mixkit.co/videos/5038/5038-720.mp4")!, // Beautiful lake in a quiet forest
-        URL(string: "https://assets.mixkit.co/videos/2363/2363-720.mp4")!, // Nature in the park
-        URL(string: "https://assets.mixkit.co/videos/40657/40657-720.mp4")!, // Meadow, grass & trees
-        URL(string: "https://assets.mixkit.co/videos/1164/1164-720.mp4")!, // Waves in the water
+        URL(string: "https://assets.mixkit.co/videos/5038/5038-720.mp4")!,
+        URL(string: "https://assets.mixkit.co/videos/2363/2363-720.mp4")!,
+        URL(string: "https://assets.mixkit.co/videos/40657/40657-720.mp4")!,
+        URL(string: "https://assets.mixkit.co/videos/1164/1164-720.mp4")!,
     ]
+
+    /// Deterministic shuffle from session id — same id ⇒ same order (used for replay).
+    static func clipPlaylist(seed: UUID) -> [URL] {
+        var urls = mixkitClipURLs
+        var rng = SeededRandomNumberGenerator(seed: seed)
+        urls.shuffle(using: &rng)
+        return urls
+    }
+}
+
+/// Seeded shuffle so replay can reproduce the same sequence.
+private struct SeededRandomNumberGenerator: RandomNumberGenerator {
+    private var state: UInt64
+
+    init(seed: UUID) {
+        var h = Hasher()
+        seed.hash(into: &h)
+        let v = Int(truncatingIfNeeded: h.finalize())
+        state = UInt64(bitPattern: Int64(v))
+        if state == 0 { state = 0x9E37_79B9_7F4A_7C15 }
+    }
+
+    mutating func next() -> UInt64 {
+        state = state &* 6364136223846793005 &+ 1
+        return state
+    }
 }
 
 final class NatureCompilationSession: ObservableObject {
-    /// Subclass of `AVPlayer` — same layer binding, better queue control.
     private(set) var queuePlayer = AVQueuePlayer()
-
-    /// Exposed for `AVPlayerLayer` (`AVQueuePlayer` is an `AVPlayer`).
     var player: AVPlayer { queuePlayer }
 
+    private let clipURLs: [URL]
     private var endObserver: NSObjectProtocol?
 
+    init(clipURLs: [URL]) {
+        self.clipURLs = clipURLs.isEmpty ? NatureVideoCompilation.mixkitClipURLs : clipURLs
+    }
+
     func prepareAndPlay() {
+        queuePlayer.removeAllItems()
         queuePlayer.isMuted = true
         queuePlayer.actionAtItemEnd = .advance
         enqueueRound()
@@ -34,14 +62,13 @@ final class NatureCompilationSession: ObservableObject {
         queuePlayer.pause()
     }
 
-    /// Inserts one full compilation after any current queued items; wires loop when the **last** clip ends.
     private func enqueueRound() {
         if let endObserver {
             NotificationCenter.default.removeObserver(endObserver)
-            self.endObserver = nil
+            endObserver = nil
         }
 
-        let items = NatureVideoCompilation.mixkitClipURLs.map { AVPlayerItem(url: $0) }
+        let items = clipURLs.map { AVPlayerItem(url: $0) }
         guard let last = items.last else { return }
 
         for item in items {
@@ -57,7 +84,6 @@ final class NatureCompilationSession: ObservableObject {
         }
     }
 
-    /// When the final clip in this round ends, `AVQueuePlayer` has drained — enqueue another seamless **cycle**.
     private func onCompilationRoundEnded() {
         enqueueRound()
         queuePlayer.play()
@@ -71,7 +97,15 @@ final class NatureCompilationSession: ObservableObject {
 }
 
 struct NatureVideoCompilationView: View {
-    @StateObject private var session = NatureCompilationSession()
+    let mediaSessionID: UUID
+
+    @StateObject private var session: NatureCompilationSession
+
+    init(mediaSessionID: UUID) {
+        self.mediaSessionID = mediaSessionID
+        let clips = NatureVideoCompilation.clipPlaylist(seed: mediaSessionID)
+        _session = StateObject(wrappedValue: NatureCompilationSession(clipURLs: clips))
+    }
 
     var body: some View {
         NatureVideoPlayerRepresentable(player: session.player)
@@ -82,10 +116,10 @@ struct NatureVideoCompilationView: View {
             .onDisappear {
                 session.pause()
             }
+            .id(mediaSessionID)
     }
 }
 
-/// Full-bleed `AVPlayerLayer` (no controls, aspect fill).
 private struct NatureVideoPlayerRepresentable: UIViewRepresentable {
     let player: AVPlayer
 

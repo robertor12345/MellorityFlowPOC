@@ -4,6 +4,8 @@ import SwiftUI
 struct GoldAmbientSparklesView: View {
     /// Visual strength (boost during launch intro if desired).
     var intensity: CGFloat = 1
+    /// When `true`, radial haze matches cream/beige UI; when `false`, deeper PS5-style dim.
+    var lightBackdrop: Bool = true
 
     private struct Particle: Identifiable {
         let id: Int
@@ -19,8 +21,9 @@ struct GoldAmbientSparklesView: View {
 
     private let particles: [Particle]
 
-    init(particleCount: Int = 86, intensity: CGFloat = 1) {
+    init(particleCount: Int = 86, intensity: CGFloat = 1, lightBackdrop: Bool = true) {
         self.intensity = intensity
+        self.lightBackdrop = lightBackdrop
         var gen = SplitMix64(seed: 0xF10C_B0C5) // deterministic layout (POC)
         particles = (0..<particleCount).map { i in
             Particle(
@@ -42,13 +45,20 @@ struct GoldAmbientSparklesView: View {
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
                 let haze = CGRect(origin: .zero, size: size)
+                let hazeColors: [Color] = lightBackdrop
+                    ? [
+                        BrandTheme.goldSoft.opacity(0.22 * Double(intensity)),
+                        BrandTheme.creamMid.opacity(0.06 * Double(intensity)),
+                        .clear,
+                    ]
+                    : [
+                        Color(red: 0.18, green: 0.14, blue: 0.06).opacity(0.35 * Double(intensity)),
+                        .clear,
+                    ]
                 context.fill(
                     Path(ellipseIn: haze),
                     with: .radialGradient(
-                        Gradient(colors: [
-                            Color(red: 0.18, green: 0.14, blue: 0.06).opacity(0.35 * Double(intensity)),
-                            .clear,
-                        ]),
+                        Gradient(colors: hazeColors),
                         center: CGPoint(x: size.width * 0.5, y: size.height * 0.35),
                         startRadius: size.width * 0.08,
                         endRadius: max(size.width, size.height) * 0.72

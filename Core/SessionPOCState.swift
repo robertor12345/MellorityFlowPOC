@@ -82,6 +82,13 @@ final class SessionPOCState: ObservableObject {
 
     private var sessionStart: Date?
 
+    /// New ID each `beginSession()` so nature video + players are not reused across sessions.
+    @Published var immersiveMediaSessionID = UUID()
+    /// `true` when the user reached the session with a captured/library photo (not Quick Start only).
+    @Published private(set) var sessionAnchoredWithPhoto = false
+    /// Snapshot of `immersiveMediaSessionID` when the session ended — used to rebuild the same clip order for **Replay**.
+    @Published private(set) var replaySnapshotMediaID: UUID?
+
     struct SnippetHighlight: Identifiable {
         let id = UUID()
         let title: String
@@ -93,6 +100,8 @@ final class SessionPOCState: ObservableObject {
     let moodOptions = ["Stressed", "Anxious", "Down", "Overwhelmed", "Tired", "Calm"]
 
     func beginSession() {
+        immersiveMediaSessionID = UUID()
+        sessionAnchoredWithPhoto = capturedImage != nil
         sessionStart = Date()
         mockHeartRateStart = Double.random(in: 72 ... 88)
         mockHeartRateCurrent = mockHeartRateStart
@@ -100,6 +109,7 @@ final class SessionPOCState: ObservableObject {
         sessionHomeLightsSyncEnabled = false
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
+        replaySnapshotMediaID = nil
     }
 
     func addSnippet() {
@@ -117,6 +127,7 @@ final class SessionPOCState: ObservableObject {
         replayMoodSnapshot = selectedMood
         replayCalmPercentSnapshot = Int(calmScore * 100)
         replayHeartRateSnapshot = Int(mockHeartRateCurrent)
+        replaySnapshotMediaID = immersiveMediaSessionID
         replayExperienceAvailable = true
     }
 
@@ -126,6 +137,7 @@ final class SessionPOCState: ObservableObject {
         selectedMood = nil
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
+        replaySnapshotMediaID = nil
     }
 
     func exitPostSignInSlidesToHome() {
@@ -153,6 +165,9 @@ final class SessionPOCState: ObservableObject {
         sessionHomeLightsSyncEnabled = false
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
+        replaySnapshotMediaID = nil
+        immersiveMediaSessionID = UUID()
+        sessionAnchoredWithPhoto = false
         resetConnectedDeviceSettingsToDefaults()
     }
 

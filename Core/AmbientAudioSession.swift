@@ -28,6 +28,12 @@ final class AmbientAudioSession: ObservableObject {
         startStream()
     }
 
+    /// Tears down the looper and starts a **new** stream (new `AVPlayerItem` chain) — use for a clean audio pass each session.
+    func startFresh() {
+        stop()
+        start()
+    }
+
     func stop() {
         didStart = false
         audioLooper = nil
