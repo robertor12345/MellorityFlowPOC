@@ -32,9 +32,9 @@ targets:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: Mellority captures your environment to tailor visuals and sound to the moment.
         NSPhotoLibraryUsageDescription: Choose a photo to analyse colour and mood for your session.
-        NSMicrophoneUsageDescription: Spatial audio and session capture may use the microphone in the full product.
-        NSHealthShareUsageDescription: Optional heart rate and mindfulness data help adapt your session in the full product.
-        NSHealthUpdateUsageDescription: Optional updates for wellness insights in the full product.
+        NSMicrophoneUsageDescription: Spatial audio and session capture may use the microphone when you enable those features.
+        NSHealthShareUsageDescription: Optional heart rate and mindfulness data help adapt your session when you connect Health.
+        NSHealthUpdateUsageDescription: Optional wellness updates when you connect Health.
     dependencies: []
 
 schemes:

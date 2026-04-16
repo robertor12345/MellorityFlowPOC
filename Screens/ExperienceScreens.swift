@@ -15,29 +15,30 @@ struct ProcessingFastView: View {
 
     var body: some View {
         ScreenFadeIn {
-            VStack(spacing: 28) {
-                Spacer()
-                FadeInTitle(text: "Starting session", delay: 0)
-                FadeInLine(
-                    text: "Subtle AI feedback while we prepare — quick, not busy.",
-                    font: .caption,
-                    delay: 0.1
-                )
+            CenteredScrollScreen {
+                VStack(spacing: 28) {
+                    FadeInTitle(text: "Starting session", delay: 0)
+                    FadeInLine(
+                        text: "Subtle AI feedback while we prepare — quick, not busy.",
+                        font: .caption,
+                        delay: 0.1
+                    )
 
-                ProgressView(value: progress, total: 1)
-                    .tint(BrandTheme.goldDeep)
-                    .scaleEffect(x: 1, y: 1.2, anchor: .center)
-                    .padding(.horizontal, 40)
+                    ProgressView(value: progress, total: 1)
+                        .tint(BrandTheme.goldDeep)
+                        .scaleEffect(x: 1, y: 1.2, anchor: .center)
+                        .padding(.horizontal, 40)
+                        .frame(maxWidth: .infinity)
 
-                Text(messages[tick % messages.count])
-                    .font(BrandTheme.title(.title3))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(BrandTheme.brown)
-                    .padding(.horizontal)
-                    .animation(.easeInOut(duration: 0.45), value: tick)
-                    .id(tick)
-
-                Spacer()
+                    Text(messages[tick % messages.count])
+                        .font(BrandTheme.title(.title3))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(BrandTheme.brown)
+                        .padding(.horizontal)
+                        .animation(.easeInOut(duration: 0.45), value: tick)
+                        .id(tick)
+                }
+                .padding(.vertical, 28)
             }
         }
         .task {
@@ -123,7 +124,7 @@ struct ImmersiveSessionView: View {
                             .multilineTextAlignment(.center)
                             .transition(.opacity)
                     }
-                    Text("Meditation music · Mixkit nature video · gentle HR (mock)")
+                    Text("Meditation audio · nature video · heart rate")
                         .font(.caption2)
                         .foregroundStyle(BrandTheme.brownMuted)
                         .multilineTextAlignment(.center)

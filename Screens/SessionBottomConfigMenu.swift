@@ -45,7 +45,7 @@ struct SessionBottomConfigMenu: View {
                             Label("Home lighting", systemImage: "lightbulb.led.fill")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(BrandTheme.brown)
-                            Text("Sync calm scenes to your lights — e.g. Philips Hue / HomeKit (POC, no real pairing).")
+                            Text("Sync calm scenes to your lights — Philips Hue, HomeKit, and compatible bridges.")
                                 .font(.caption2)
                                 .foregroundStyle(BrandTheme.brownMuted)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -103,10 +103,7 @@ struct SessionBottomConfigMenu: View {
 
     private var shareItems: [Any] {
         let mood = state.selectedMood ?? "Calm"
-        let text = """
-        My Mellority calm session — mood: \(mood). \
-        (Flow POC — nature video & UI are illustrative.)
-        """
+        let text = "My Mellority calm session — mood: \(mood)."
         return [text]
     }
 }

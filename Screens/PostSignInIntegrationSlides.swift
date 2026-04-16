@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// After mock sign-in: short pager on extra integrations — connect (mock opt-in) or skip each, or skip everything.
+/// After sign-in: pager on extra integrations — connect or skip each, or skip everything.
 struct PostSignInIntegrationSlidesView: View {
     @ObservedObject var state: SessionPOCState
     @State private var page = 0
@@ -26,7 +26,7 @@ struct PostSignInIntegrationSlidesView: View {
                         stock: .health,
                         title: "Health sync",
                         detail:
-                            "Connect wearables so sessions can respond to heart rate, rest, and recovery — in the full Mellority app."
+                            "Connect wearables so sessions can respond to heart rate, rest, and recovery."
                     ) { state.wantsHealthSync = true }
                     featurePage(
                         index: 1,
@@ -57,6 +57,7 @@ struct PostSignInIntegrationSlidesView: View {
                     ) { state.wantsReplayCalm = true }
                     summaryPage(index: 5)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .tabViewStyle(.page(indexDisplayMode: .always))
                 .indexViewStyle(.page(backgroundDisplayMode: .always))
                 .animation(.easeInOut(duration: 0.3), value: page)
@@ -72,10 +73,8 @@ struct PostSignInIntegrationSlidesView: View {
         detail: String,
         onConnect: @escaping () -> Void
     ) -> some View {
-        ScrollView {
+        CenteredScrollScreen {
             VStack(spacing: 22) {
-                Spacer(minLength: 12)
-
                 Text(title)
                     .font(BrandTheme.title(.title))
                     .foregroundStyle(BrandTheme.brown)
@@ -96,12 +95,6 @@ struct PostSignInIntegrationSlidesView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 4)
 
-                Text("POC: taps only save preferences for demo — no real connections yet.")
-                    .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted.opacity(0.9))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
-
                 VStack(spacing: 12) {
                     PrimaryButton(title: "Connect") {
                         onConnect()
@@ -113,8 +106,6 @@ struct PostSignInIntegrationSlidesView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
-
-                Spacer(minLength: 24)
             }
             .padding(.vertical, 16)
         }
@@ -122,23 +113,21 @@ struct PostSignInIntegrationSlidesView: View {
     }
 
     private func summaryPage(index: Int) -> some View {
-        ScrollView {
+        CenteredScrollScreen {
             VStack(spacing: 20) {
-                Spacer(minLength: 20)
-
                 FadeInTitle(text: "You’re set", delay: 0)
                 FadeInLine(
-                    text: "We’ll honour these choices when sync lands. You can change them anytime.",
+                    text: "We’ll honour these choices. You can change them anytime.",
                     delay: 0.08
                 )
 
                 BrandCard {
                     VStack(alignment: .leading, spacing: 8) {
-                        mockRow("Health", state.wantsHealthSync)
-                        mockRow("IoT", state.wantsIoT)
-                        mockRow("Personalisation", state.wantsPersonalisation)
-                        mockRow("Snippets + memory", state.wantsSnippetsMemory)
-                        mockRow("Replay your calm", state.wantsReplayCalm)
+                        summaryPreferenceRow("Health", state.wantsHealthSync)
+                        summaryPreferenceRow("IoT", state.wantsIoT)
+                        summaryPreferenceRow("Personalisation", state.wantsPersonalisation)
+                        summaryPreferenceRow("Snippets + memory", state.wantsSnippetsMemory)
+                        summaryPreferenceRow("Replay your calm", state.wantsReplayCalm)
                     }
                 }
                 .padding(.horizontal, 8)
@@ -148,15 +137,13 @@ struct PostSignInIntegrationSlidesView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 4)
-
-                Spacer(minLength: 32)
             }
             .padding(.vertical, 16)
         }
         .tag(index)
     }
 
-    private func mockRow(_ label: String, _ on: Bool) -> some View {
+    private func summaryPreferenceRow(_ label: String, _ on: Bool) -> some View {
         HStack {
             Text(label)
                 .font(.subheadline)

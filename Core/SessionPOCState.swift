@@ -1,17 +1,17 @@
 import SwiftUI
 import Combine
 
-/// Simplified POC flow — no login required to start.
+/// In-memory app session — start without signing in.
 final class SessionPOCState: ObservableObject {
     @Published var phase: FlowPhase = .home
     @Published var showSignInSheet = false
 
-    /// Optional account (mock).
+    /// Optional account fields (in-memory until sync ships).
     @Published var email = ""
     @Published var password = ""
     @Published var isSignedIn = false
 
-    /// Mock opt-ins chosen on post–sign-in integration slides (POC only).
+    /// Opt-ins from post–sign-in integration slides.
     @Published var wantsHealthSync = false
     @Published var wantsIoT = false
     @Published var wantsPersonalisation = false
@@ -27,7 +27,7 @@ final class SessionPOCState: ObservableObject {
 
     @Published var snippets: [SnippetHighlight] = []
 
-    /// Immersive session: mock “sync with home lights” (Hue / HomeKit style — no real bridge in POC).
+    /// Session toggle: sync calm scenes with home lights (Hue / HomeKit style).
     @Published var sessionHomeLightsSyncEnabled = false
 
     private var sessionStart: Date?
@@ -39,7 +39,8 @@ final class SessionPOCState: ObservableObject {
         let timecode: String
     }
 
-    let moodOptions = ["Calm", "Focus", "Sleep", "Lift stress"]
+    /// Labels name a range of valence (including difficult states) so choices feel honest; the session still adapts tone and pace.
+    let moodOptions = ["Stressed", "Anxious", "Down", "Overwhelmed", "Tired", "Calm"]
 
     func beginSession() {
         sessionStart = Date()
@@ -73,7 +74,7 @@ final class SessionPOCState: ObservableObject {
         phase = .home
     }
 
-    /// Clears every POC flag/value so each cold start matches a fresh `SessionPOCState()` (no persisted demo state).
+    /// Clears session state so each cold start matches default values (nothing persisted).
     func resetAllForFreshAppLaunch() {
         phase = .home
         showSignInSheet = false

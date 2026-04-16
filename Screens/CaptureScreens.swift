@@ -10,7 +10,7 @@ struct CapturePhotoView: View {
 
     var body: some View {
         ScreenFadeIn {
-            ScrollView {
+            CenteredScrollScreen {
                 VStack(spacing: 20) {
                     FadeInTitle(text: "A visual anchor", delay: 0)
                     FadeInLine(text: "Optional — Quick Start skips this step.", delay: 0.1)
@@ -24,13 +24,14 @@ struct CapturePhotoView: View {
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(BrandTheme.gold.opacity(0.4), lineWidth: 1))
                     } else {
                         BrandCard {
-                            VStack(spacing: 12) {
+                            VStack(alignment: .center, spacing: 12) {
                                 Image(systemName: "photo.on.rectangle.angled")
                                     .font(.largeTitle)
                                     .foregroundStyle(BrandTheme.goldDeep)
                                 Text("Add a photo or continue without")
                                     .font(.caption)
                                     .foregroundStyle(BrandTheme.brownMuted)
+                                    .multilineTextAlignment(.center)
                             }
                             .frame(maxWidth: .infinity)
                         }

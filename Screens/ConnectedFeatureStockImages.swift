@@ -15,7 +15,7 @@ struct ConnectedFeatureStock: Identifiable {
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/0/0b/Fitbit_Alta_HR.jpg")!,
         badge: "Wearable",
         attribution:
-            "Stock photo: Fitbit Alta HR (heart-rate display) — Wikimedia Commons (CC BY-SA 4.0, PamD). POC only; not affiliated with Fitbit.",
+            "Image: Fitbit Alta HR (heart-rate display) — Wikimedia Commons (CC BY-SA 4.0, PamD). Not affiliated with Fitbit.",
         fallbackSystemImage: "heart.fill"
     )
 
@@ -24,7 +24,7 @@ struct ConnectedFeatureStock: Identifiable {
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/8/84/Philips_Hue_hub_and_2_bulbs.jpg")!,
         badge: "Philips Hue",
         attribution:
-            "Stock photo: Philips Hue hub and bulbs — Wikimedia Commons (CC BY 2.0, Sho Hashimoto). POC only; not affiliated with Signify.",
+            "Image: Philips Hue hub and bulbs — Wikimedia Commons (CC BY 2.0, Sho Hashimoto). Not affiliated with Signify.",
         fallbackSystemImage: "lightbulb.led.fill"
     )
 
@@ -32,7 +32,7 @@ struct ConnectedFeatureStock: Identifiable {
         id: "personalisation",
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/2/29/DJ_Mixer.JPG")!,
         badge: "Mix & tune",
-        attribution: "Stock photo: DJ mixer — Wikimedia Commons (public domain, Jana C.).",
+        attribution: "Image: DJ mixer — Wikimedia Commons (public domain, Jana C.).",
         fallbackSystemImage: "slider.horizontal.3"
     )
 
@@ -41,7 +41,7 @@ struct ConnectedFeatureStock: Identifiable {
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/0/0a/Woman_writing_on_a_notebook_with_a_pen.jpg")!,
         badge: "Notes",
         attribution:
-            "Stock photo: writing in a notebook — Wikimedia Commons (CC0, Kristin Hardwick; ISO Republic).",
+            "Image: writing in a notebook — Wikimedia Commons (CC0, Kristin Hardwick; ISO Republic).",
         fallbackSystemImage: "bookmark.fill"
     )
 
@@ -50,7 +50,7 @@ struct ConnectedFeatureStock: Identifiable {
         imageURL: URL(string: "https://upload.wikimedia.org/wikipedia/commons/e/e8/Deep_meditation_in_forest.jpg")!,
         badge: "Calm",
         attribution:
-            "Stock photo: meditation in forest — Wikimedia Commons (CC BY-SA 4.0, intergalactic Passenger).",
+            "Image: meditation in forest — Wikimedia Commons (CC BY-SA 4.0, intergalactic Passenger).",
         fallbackSystemImage: "play.circle.fill"
     )
 }

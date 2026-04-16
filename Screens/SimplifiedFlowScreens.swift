@@ -7,46 +7,38 @@ struct HomeView: View {
 
     var body: some View {
         ScreenFadeIn {
-            GeometryReader { geo in
-                ScrollView {
-                    VStack(spacing: 0) {
-                        Spacer(minLength: 0)
-                        VStack(spacing: 28) {
-                            MellorityLogoImage(maxHeight: 140)
-                                .frame(maxWidth: .infinity)
-
-                            FadeInTitle(text: "Mellority", delay: 0.05)
-                            FadeInLine(
-                                text: "Calm that meets you where you are.",
-                                font: BrandTheme.title(.title3),
-                                color: BrandTheme.brownMuted,
-                                delay: 0.15
-                            )
-                            FadeInLine(
-                                text: state.isSignedIn
-                                    ? "You’re signed in — sync when you’re ready."
-                                    : "No account needed to begin.",
-                                font: .subheadline,
-                                delay: 0.28
-                            )
-
-                            VStack(spacing: 12) {
-                                PrimaryButton(title: "Start Session") {
-                                    state.phase = .entryMode
-                                }
-                                if !state.isSignedIn {
-                                    SecondaryButton(title: "Sign in (optional)") {
-                                        state.showSignInSheet = true
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 12)
-                        }
+            CenteredScrollScreen {
+                VStack(spacing: 28) {
+                    MellorityLogoImage(maxHeight: 140)
                         .frame(maxWidth: .infinity)
-                        Spacer(minLength: 0)
+
+                    FadeInTitle(text: "Mellority", delay: 0.05)
+                    FadeInLine(
+                        text: "Calm that meets you where you are.",
+                        font: BrandTheme.title(.title3),
+                        color: BrandTheme.brownMuted,
+                        delay: 0.15
+                    )
+                    FadeInLine(
+                        text: state.isSignedIn
+                            ? "You’re signed in — sync when you’re ready."
+                            : "No account needed to begin.",
+                        font: .subheadline,
+                        delay: 0.28
+                    )
+
+                    VStack(spacing: 12) {
+                        PrimaryButton(title: "Start Session") {
+                            state.phase = .entryMode
+                        }
+                        if !state.isSignedIn {
+                            SecondaryButton(title: "Sign in") {
+                                state.showSignInSheet = true
+                            }
+                        }
                     }
-                    .frame(minWidth: geo.size.width, minHeight: geo.size.height)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
                 }
             }
         }
@@ -61,39 +53,97 @@ struct HomeView: View {
 struct OptionalSignInSheet: View {
     @ObservedObject var state: SessionPOCState
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var focusedField: Field?
+    private enum Field: Hashable { case email, password }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("Email", text: $state.email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                    SecureField("Password", text: $state.password)
-                } header: {
-                    Text("Optional account")
-                } footer: {
-                    Text("This POC stores nothing real — sign-in unlocks future sync in the full app.")
-                }
-            }
-            .navigationTitle("Sign in")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Continue") {
-                        state.isSignedIn = true
-                        state.showSignInSheet = false
-                        state.phase = .postSignInFeatureSlides
-                        dismiss()
+        ZStack {
+            BrandBackground()
+                .ignoresSafeArea()
+
+            CenteredScrollScreen {
+                VStack(spacing: 24) {
+                    HStack {
+                        Spacer()
+                        Button("Close") { dismiss() }
+                            .font(BrandTheme.buttonLabel(.subheadline))
+                            .foregroundStyle(BrandTheme.brownMuted)
                     }
-                    .fontWeight(.semibold)
+
+                    FadeInTitle(text: "Sign in", delay: 0)
+                    FadeInLine(
+                        text: "Sign in to sync preferences across your devices when available.",
+                        font: .subheadline,
+                        color: BrandTheme.brownMuted,
+                        delay: 0.08
+                    )
+
+                    BrandCard {
+                        VStack(alignment: .leading, spacing: 18) {
+                            labeledField(
+                                title: "Email",
+                                content: {
+                                    TextField("you@example.com", text: $state.email)
+                                        .textContentType(.emailAddress)
+                                        .keyboardType(.emailAddress)
+                                        .textInputAutocapitalization(.never)
+                                        .focused($focusedField, equals: .email)
+                                        .submitLabel(.next)
+                                        .onSubmit { focusedField = .password }
+                                }
+                            )
+                            labeledField(
+                                title: "Password",
+                                content: {
+                                    SecureField("Required to sign in", text: $state.password)
+                                        .textContentType(.password)
+                                        .focused($focusedField, equals: .password)
+                                        .submitLabel(.go)
+                                        .onSubmit(signInContinue)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 4)
+
+                    VStack(spacing: 12) {
+                        PrimaryButton(title: "Continue", action: signInContinue)
+                        SecondaryButton(title: "Cancel") {
+                            dismiss()
+                        }
+                    }
                 }
+                .padding(24)
             }
         }
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(22)
+    }
+
+    private func labeledField(title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(BrandTheme.brownMuted)
+            content()
+                .font(.body)
+                .foregroundStyle(BrandTheme.brown)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(BrandTheme.creamMid.opacity(0.95))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+                )
+        }
+    }
+
+    private func signInContinue() {
+        state.isSignedIn = true
+        state.showSignInSheet = false
+        state.phase = .postSignInFeatureSlides
+        dismiss()
     }
 }
 
@@ -104,7 +154,7 @@ struct EntryModeView: View {
 
     var body: some View {
         ScreenFadeIn {
-            ScrollView {
+            CenteredScrollScreen {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "Choose Entry Mode", delay: 0)
                     FadeInLine(text: "Camera or Quick Start, then mood.", delay: 0.12)
@@ -147,17 +197,14 @@ struct EntryModeView: View {
     ) -> some View {
         Button(action: action) {
             BrandCard {
-                HStack(alignment: .top, spacing: 16) {
+                VStack(spacing: 12) {
                     Image(systemName: systemImage)
-                        .font(.title2)
+                        .font(.title)
                         .foregroundStyle(BrandTheme.goldDeep)
-                        .frame(width: 36)
-                    VStack(alignment: .leading, spacing: 6) {
-                        FadeInLine(text: title, font: BrandTheme.title(.title3), color: BrandTheme.brown, delay: delay)
-                        FadeInLine(text: subtitle, font: .caption, delay: delay + 0.06)
-                    }
-                    Spacer(minLength: 0)
+                    FadeInLine(text: title, font: BrandTheme.title(.title3), color: BrandTheme.brown, delay: delay)
+                    FadeInLine(text: subtitle, font: .caption, delay: delay + 0.06)
                 }
+                .frame(maxWidth: .infinity)
             }
         }
         .buttonStyle(.plain)
@@ -171,10 +218,16 @@ struct MoodSelectView: View {
 
     var body: some View {
         ScreenFadeIn {
-            ScrollView {
+            CenteredScrollScreen {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "How do you feel?", delay: 0)
-                    FadeInLine(text: "We’ll adapt sound and motion to this — in seconds.", delay: 0.1)
+                    FadeInLine(text: "We’ll adapt sound and motion to this — in seconds.", delay: 0.06)
+                    FadeInLine(
+                        text: "There’s no wrong answer — pick what fits closest right now.",
+                        font: .caption,
+                        color: BrandTheme.brownMuted.opacity(0.95),
+                        delay: 0.14
+                    )
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         ForEach(Array(state.moodOptions.enumerated()), id: \.offset) { i, mood in
@@ -227,7 +280,7 @@ struct InsightView: View {
 
     var body: some View {
         ScreenFadeIn {
-            ScrollView {
+            CenteredScrollScreen {
                 VStack(spacing: 24) {
                     FadeInTitle(text: "Your calm", delay: 0)
                     FadeInLine(text: "A quiet snapshot — not a dashboard.", delay: 0.1)
@@ -255,6 +308,7 @@ struct InsightView: View {
                         }
                     }
                     .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
 
                     if let mood = state.selectedMood {
                         FadeInLine(text: mood, font: BrandTheme.title(.title2), color: BrandTheme.brown, delay: 0.15)
@@ -266,14 +320,19 @@ struct InsightView: View {
                     )
 
                     BrandCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Replay your calm", systemImage: "play.circle.fill")
-                                .font(.headline)
-                                .foregroundStyle(BrandTheme.brown)
-                            Text("Snippets and memory layer in the full app — revisit this tone anytime.")
+                        VStack(alignment: .center, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "play.circle.fill")
+                                Text("Replay your calm")
+                            }
+                            .font(.headline)
+                            .foregroundStyle(BrandTheme.brown)
+                            Text("Snippets and memory — revisit this tone anytime.")
                                 .font(.caption)
                                 .foregroundStyle(BrandTheme.brownMuted)
+                                .multilineTextAlignment(.center)
                         }
+                        .frame(maxWidth: .infinity)
                     }
                     .padding(.horizontal, 20)
 
@@ -298,13 +357,13 @@ struct UnlockFeaturesView: View {
         (.iot, "IoT", "Light and space that follow your session."),
         (.personalisation, "Personalisation", "Taste and timing that learn with you."),
         (.snippetsMemory, "Snippets + memory layer", "Short highlights tied to how you felt."),
-        (.replayCalm, "Replay your calm", "Return to a saved calm moment — full product."),
+        (.replayCalm, "Replay your calm", "Return to a saved calm moment anytime."),
     ]
 
     var body: some View {
         ScreenFadeIn {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+            CenteredScrollScreen {
+                VStack(alignment: .center, spacing: 18) {
                     FadeInTitle(text: "Unlock Deeper Features", delay: 0)
                     FadeInLine(text: "Optional — add when you’re ready.", delay: 0.08)
 
@@ -320,6 +379,7 @@ struct UnlockFeaturesView: View {
                                         .font(.caption)
                                         .foregroundStyle(BrandTheme.brownMuted)
                                 }
+                                Spacer(minLength: 0)
                             }
                         }
                         .opacity(1)
@@ -327,6 +387,7 @@ struct UnlockFeaturesView: View {
                         .animation(.easeOut(duration: 0.45).delay(0.06 * Double(i)), value: state.phase)
                     }
                     .padding(.horizontal, 4)
+                    .frame(maxWidth: .infinity)
 
                     PrimaryButton(title: "Start another session") {
                         state.resetToHome()
