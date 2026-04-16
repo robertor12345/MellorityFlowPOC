@@ -3,7 +3,6 @@ import SwiftUI
 /// PlayStation-style warm gold ambient particles: brighter, irregular multi-frequency drift, subtle twinkle.
 struct GoldAmbientSparklesView: View {
     var intensity: CGFloat = 1
-    var lightBackdrop: Bool = true
 
     private struct Particle: Identifiable {
         let id: Int
@@ -25,9 +24,8 @@ struct GoldAmbientSparklesView: View {
 
     private let particles: [Particle]
 
-    init(particleCount: Int = 112, intensity: CGFloat = 1, lightBackdrop: Bool = true) {
+    init(particleCount: Int = 112, intensity: CGFloat = 1) {
         self.intensity = intensity
-        self.lightBackdrop = lightBackdrop
         var gen = SplitMix64(seed: 0xF10C_B0C5)
         particles = (0..<particleCount).map { i in
             Particle(
@@ -53,27 +51,7 @@ struct GoldAmbientSparklesView: View {
         TimelineView(.animation(minimumInterval: 1 / 50, paused: false)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
-                let haze = CGRect(origin: .zero, size: size)
-                let hazeColors: [Color] = lightBackdrop
-                    ? [
-                        BrandTheme.goldSoft.opacity(0.34 * Double(intensity)),
-                        BrandTheme.gold.opacity(0.12 * Double(intensity)),
-                        BrandTheme.creamMid.opacity(0.04 * Double(intensity)),
-                        .clear,
-                    ]
-                    : [
-                        Color(red: 0.18, green: 0.14, blue: 0.06).opacity(0.42 * Double(intensity)),
-                        .clear,
-                    ]
-                context.fill(
-                    Path(ellipseIn: haze),
-                    with: .radialGradient(
-                        Gradient(colors: hazeColors),
-                        center: CGPoint(x: size.width * 0.5, y: size.height * 0.35),
-                        startRadius: size.width * 0.08,
-                        endRadius: max(size.width, size.height) * 0.72
-                    )
-                )
+                // No full-screen radial “haze” here — only particles — avoids a dome / semicircle tint on cream UI.
 
                 for p in particles {
                     let fx = t * p.driftSpeed + Double(p.phase)

@@ -6,23 +6,11 @@ struct SplashScreenView: View {
 
     @State private var logoIn = false
     @State private var titleIn = false
-    @State private var glowPulse = false
     @State private var exitFade = false
 
     var body: some View {
         ZStack {
             BrandBackground()
-
-            RadialGradient(
-                colors: [
-                    BrandTheme.goldSoft.opacity(glowPulse ? 0.35 : 0.18),
-                    Color.clear,
-                ],
-                center: .center,
-                startRadius: 40,
-                endRadius: 280
-            )
-            .ignoresSafeArea()
 
             VStack(spacing: 20) {
                 MellorityLogoImage(maxHeight: 150)
@@ -41,9 +29,6 @@ struct SplashScreenView: View {
             try? await Task.sleep(nanoseconds: 80_000_000)
             withAnimation(.spring(response: 0.78, dampingFraction: 0.78, blendDuration: 0)) {
                 logoIn = true
-            }
-            withAnimation(.easeOut(duration: 0.55).delay(0.12)) {
-                glowPulse = true
             }
             try? await Task.sleep(nanoseconds: 320_000_000)
             withAnimation(.easeOut(duration: 0.55)) {

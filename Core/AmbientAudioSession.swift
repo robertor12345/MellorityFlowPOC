@@ -1,19 +1,19 @@
 import AVFoundation
 import Combine
 
-/// Streams meditation-style ambient music (see README for license / fallback).
-/// Uses `AVPlayerLooper` for **gapless** looping until `stop()` — no seek-to-zero hitch at loop points.
+/// Streams **meditation-style** ambient music with gapless `AVPlayerLooper` looping until `stop()`.
 ///
-/// **POC:** Photo-anchored sessions use a **different, reliably streamable** URL than Quick Start (Mixkit preview
-/// links were flaky in AVPlayer). If the alternate stream fails to load, we **fall back** to the Quick Start track.
+/// **POC tracks (both meditation / calm loops):**
+/// - **Quick Start:** Morsi — [Calm music / `song_2.mp3`](https://opengameart.org/content/calm-music) (CC0).
+/// - **Photo-anchor:** YannZ — *Indie Meditations* [`lvl_5_the_oasis_or_resting_place.mp3`](https://opengameart.org/content/indie-meditations-free-music-pack)
+///   (CC BY 4.0 — attribution in pack readme). If loading fails, falls back to `song_2.mp3`.
 @MainActor
 final class AmbientAudioSession: ObservableObject {
-    /// Quick Start / mood-only — CC0 calm bed on OpenGameArt (same host as README).
     static let quickStartStreamURL = URL(string: "https://opengameart.org/sites/default/files/song_2.mp3")!
 
-    /// Photo-anchor — distinct orchestrated demo MP3 (widely used for streaming tests; HTTPS).
-    /// Falls back to `quickStartStreamURL` if the player item fails.
-    static let photoAnchorStreamURL = URL(string: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")!
+    /// Oasis / resting-place loop from the *Indie Meditations* pack (meditation ambience).
+    static let photoAnchorStreamURL =
+        URL(string: "https://opengameart.org/sites/default/files/lvl_5_the_oasis_or_resting_place.mp3")!
 
     private static let streamVolume: Float = 0.38
 
