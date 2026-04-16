@@ -96,8 +96,8 @@ struct EntryModeView: View {
         ScreenFadeIn {
             ScrollView {
                 VStack(spacing: 22) {
-                    FadeInTitle(text: "Choose entry", delay: 0)
-                    FadeInLine(text: "Camera anchors the scene; Quick Start jumps straight to mood.", delay: 0.12)
+                    FadeInTitle(text: "Choose Entry Mode", delay: 0)
+                    FadeInLine(text: "Camera or Quick Start, then mood.", delay: 0.12)
 
                     VStack(spacing: 14) {
                         entryCard(
@@ -287,15 +287,16 @@ struct UnlockFeaturesView: View {
         ("heart.fill", "Health sync", "Wearables and resting signals, when you choose."),
         ("lightbulb.led.fill", "IoT", "Light and space that follow your session."),
         ("slider.horizontal.3", "Personalisation", "Taste and timing that learn with you."),
-        ("bookmark.fill", "Snippets + memory", "Save peaks — replay the calm."),
+        ("bookmark.fill", "Snippets + memory layer", "Short highlights tied to how you felt."),
+        ("play.circle.fill", "Replay your calm", "Return to a saved calm moment — full product."),
     ]
 
     var body: some View {
         ScreenFadeIn {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    FadeInTitle(text: "Go deeper", delay: 0)
-                    FadeInLine(text: "Optional layers — add when you’re ready.", delay: 0.08)
+                    FadeInTitle(text: "Unlock Deeper Features", delay: 0)
+                    FadeInLine(text: "Optional — add when you’re ready.", delay: 0.08)
 
                     ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                         BrandCard {

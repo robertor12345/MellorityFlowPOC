@@ -19,7 +19,7 @@ struct ProcessingFastView: View {
                 Spacer()
                 FadeInTitle(text: "Starting session", delay: 0)
                 FadeInLine(
-                    text: "Light feedback while we prepare — no clutter.",
+                    text: "Subtle AI feedback while we prepare — quick, not busy.",
                     font: .caption,
                     delay: 0.1
                 )
