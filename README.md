@@ -23,7 +23,7 @@ Set your **Development Team**, pick an **iPhone**, build and run.
 | 2 | **Entry mode** — **Camera** (photo) or **Quick Start** (skip to mood) |
 | 3 | **Mood select** |
 | 4 | **Starting session** — progress + rotating subtle AI lines (&lt; ~5s) |
-| 5 | **Immersive** — ethereal layers, leaf breeze, streaming ambient + HF sine, mock HR; **End session** → insight |
+| 5 | **Immersive** — ethereal layers, leaf breeze, streaming ambient audio, mock HR; **End session** → insight |
 | 6 | **Insight** — minimal visual calm ring + mood; **Replay your calm** teaser |
 | 7 | **Unlock features** — health sync, IoT, personalisation, snippets + memory; another session or sign-in |
 
@@ -32,9 +32,7 @@ Soft **fade-in** animations (`FadeInTitle`, `FadeInLine`, `ScreenFadeIn`) run on
 ## Immersive session — audio & visuals
 
 - **Nature imagery:** `NatureSessionImagery` stacks sky/mist, tinted light orbs, **mountain** silhouettes, animated **water** bands, subtle drifting symbols (water, waves, mountains, trees, leaves, clouds), and `LeafBreezeLayer` for gold **leaf** motion.
-- **Streaming bed:** `AVPlayer` loads **[SoundHelix Song 8](https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3)** (chill-out example on their [audio examples](https://www.soundhelix.com/audio-examples) page) over HTTPS. Loops until you leave the screen. Credit SoundHelix + artist per their terms.
-- **High frequency:** A quiet **~9.2 kHz sine** is synthesized with `AVAudioEngine` + `AVAudioSourceNode`. Use the **speaker** button to mute.
-- **Why not only a remote HF file?** Many royalty-free CDNs return **403** to app user-agents; the split (streamed bed + local HF) matches the brief.
+- **Streaming bed:** `AVPlayer` loads **[SoundHelix Song 8](https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3)** (chill-out example on their [audio examples](https://www.soundhelix.com/audio-examples) page) over HTTPS. Loops until you leave the screen. Use the **speaker** button to mute. Credit SoundHelix + artist per their terms.
 
 ## Requirements
 
