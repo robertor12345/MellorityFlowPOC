@@ -9,10 +9,7 @@ struct HomeView: View {
         ScreenFadeIn {
             ScrollView {
                 VStack(spacing: 28) {
-                    Image("MellorityLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 140)
+                    MellorityLogoImage(maxHeight: 140)
                         .padding(.top, 20)
 
                     FadeInTitle(text: "Mellority", delay: 0.05)

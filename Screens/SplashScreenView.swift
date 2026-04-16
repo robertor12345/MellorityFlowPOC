@@ -25,13 +25,9 @@ struct SplashScreenView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Image("MellorityLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 150)
+                MellorityLogoImage(maxHeight: 150)
                     .scaleEffect(logoIn ? 1 : 0.78)
                     .opacity(logoIn ? 1 : 0)
-                    .shadow(color: BrandTheme.brown.opacity(0.15), radius: logoIn ? 12 : 4, y: 6)
 
                 Text("Mellority")
                     .font(BrandTheme.title(.largeTitle))
