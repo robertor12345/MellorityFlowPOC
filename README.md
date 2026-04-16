@@ -20,7 +20,7 @@ Set your **Development Team**, pick an **iPhone**, build and run.
 | Step | Screen |
 |------|--------|
 | 1 | **Home** — “Start Session”; **Sign in (optional)** in a sheet |
-| 1b | **Post–sign-in slides** (only if user continues sign-in) — Health, IoT, personalisation, snippets + memory, replay; mock **Connect** / **Skip**; **Skip all** or **Continue** to home |
+| 1b | **Post–sign-in slides** (only if user continues sign-in) — Health, **IoT** (Philips Hue stock image from Wikimedia Commons, CC BY 2.0), personalisation, snippets + memory, replay; mock **Connect** / **Skip**; **Skip all** or **Continue** to home |
 | 2 | **Entry mode** — **Camera** (photo) or **Quick Start** (skip to mood) |
 | 3 | **Mood select** |
 | 4 | **Starting session** — progress + rotating subtle AI lines (&lt; ~5s) |
