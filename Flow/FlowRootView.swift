@@ -8,34 +8,22 @@ struct FlowRootView: View {
             BrandBackground()
             Group {
                 switch state.phase {
-                case .welcome:
-                    WelcomeView(state: state)
-                case .authChoice:
-                    AuthChoiceView(state: state)
-                case .signUp:
-                    SignUpView(state: state)
-                case .login:
-                    LoginView(state: state)
-                case .permissions:
-                    PermissionsView(state: state)
-                case .personalization:
-                    PersonalizationView(state: state)
-                case .captureHome:
-                    CaptureHomeView(state: state)
-                case .capturePhoto:
+                case .home:
+                    HomeView(state: state)
+                case .entryMode:
+                    EntryModeView(state: state)
+                case .captureMoment:
                     CapturePhotoView(state: state)
-                case .processing:
-                    ProcessingView(state: state)
+                case .moodSelect:
+                    MoodSelectView(state: state)
+                case .processingFast:
+                    ProcessingFastView(state: state)
                 case .immersive:
                     ImmersiveSessionView(state: state)
-                case .snippets:
-                    SnippetsView(state: state)
-                case .iotSync:
-                    IoTSyncView(state: state)
-                case .summary:
-                    SessionSummaryView(state: state)
-                case .learning:
-                    LearningLoopView(state: state)
+                case .insight:
+                    InsightView(state: state)
+                case .unlockFeatures:
+                    UnlockFeaturesView(state: state)
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))

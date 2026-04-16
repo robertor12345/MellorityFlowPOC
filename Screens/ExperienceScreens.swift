@@ -1,55 +1,69 @@
 import SwiftUI
 
-// MARK: - 4. AI processing
+// MARK: - Fast load — under 5s, subtle AI lines
 
-struct ProcessingView: View {
+struct ProcessingFastView: View {
     @ObservedObject var state: SessionPOCState
     @State private var progress: CGFloat = 0
     @State private var tick = 0
     private let messages = [
-        "Reading colour palette & light…",
-        "Blending your preferences…",
-        "Weaving spatial audio layers…",
-        "Painting ethereal visuals…",
+        "Tuning to your mood…",
+        "Softening the sound field…",
+        "Balancing motion with breath…",
+        "Almost there…",
     ]
 
     var body: some View {
-        VStack(spacing: 28) {
-            Spacer()
-            ProgressView(value: progress, total: 1)
-                .tint(BrandTheme.goldDeep)
-                .padding(.horizontal, 40)
-            Text(messages[tick % messages.count])
-                .font(BrandTheme.title(.title3))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(BrandTheme.brown)
-                .padding(.horizontal)
-            Text("Mock pipeline — image + prefs + biometrics → experience model.")
-                .font(.caption)
-                .foregroundStyle(BrandTheme.brownMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            Spacer()
+        ScreenFadeIn {
+            VStack(spacing: 28) {
+                Spacer()
+                FadeInTitle(text: "Starting session", delay: 0)
+                FadeInLine(
+                    text: "Light feedback while we prepare — no clutter.",
+                    font: .caption,
+                    delay: 0.1
+                )
+
+                ProgressView(value: progress, total: 1)
+                    .tint(BrandTheme.goldDeep)
+                    .scaleEffect(x: 1, y: 1.2, anchor: .center)
+                    .padding(.horizontal, 40)
+
+                Text(messages[tick % messages.count])
+                    .font(BrandTheme.title(.title3))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(BrandTheme.brown)
+                    .padding(.horizontal)
+                    .animation(.easeInOut(duration: 0.45), value: tick)
+                    .id(tick)
+
+                Spacer()
+            }
         }
         .task {
             progress = 0
-            withAnimation(.easeInOut(duration: 2.4)) { progress = 1 }
-            for i in 0..<4 {
+            let totalSeconds: Double = 3.2
+            withAnimation(.easeInOut(duration: totalSeconds)) { progress = 1 }
+            let steps = messages.count
+            let per = UInt64((totalSeconds / Double(steps)) * 1_000_000_000)
+            for i in 0..<steps {
                 tick = i
-                try? await Task.sleep(nanoseconds: 600_000_000)
+                try? await Task.sleep(nanoseconds: per)
             }
+            tick = steps - 1
             try? await Task.sleep(nanoseconds: 200_000_000)
             state.phase = .immersive
         }
     }
 }
 
-// MARK: - 5. Immersive session
+// MARK: - Immersive — real-time adaptation
 
 struct ImmersiveSessionView: View {
     @ObservedObject var state: SessionPOCState
     @StateObject private var ambientAudio = AmbientAudioSession()
     @State private var hrTimer: Timer?
+    @State private var showCopy = false
 
     var body: some View {
         ZStack {
@@ -112,15 +126,24 @@ struct ImmersiveSessionView: View {
                 }
                 .padding()
                 Spacer()
-                VStack(spacing: 16) {
-                    Text("Immersive space")
-                        .font(BrandTheme.title(.title2))
-                        .foregroundStyle(BrandTheme.cream.opacity(0.95))
-                        .shadow(radius: 4)
-                    Text("Streaming ambient + high-frequency air · leaf motion · mock HR")
-                        .font(.caption)
-                        .foregroundStyle(BrandTheme.cream.opacity(0.85))
+                VStack(spacing: 12) {
+                    if showCopy {
+                        Text("Immersive space")
+                            .font(BrandTheme.title(.title2))
+                            .foregroundStyle(BrandTheme.cream.opacity(0.95))
+                            .shadow(radius: 4)
+                            .transition(.opacity.combined(with: .offset(y: 8)))
+                        Text("Real-time adaptation — the core magic")
+                            .font(.caption)
+                            .foregroundStyle(BrandTheme.cream.opacity(0.88))
+                            .multilineTextAlignment(.center)
+                            .transition(.opacity)
+                    }
+                    Text("Streaming ambient · leaf motion · gentle HR (mock)")
+                        .font(.caption2)
+                        .foregroundStyle(BrandTheme.cream.opacity(0.75))
                         .multilineTextAlignment(.center)
+
                     HStack(spacing: 24) {
                         VStack {
                             Text("HR")
@@ -141,13 +164,18 @@ struct ImmersiveSessionView: View {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
                 .padding(.bottom, 40)
+                .onAppear {
+                    withAnimation(.easeOut(duration: 0.8).delay(0.15)) {
+                        showCopy = true
+                    }
+                }
             }
 
             VStack {
                 Spacer()
                 PrimaryButton(title: "End session") {
                     state.endSession()
-                    state.phase = .snippets
+                    state.phase = .insight
                 }
                 .padding(24)
             }
@@ -164,215 +192,6 @@ struct ImmersiveSessionView: View {
             hrTimer?.invalidate()
             hrTimer = nil
             ambientAudio.stop()
-        }
-    }
-}
-
-// MARK: - 6. Snippets
-
-struct SnippetsView: View {
-    @ObservedObject var state: SessionPOCState
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Snippets & peaks")
-                    .font(BrandTheme.title(.title))
-                    .foregroundStyle(BrandTheme.brown)
-                Text("Short A/V highlights and mood labels — save, replay, share in the full app.")
-                    .font(.subheadline)
-                    .foregroundStyle(BrandTheme.brownMuted)
-
-                if state.snippets.isEmpty {
-                    BrandCard {
-                        Text("No highlights bookmarked — tap “Mark highlight” during a session.")
-                            .foregroundStyle(BrandTheme.brownMuted)
-                    }
-                } else {
-                    ForEach(state.snippets) { s in
-                        BrandCard {
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack {
-                                    Text(s.title)
-                                        .font(.headline)
-                                        .foregroundStyle(BrandTheme.brown)
-                                    Spacer()
-                                    Text(s.timecode)
-                                        .font(.caption.monospacedDigit())
-                                        .foregroundStyle(BrandTheme.goldDeep)
-                                }
-                                Text(s.subtitle)
-                                    .font(.caption)
-                                    .foregroundStyle(BrandTheme.brownMuted)
-                                HStack {
-                                    Button("Save") {}
-                                    Button("Replay") {}
-                                    Button("Share") {}
-                                }
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(BrandTheme.goldDeep)
-                            }
-                        }
-                    }
-                }
-
-                PrimaryButton(title: "Continue") {
-                    state.phase = .iotSync
-                }
-            }
-            .padding(24)
-        }
-    }
-}
-
-// MARK: - 7. IoT
-
-struct IoTSyncView: View {
-    @ObservedObject var state: SessionPOCState
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Ambient space")
-                    .font(BrandTheme.title(.title))
-                    .foregroundStyle(BrandTheme.brown)
-                Text("Sync lighting with your session mood — POC shows Hue-style presets only.")
-                    .font(.subheadline)
-                    .foregroundStyle(BrandTheme.brownMuted)
-
-                BrandCard {
-                    Toggle(isOn: $state.connectSmartHome) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Philips Hue bridge")
-                                .font(.headline)
-                                .foregroundStyle(BrandTheme.brown)
-                            Text("Warm dim for calm · soft pulses for breath cues")
-                                .font(.caption)
-                                .foregroundStyle(BrandTheme.brownMuted)
-                        }
-                    }
-                    .tint(BrandTheme.gold)
-                }
-
-                Picker("Scene", selection: $state.hueScene) {
-                    Text("Warm dim (relax)").tag("Warm dim (relax)")
-                    Text("Soft pulse (breath)").tag("Soft pulse (breath)")
-                    Text("Cool focus").tag("Cool focus")
-                }
-                .pickerStyle(.menu)
-                .padding()
-                .background(BrandTheme.cream)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                PrimaryButton(title: "Continue") {
-                    state.phase = .summary
-                }
-            }
-            .padding(24)
-        }
-    }
-}
-
-// MARK: - 8. Summary & feedback
-
-struct SessionSummaryView: View {
-    @ObservedObject var state: SessionPOCState
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("How was that?")
-                    .font(BrandTheme.title(.title))
-                    .foregroundStyle(BrandTheme.brown)
-
-                BrandCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Mood & body")
-                            .font(.headline)
-                            .foregroundStyle(BrandTheme.brown)
-                        row("Dominant palette (mock)", state.mockDominantPalette)
-                        row("Heart rate start → end", "\(Int(state.mockHeartRateStart)) → \(Int(state.mockHeartRateCurrent)) bpm")
-                        row("Calm index", "\(Int(state.calmScore * 100))%")
-                    }
-                }
-
-                Text("Did this help you relax?")
-                    .font(.headline)
-                    .foregroundStyle(BrandTheme.brown)
-                HStack(spacing: 16) {
-                    Button("Yes") { state.feedbackHelpful = true }
-                        .buttonStyle(.borderedProminent)
-                        .tint(BrandTheme.goldDeep)
-                    Button("Not sure") { state.feedbackHelpful = nil }
-                    Button("No") { state.feedbackHelpful = false }
-                }
-                .foregroundStyle(BrandTheme.brown)
-
-                Text("Feedback trains the personalisation loop for your next session.")
-                    .font(.caption)
-                    .foregroundStyle(BrandTheme.brownMuted)
-
-                PrimaryButton(title: "See what’s next") {
-                    state.phase = .learning
-                }
-            }
-            .padding(24)
-        }
-    }
-
-    private func row(_ k: String, _ v: String) -> some View {
-        HStack {
-            Text(k)
-                .font(.caption)
-                .foregroundStyle(BrandTheme.brownMuted)
-            Spacer()
-            Text(v)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(BrandTheme.brown)
-        }
-    }
-}
-
-// MARK: - 9. Learning loop
-
-struct LearningLoopView: View {
-    @ObservedObject var state: SessionPOCState
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("Continuous learning")
-                    .font(BrandTheme.title(.title))
-                    .foregroundStyle(BrandTheme.brown)
-                BrandCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        bullet("Audio preferences refine after each session")
-                        bullet("Visual styles drift toward what calms you faster")
-                        bullet("Timing improves with your habits & biometrics")
-                    }
-                }
-                Text("The full Mellority engine fuses this feedback with on-device and cloud models.")
-                    .font(.footnote)
-                    .foregroundStyle(BrandTheme.brownMuted)
-
-                PrimaryButton(title: "Start another session") {
-                    state.resetToCapture()
-                }
-                SecondaryButton(title: "Back to welcome") {
-                    state.phase = .welcome
-                }
-            }
-            .padding(24)
-        }
-    }
-
-    private func bullet(_ t: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "leaf.fill")
-                .foregroundStyle(BrandTheme.gold)
-            Text(t)
-                .font(.subheadline)
-                .foregroundStyle(BrandTheme.brownMuted)
         }
     }
 }
