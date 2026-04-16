@@ -40,7 +40,7 @@ struct FlowRootView: View {
             .transition(.opacity.combined(with: .move(edge: .trailing)))
             // Ambient gold sparkles above UI chrome (hidden for full-screen video phases).
             if Self.sparkleOverlayPhases.contains(state.phase) {
-                GoldAmbientSparklesView(intensity: 0.56, lightBackdrop: true)
+                GoldAmbientSparklesView(intensity: 0.64, lightBackdrop: true)
                     .allowsHitTesting(false)
                     .ignoresSafeArea()
                     .accessibilityHidden(true)
@@ -59,7 +59,7 @@ struct BrandBackground: View {
             BrandTheme.backgroundGradient
                 .ignoresSafeArea()
             // Light base wash only — primary sparkles sit in `FlowRootView` above content.
-            GoldAmbientSparklesView(intensity: 0.28, lightBackdrop: true)
+            GoldAmbientSparklesView(intensity: 0.34, lightBackdrop: true)
                 .ignoresSafeArea()
             RadialGradient(
                 colors: [BrandTheme.goldSoft.opacity(0.15), Color.clear],

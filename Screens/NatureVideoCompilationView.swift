@@ -14,12 +14,13 @@ enum NatureVideoCompilation {
         URL(string: "https://assets.mixkit.co/videos/1164/1164-720.mp4")!,
     ]
 
-    /// Photo anchor path — alternate Mixkit set (coast, mist, mountains, trees) so it never matches the Quick Start reel.
+    /// Photo anchor path — **animals in nature** (Mixkit free video; different reel from Quick Start).
+    /// IDs from [Mixkit Animal](https://mixkit.co/free-stock-video/discover/animal/) + seagulls wildlife shot.
     static let mixkitPhotoAnchorClipURLs: [URL] = [
-        URL(string: "https://assets.mixkit.co/videos/5171/5171-720.mp4")!,
-        URL(string: "https://assets.mixkit.co/videos/4862/4862-720.mp4")!,
-        URL(string: "https://assets.mixkit.co/videos/2382/2382-720.mp4")!,
-        URL(string: "https://assets.mixkit.co/videos/4489/4489-720.mp4")!,
+        URL(string: "https://assets.mixkit.co/videos/4669/4669-720.mp4")!, // macaw parrot on branch
+        URL(string: "https://assets.mixkit.co/videos/4649/4649-720.mp4")!, // parrots in nature reserve
+        URL(string: "https://assets.mixkit.co/videos/4682/4682-720.mp4")!, // swans on river
+        URL(string: "https://assets.mixkit.co/videos/4681/4681-720.mp4")!, // flamingos at lakeshore
     ]
 
     /// Deterministic shuffle from session id — same id + same path ⇒ same order (replay).
