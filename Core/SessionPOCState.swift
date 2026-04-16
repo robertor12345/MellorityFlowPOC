@@ -19,7 +19,23 @@ final class SessionPOCState: ObservableObject {
     @Published var wantsReplayCalm = false
 
     @Published var capturedImage: UIImage?
-    @Published var selectedMood: String?
+    /// Quick Start mood tags; user may select several (order follows `moodOptions`).
+    @Published private(set) var selectedMoods: Set<String> = []
+
+    /// Selected labels in canonical list order (for display, replay, share).
+    var selectedMoodsOrdered: [String] {
+        moodOptions.filter { selectedMoods.contains($0) }
+    }
+
+    func toggleMoodSelection(_ mood: String) {
+        var next = selectedMoods
+        if next.contains(mood) {
+            next.remove(mood)
+        } else {
+            next.insert(mood)
+        }
+        selectedMoods = next
+    }
 
     @Published var mockHeartRateStart: Double = 78
     @Published var mockHeartRateCurrent: Double = 72
@@ -127,7 +143,9 @@ final class SessionPOCState: ObservableObject {
     func endSession() {
         mockHeartRateCurrent = max(58, mockHeartRateStart - Double.random(in: 4 ... 12))
         calmScore = min(0.98, calmScore + 0.05)
-        replayMoodSnapshot = selectedMood
+        replayMoodSnapshot = selectedMoodsOrdered.isEmpty
+            ? nil
+            : selectedMoodsOrdered.joined(separator: ", ")
         replayCalmPercentSnapshot = Int(calmScore * 100)
         replayHeartRateSnapshot = Int(mockHeartRateCurrent)
         replaySnapshotMediaID = immersiveMediaSessionID
@@ -138,7 +156,7 @@ final class SessionPOCState: ObservableObject {
     func resetToHome() {
         phase = .home
         capturedImage = nil
-        selectedMood = nil
+        selectedMoods = []
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
         replaySnapshotMediaID = nil
@@ -162,7 +180,7 @@ final class SessionPOCState: ObservableObject {
         wantsSnippetsMemory = false
         wantsReplayCalm = false
         capturedImage = nil
-        selectedMood = nil
+        selectedMoods = []
         mockHeartRateStart = 78
         mockHeartRateCurrent = 72
         calmScore = 0.82

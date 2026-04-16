@@ -228,7 +228,7 @@ struct MoodSelectView: View {
                     FadeInTitle(text: "How do you feel?", delay: 0)
                     FadeInLine(text: "We’ll adapt sound and motion to this — in seconds.", delay: 0.06)
                     FadeInLine(
-                        text: "There’s no wrong answer — tap the word that fits closest right now.",
+                        text: "There’s no wrong answer — tap any words that fit. You can choose more than one.",
                         font: .caption,
                         color: BrandTheme.brownMuted.opacity(0.95),
                         delay: 0.14
@@ -242,11 +242,11 @@ struct MoodSelectView: View {
                                     title: mood,
                                     index: index,
                                     phase: t,
-                                    isSelected: state.selectedMood == mood
+                                    isSelected: state.selectedMoods.contains(mood)
                                 ) {
-                                    state.selectedMood = mood
+                                    state.toggleMoodSelection(mood)
                                 }
-                                .animation(.spring(response: 0.4, dampingFraction: 0.78), value: state.selectedMood)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.78), value: state.selectedMoods)
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -258,8 +258,8 @@ struct MoodSelectView: View {
                         state.beginSession()
                         state.phase = .processingFast
                     }
-                    .disabled(state.selectedMood == nil)
-                    .opacity(state.selectedMood == nil ? 0.45 : 1)
+                    .disabled(state.selectedMoods.isEmpty)
+                    .opacity(state.selectedMoods.isEmpty ? 0.45 : 1)
                     .padding(.horizontal, 24)
 
                     SecondaryButton(title: "Back") {

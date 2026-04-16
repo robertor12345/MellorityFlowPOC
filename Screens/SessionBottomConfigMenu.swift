@@ -102,7 +102,9 @@ struct SessionBottomConfigMenu: View {
     }
 
     private var shareItems: [Any] {
-        let mood = state.selectedMood ?? "Calm"
+        let mood = state.selectedMoodsOrdered.isEmpty
+            ? "Calm"
+            : state.selectedMoodsOrdered.joined(separator: ", ")
         let text = "My Mellority calm session — mood: \(mood)."
         return [text]
     }
