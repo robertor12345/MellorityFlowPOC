@@ -46,6 +46,9 @@ struct BrandBackground: View {
         ZStack {
             BrandTheme.backgroundGradient
                 .ignoresSafeArea()
+            // PS5-style gold ambient sparkles (subtle on cream; matches launch intro language).
+            GoldAmbientSparklesView(intensity: 0.42)
+                .ignoresSafeArea()
             RadialGradient(
                 colors: [BrandTheme.goldSoft.opacity(0.15), Color.clear],
                 center: .topTrailing,

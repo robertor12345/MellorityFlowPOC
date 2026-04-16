@@ -1,23 +1,32 @@
 import SwiftUI
 
-/// Hosts splash animation, then the main flow (single load of `FlowRootView` behind for a smooth handoff).
+/// Hosts a long PS5-style launch intro (gold sparkles + title), then mounts the main flow.
 struct AppRootView: View {
-    @State private var showSplash = true
+    @State private var showLaunchIntro = true
 
     var body: some View {
-        ZStack {
-            FlowRootView()
+        Group {
+            if showLaunchIntro {
+                ZStack {
+                    Color(red: 0.04, green: 0.04, blue: 0.05)
+                        .ignoresSafeArea()
 
-            if showSplash {
-                SplashScreenView {
-                    showSplash = false
+                    GoldAmbientSparklesView(intensity: 1.22)
+                        .ignoresSafeArea()
+
+                    LaunchIntroView {
+                        showLaunchIntro = false
+                    }
+                    .transition(.opacity)
                 }
                 .transition(.opacity)
-                .zIndex(1)
+            } else {
+                FlowRootView()
+                    .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.45), value: showSplash)
+        .animation(.easeInOut(duration: 0.95), value: showLaunchIntro)
+        .preferredColorScheme(showLaunchIntro ? .dark : .light)
         .environment(\.font, Font.system(.body, design: .rounded))
-        .preferredColorScheme(.light)
     }
 }
