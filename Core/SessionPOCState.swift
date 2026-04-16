@@ -72,6 +72,27 @@ final class SessionPOCState: ObservableObject {
     func exitPostSignInSlidesToHome() {
         phase = .home
     }
+
+    /// Clears every POC flag/value so each cold start matches a fresh `SessionPOCState()` (no persisted demo state).
+    func resetAllForFreshAppLaunch() {
+        phase = .home
+        showSignInSheet = false
+        email = ""
+        password = ""
+        isSignedIn = false
+        wantsHealthSync = false
+        wantsIoT = false
+        wantsPersonalisation = false
+        wantsSnippetsMemory = false
+        wantsReplayCalm = false
+        capturedImage = nil
+        selectedMood = nil
+        mockHeartRateStart = 78
+        mockHeartRateCurrent = 72
+        calmScore = 0.82
+        snippets = []
+        sessionHomeLightsSyncEnabled = false
+    }
 }
 
 enum FlowPhase: Int, CaseIterable, Identifiable {

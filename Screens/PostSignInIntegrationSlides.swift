@@ -5,11 +5,6 @@ struct PostSignInIntegrationSlidesView: View {
     @ObservedObject var state: SessionPOCState
     @State private var page = 0
 
-    /// Stock image: Philips Hue hub + colour bulbs — [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Philips_Hue_hub_and_2_bulbs.jpg) (CC BY 2.0, Sho Hashimoto).
-    private static let philipsHueStockImageURL = URL(
-        string: "https://upload.wikimedia.org/wikipedia/commons/8/84/Philips_Hue_hub_and_2_bulbs.jpg"
-    )!
-
     var body: some View {
         ScreenFadeIn {
             VStack(spacing: 0) {
@@ -28,26 +23,35 @@ struct PostSignInIntegrationSlidesView: View {
                 TabView(selection: $page) {
                     featurePage(
                         index: 0,
-                        icon: "heart.fill",
+                        stock: .health,
                         title: "Health sync",
-                        detail: "Connect wearables so sessions can respond to heart rate, rest, and recovery — in the full Mellority app."
+                        detail:
+                            "Connect wearables so sessions can respond to heart rate, rest, and recovery — in the full Mellority app."
                     ) { state.wantsHealthSync = true }
-                    iotPage()
+                    featurePage(
+                        index: 1,
+                        stock: .iot,
+                        title: "IoT & space",
+                        detail:
+                            "Pair lighting like Philips Hue so scenes can follow your session — warm dim for calm, soft shifts with breath."
+                    ) { state.wantsIoT = true }
                     featurePage(
                         index: 2,
-                        icon: "slider.horizontal.3",
+                        stock: .personalisation,
                         title: "Personalisation",
-                        detail: "Your taste and timing refine over time so sound and visuals match you faster."
+                        detail:
+                            "Your taste and timing refine over time so sound and visuals match you faster."
                     ) { state.wantsPersonalisation = true }
                     featurePage(
                         index: 3,
-                        icon: "bookmark.fill",
+                        stock: .snippetsMemory,
                         title: "Snippets + memory",
-                        detail: "Save short peaks from sessions and build a gentle memory of what grounded you."
+                        detail:
+                            "Save short peaks from sessions and build a gentle memory of what grounded you."
                     ) { state.wantsSnippetsMemory = true }
                     featurePage(
                         index: 4,
-                        icon: "play.circle.fill",
+                        stock: .replayCalm,
                         title: "Replay your calm",
                         detail: "Return to a saved tone or moment — a calm you can revisit."
                     ) { state.wantsReplayCalm = true }
@@ -60,107 +64,10 @@ struct PostSignInIntegrationSlidesView: View {
         }
     }
 
-    /// IoT slide with real **Philips Hue** stock imagery (hub + bulbs) and Hue-style pairing copy.
-    @ViewBuilder
-    private func iotPage() -> some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                Spacer(minLength: 8)
-
-                Text("IoT & space")
-                    .font(BrandTheme.title(.title))
-                    .foregroundStyle(BrandTheme.brown)
-                    .multilineTextAlignment(.center)
-
-                ZStack(alignment: .bottomLeading) {
-                    AsyncImage(url: Self.philipsHueStockImageURL) { phase in
-                        switch phase {
-                        case .empty:
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(BrandTheme.creamMid)
-                                .frame(height: 200)
-                                .overlay {
-                                    ProgressView()
-                                        .tint(BrandTheme.goldDeep)
-                                }
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 200)
-                                .clipped()
-                        case .failure:
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(BrandTheme.creamMid)
-                                .frame(height: 200)
-                                .overlay {
-                                    Image(systemName: "lightbulb.led.fill")
-                                        .font(.system(size: 48))
-                                        .foregroundStyle(BrandTheme.goldDeep)
-                                }
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1)
-                    )
-
-                    Text("Philips Hue")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(BrandTheme.cream)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.black.opacity(0.45), in: Capsule())
-                        .padding(10)
-                }
-
-                Text("Pair lighting like Philips Hue so scenes can follow your session — warm dim for calm, soft shifts with breath.")
-                    .font(.body)
-                .foregroundStyle(BrandTheme.brownMuted)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 8)
-
-                Text("Stock photo: Philips Hue hub and bulbs — Wikimedia Commons (CC BY 2.0, Sho Hashimoto). POC only; not affiliated with Signify.")
-                    .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted.opacity(0.88))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 4)
-
-                Text("POC: taps only save preferences for demo — no real connections yet.")
-                    .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted.opacity(0.9))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
-
-                VStack(spacing: 12) {
-                    PrimaryButton(title: "Connect") {
-                        state.wantsIoT = true
-                        advanceFrom(1)
-                    }
-                    SecondaryButton(title: "Skip this one") {
-                        advanceFrom(1)
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 4)
-
-                Spacer(minLength: 24)
-            }
-            .padding(.vertical, 16)
-            .padding(.horizontal, 12)
-        }
-        .tag(1)
-    }
-
     @ViewBuilder
     private func featurePage(
         index: Int,
-        icon: String,
+        stock: ConnectedFeatureStock,
         title: String,
         detail: String,
         onConnect: @escaping () -> Void
@@ -169,28 +76,25 @@ struct PostSignInIntegrationSlidesView: View {
             VStack(spacing: 22) {
                 Spacer(minLength: 12)
 
-                Image(systemName: icon)
-                    .font(.system(size: 44))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [BrandTheme.goldSoft, BrandTheme.goldDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .padding(.bottom, 4)
-
                 Text(title)
                     .font(BrandTheme.title(.title))
                     .foregroundStyle(BrandTheme.brown)
                     .multilineTextAlignment(.center)
+
+                ConnectedFeatureHeroImage(stock: stock)
 
                 Text(detail)
                     .font(.body)
                     .foregroundStyle(BrandTheme.brownMuted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 8)
+
+                Text(stock.attribution)
+                    .font(.caption2)
+                    .foregroundStyle(BrandTheme.brownMuted.opacity(0.88))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 4)
 
                 Text("POC: taps only save preferences for demo — no real connections yet.")
                     .font(.caption2)

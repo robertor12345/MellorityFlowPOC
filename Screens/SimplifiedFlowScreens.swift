@@ -7,36 +7,47 @@ struct HomeView: View {
 
     var body: some View {
         ScreenFadeIn {
-            ScrollView {
-                VStack(spacing: 28) {
-                    MellorityLogoImage(maxHeight: 140)
-                        .padding(.top, 20)
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        VStack(spacing: 28) {
+                            MellorityLogoImage(maxHeight: 140)
+                                .frame(maxWidth: .infinity)
 
-                    FadeInTitle(text: "Mellority", delay: 0.05)
-                    FadeInLine(
-                        text: "Calm that meets you where you are.",
-                        font: BrandTheme.title(.title3),
-                        color: BrandTheme.brownMuted,
-                        delay: 0.15
-                    )
-                    FadeInLine(
-                        text: "No account needed to begin.",
-                        font: .subheadline,
-                        delay: 0.28
-                    )
+                            FadeInTitle(text: "Mellority", delay: 0.05)
+                            FadeInLine(
+                                text: "Calm that meets you where you are.",
+                                font: BrandTheme.title(.title3),
+                                color: BrandTheme.brownMuted,
+                                delay: 0.15
+                            )
+                            FadeInLine(
+                                text: state.isSignedIn
+                                    ? "You’re signed in — sync when you’re ready."
+                                    : "No account needed to begin.",
+                                font: .subheadline,
+                                delay: 0.28
+                            )
 
-                    VStack(spacing: 12) {
-                        PrimaryButton(title: "Start Session") {
-                            state.phase = .entryMode
+                            VStack(spacing: 12) {
+                                PrimaryButton(title: "Start Session") {
+                                    state.phase = .entryMode
+                                }
+                                if !state.isSignedIn {
+                                    SecondaryButton(title: "Sign in (optional)") {
+                                        state.showSignInSheet = true
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 12)
                         }
-                        SecondaryButton(title: "Sign in (optional)") {
-                            state.showSignInSheet = true
-                        }
+                        .frame(maxWidth: .infinity)
+                        Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
+                    .frame(minWidth: geo.size.width, minHeight: geo.size.height)
                 }
-                .padding(.bottom, 32)
             }
         }
         .sheet(isPresented: $state.showSignInSheet) {
@@ -282,12 +293,12 @@ struct InsightView: View {
 struct UnlockFeaturesView: View {
     @ObservedObject var state: SessionPOCState
 
-    private let rows: [(String, String, String)] = [
-        ("heart.fill", "Health sync", "Wearables and resting signals, when you choose."),
-        ("lightbulb.led.fill", "IoT", "Light and space that follow your session."),
-        ("slider.horizontal.3", "Personalisation", "Taste and timing that learn with you."),
-        ("bookmark.fill", "Snippets + memory layer", "Short highlights tied to how you felt."),
-        ("play.circle.fill", "Replay your calm", "Return to a saved calm moment — full product."),
+    private let rows: [(ConnectedFeatureStock, String, String)] = [
+        (.health, "Health sync", "Wearables and resting signals, when you choose."),
+        (.iot, "IoT", "Light and space that follow your session."),
+        (.personalisation, "Personalisation", "Taste and timing that learn with you."),
+        (.snippetsMemory, "Snippets + memory layer", "Short highlights tied to how you felt."),
+        (.replayCalm, "Replay your calm", "Return to a saved calm moment — full product."),
     ]
 
     var body: some View {
@@ -300,10 +311,7 @@ struct UnlockFeaturesView: View {
                     ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                         BrandCard {
                             HStack(alignment: .top, spacing: 14) {
-                                Image(systemName: row.0)
-                                    .font(.title2)
-                                    .foregroundStyle(BrandTheme.goldDeep)
-                                    .frame(width: 36)
+                                ConnectedFeatureThumbnail(stock: row.0)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(row.1)
                                         .font(.headline)
@@ -323,10 +331,12 @@ struct UnlockFeaturesView: View {
                     PrimaryButton(title: "Start another session") {
                         state.resetToHome()
                     }
-                    SecondaryButton(title: "Sign in for sync") {
-                        state.showSignInSheet = true
+                    if !state.isSignedIn {
+                        SecondaryButton(title: "Sign in for sync") {
+                            state.showSignInSheet = true
+                        }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
                 }
                 .padding(24)
             }

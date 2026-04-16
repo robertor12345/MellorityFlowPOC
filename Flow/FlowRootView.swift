@@ -31,6 +31,9 @@ struct FlowRootView: View {
             .transition(.opacity.combined(with: .move(edge: .trailing)))
         }
         .animation(.easeInOut(duration: 0.35), value: state.phase)
+        .onAppear {
+            state.resetAllForFreshAppLaunch()
+        }
     }
 }
 
