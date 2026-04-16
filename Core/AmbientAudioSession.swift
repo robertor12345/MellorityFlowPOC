@@ -6,7 +6,7 @@ import Combine
 final class AmbientAudioSession: ObservableObject {
     private var didStart = false
 
-    /// CC0 calm bed — Morsi, [OpenGameArt](https://opengameart.org/content/calm-music) (`song_2.mp3`). Replace with a bundled asset for offline / production if you prefer.
+    /// CC0 calm bed — Morsi / OpenGameArt “calm music” (`song_2.mp3`). Replace with a bundled asset for offline or production if you prefer.
     static let streamURL = URL(string: "https://opengameart.org/sites/default/files/song_2.mp3")!
 
     private static let streamVolume: Float = 0.22
