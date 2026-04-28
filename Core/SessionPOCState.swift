@@ -22,6 +22,22 @@ final class SessionPOCState: ObservableObject {
     /// Quick Start mood tags; user may select several (order follows `moodOptions`).
     @Published private(set) var selectedMoods: Set<String> = []
 
+    // MARK: - Care staff (mock POC)
+
+    @Published var carePatients: [CarePatientProfile] = CareStaffMockData.initialPatients
+    @Published var careSessionRecords: [CareSessionRecord] = CareStaffMockData.initialRecords
+    @Published var selectedCarePatientId: UUID?
+    /// Set when a guided session is started for a patient; used for feedback + banners.
+    @Published var activeCarePatientId: UUID?
+    @Published var isCareStaffSession: Bool = false
+
+    /// Planned calm length (guide only). Paired with `careSessionPrep` IoT / immersive step.
+    @Published var carePlannedDurationMinutes: Int = 15
+    /// POC: intend VR / pass-through headset path when integrations exist.
+    @Published var carePrepVRImmersiveRoute: Bool = false
+    /// POC: mirror session to room display (panel, TV, bedside screen).
+    @Published var carePrepRoomDisplayMirroring: Bool = false
+
     /// Selected labels in canonical list order (for display, replay, share).
     var selectedMoodsOrdered: [String] {
         moodOptions.filter { selectedMoods.contains($0) }
@@ -35,6 +51,129 @@ final class SessionPOCState: ObservableObject {
             next.insert(mood)
         }
         selectedMoods = next
+    }
+
+    func carePatient(id: UUID?) -> CarePatientProfile? {
+        guard let id else { return nil }
+        return carePatients.first { $0.id == id }
+    }
+
+    func recordsForPatient(_ patientId: UUID) -> [CareSessionRecord] {
+        careSessionRecords.filter { $0.patientId == patientId }.sorted { $0.date > $1.date }
+    }
+
+    func enterPersonalSessionFlow() {
+        isCareStaffSession = false
+        activeCarePatientId = nil
+        selectedCarePatientId = nil
+        phase = .entryMode
+    }
+
+    func goBackFromEntryMode() {
+        if isCareStaffSession {
+            phase = .careSessionPrep
+        } else {
+            phase = .home
+        }
+    }
+
+    func resetCarePrepForNewSession() {
+        carePlannedDurationMinutes = 15
+        carePrepVRImmersiveRoute = false
+        carePrepRoomDisplayMirroring = false
+    }
+
+    func openCareSessionPrep() {
+        resetCarePrepForNewSession()
+        phase = .careSessionPrep
+    }
+
+    func continueCareSessionFromPrep() {
+        guard let pid = selectedCarePatientId else { return }
+        startCareGuidedSession(for: pid)
+    }
+
+    func startCareGuidedSession(for patientId: UUID) {
+        selectedCarePatientId = patientId
+        activeCarePatientId = patientId
+        isCareStaffSession = true
+        phase = .entryMode
+    }
+
+    private func appendCareSessionRecord(
+        patientId: UUID,
+        staffNote: String?,
+        settledness: Int? = nil,
+        engagement: Int? = nil,
+        comfortTolerance: Int? = nil
+    ) {
+        let rec = CareSessionRecord(
+            id: UUID(),
+            patientId: patientId,
+            date: Date(),
+            moodSummary: replayMoodSnapshot ?? "—",
+            calmPercent: Int(calmScore * 100),
+            staffNote: staffNote,
+            settledness: settledness,
+            engagement: engagement,
+            comfortTolerance: comfortTolerance
+        )
+        careSessionRecords.insert(rec, at: 0)
+    }
+
+    func saveCareFeedback(
+        tempoBias: Double,
+        natureVsAbstract: Double,
+        voiceVsInstrumental: Double,
+        settledness: Int,
+        engagement: Int,
+        comfortTolerance: Int,
+        staffNote: String
+    ) {
+        guard let pid = activeCarePatientId ?? selectedCarePatientId,
+              let idx = carePatients.firstIndex(where: { $0.id == pid }) else { return }
+        var patients = carePatients
+        patients[idx].musicTempoBias = tempoBias
+        patients[idx].natureVsAbstract = natureVsAbstract
+        patients[idx].voiceVsInstrumental = voiceVsInstrumental
+        carePatients = patients
+        let note = staffNote.trimmingCharacters(in: .whitespacesAndNewlines)
+        appendCareSessionRecord(
+            patientId: pid,
+            staffNote: note.isEmpty ? nil : note,
+            settledness: settledness,
+            engagement: engagement,
+            comfortTolerance: comfortTolerance
+        )
+        isCareStaffSession = false
+        activeCarePatientId = nil
+        selectedCarePatientId = pid
+        phase = .carePatientDetail
+    }
+
+    func skipCareFeedback() {
+        let pid = activeCarePatientId ?? selectedCarePatientId
+        if let pid {
+            appendCareSessionRecord(patientId: pid, staffNote: nil)
+        }
+        isCareStaffSession = false
+        activeCarePatientId = nil
+        if let pid { selectedCarePatientId = pid }
+        phase = .carePatientDetail
+    }
+
+    func leaveInsightToUnlockFeatures() {
+        if isCareStaffSession, let pid = activeCarePatientId ?? selectedCarePatientId {
+            appendCareSessionRecord(patientId: pid, staffNote: nil)
+        }
+        isCareStaffSession = false
+        activeCarePatientId = nil
+        phase = .unlockFeatures
+    }
+
+    private func resetCareSessionFlags() {
+        isCareStaffSession = false
+        activeCarePatientId = nil
     }
 
     @Published var mockHeartRateStart: Double = 78
@@ -161,6 +300,9 @@ final class SessionPOCState: ObservableObject {
         replayMoodSnapshot = nil
         replaySnapshotMediaID = nil
         replaySessionPhotoAnchored = false
+        resetCareSessionFlags()
+        selectedCarePatientId = nil
+        resetCarePrepForNewSession()
     }
 
     func exitPostSignInSlidesToHome() {
@@ -192,6 +334,11 @@ final class SessionPOCState: ObservableObject {
         replaySessionPhotoAnchored = false
         immersiveMediaSessionID = UUID()
         sessionAnchoredWithPhoto = false
+        carePatients = CareStaffMockData.initialPatients
+        careSessionRecords = CareStaffMockData.initialRecords
+        selectedCarePatientId = nil
+        resetCareSessionFlags()
+        resetCarePrepForNewSession()
         resetConnectedDeviceSettingsToDefaults()
     }
 
@@ -230,6 +377,10 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case unlockFeatures = 8
     case connectedDevices = 9
     case replayCalmSession = 10
+    case carePatientList = 11
+    case carePatientDetail = 12
+    case careSessionFeedback = 13
+    case careSessionPrep = 14
 
     var id: Int { rawValue }
 }

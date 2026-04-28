@@ -17,12 +17,32 @@ struct ProcessingFastView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(spacing: 28) {
-                    FadeInTitle(text: "Starting session", delay: 0)
+                    FadeInTitle(text: state.isCareStaffSession ? "Unhurried start" : "Starting session", delay: 0)
                     FadeInLine(
-                        text: "Subtle AI feedback while we prepare — quick, not busy.",
+                        text: state.isCareStaffSession
+                            ? "Softening sound and motion so nothing feels sudden — stay present with them."
+                            : "Subtle AI feedback while we prepare — quick, not busy.",
                         font: .caption,
                         delay: 0.1
                     )
+                    if state.isCareStaffSession, let p = state.carePatient(id: state.activeCarePatientId) {
+                        VStack(spacing: 6) {
+                            Text("For \(p.displayName) · gentle guide ≈ \(state.carePlannedDurationMinutes) min (pause or end anytime).")
+                            if state.carePrepVRImmersiveRoute {
+                                Text("VR / headset path flagged — same calm pipeline when hardware is paired.")
+                            }
+                            if state.carePrepRoomDisplayMirroring {
+                                Text("Room mirroring flagged — extend visuals to wall or bedside display when connected.")
+                            }
+                            if state.iotPhilipsHueEnabled || state.iotHomeKitEnabled || state.iotMatterEnabled {
+                                Text("Lighting integrations on — calm scenes can track this moment when bridges are live.")
+                            }
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(BrandTheme.goldDeep)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    }
 
                     ProgressView(value: progress, total: 1)
                         .tint(BrandTheme.goldDeep)
@@ -112,6 +132,41 @@ struct ImmersiveSessionView: View {
                     }
                 }
                 .padding()
+
+                if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
+                    VStack(spacing: 4) {
+                        Text("One-to-one calm · \(patient.displayName)")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandTheme.brown)
+                        Text("≈ \(state.carePlannedDurationMinutes) min guide — honour their pace")
+                            .font(.caption2)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                        if state.carePrepVRImmersiveRoute || state.carePrepRoomDisplayMirroring {
+                            Text(
+                                [
+                                    state.carePrepVRImmersiveRoute ? "VR / immersive" : nil,
+                                    state.carePrepRoomDisplayMirroring ? "Room display" : nil,
+                                ]
+                                .compactMap(\.self)
+                                .joined(separator: " · ") + " — POC"
+                            )
+                                .font(.caption2)
+                                .foregroundStyle(BrandTheme.goldDeep.opacity(0.95))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(BrandTheme.cream.opacity(0.92))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 16)
+                }
 
                 Spacer(minLength: 0)
 

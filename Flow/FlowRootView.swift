@@ -35,6 +35,14 @@ struct FlowRootView: View {
                     ConnectedDevicesView(state: state)
                 case .replayCalmSession:
                     ReplayCalmSessionView(state: state)
+                case .carePatientList:
+                    CarePatientListView(state: state)
+                case .carePatientDetail:
+                    CarePatientDetailView(state: state)
+                case .careSessionFeedback:
+                    CareSessionFeedbackView(state: state)
+                case .careSessionPrep:
+                    CareSessionPrepView(state: state)
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))

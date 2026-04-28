@@ -29,7 +29,10 @@ struct HomeView: View {
 
                     VStack(spacing: 12) {
                         PrimaryButton(title: "Start Session") {
-                            state.phase = .entryMode
+                            state.enterPersonalSessionFlow()
+                        }
+                        SecondaryButton(title: "One-to-one calm (demo)") {
+                            state.phase = .carePatientList
                         }
                         if state.isSignedIn {
                             SecondaryButton(title: "Connected devices") {
@@ -164,6 +167,29 @@ struct EntryModeView: View {
                     FadeInTitle(text: "Choose Entry Mode", delay: 0)
                     FadeInLine(text: "Camera: pick or take a photo, confirm, then session — or Quick Start for mood only.", delay: 0.12)
 
+                    if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
+                        BrandCard {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "cross.case.fill")
+                                    .font(.title3)
+                                    .foregroundStyle(BrandTheme.goldDeep)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("One-to-one calm moment")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(BrandTheme.brown)
+                                    Text("\(patient.displayName) — \(patient.careContextLabel)")
+                                        .font(.caption)
+                                        .foregroundStyle(BrandTheme.brownMuted)
+                                    Text("Their profile recalls light, scent, touch and sound gently — nothing sudden. Mood tags add a soft layer for today only.")
+                                        .font(.caption2)
+                                        .foregroundStyle(BrandTheme.brownMuted.opacity(0.95))
+                                }
+                                Spacer(minLength: 0)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+
                     VStack(spacing: 14) {
                         entryCard(
                             title: "Camera",
@@ -184,7 +210,7 @@ struct EntryModeView: View {
                     }
                     .padding(.horizontal, 20)
 
-                    SecondaryButton(title: "Back") { state.phase = .home }
+                    SecondaryButton(title: "Back") { state.goBackFromEntryMode() }
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
                 }
@@ -227,6 +253,13 @@ struct MoodSelectView: View {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "How do you feel?", delay: 0)
                     FadeInLine(text: "We’ll adapt sound and motion to this — in seconds.", delay: 0.06)
+                    if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
+                        Text("With \(patient.displayName) — no rush. Together, tap what feels closest right now.")
+                            .font(.caption)
+                            .foregroundStyle(BrandTheme.goldDeep)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
                     FadeInLine(
                         text: "There’s no wrong answer — tap any words that fit. You can choose more than one.",
                         font: .caption,
@@ -427,10 +460,22 @@ struct InsightView: View {
                         .padding(.horizontal, 20)
                     }
 
-                    PrimaryButton(title: "Unlock deeper features") {
-                        state.phase = .unlockFeatures
+                    if state.isCareStaffSession {
+                        PrimaryButton(title: "Note how it felt & tune next calm") {
+                            state.phase = .careSessionFeedback
+                        }
+                        .padding(.horizontal, 24)
+
+                        SecondaryButton(title: "Unlock deeper features") {
+                            state.leaveInsightToUnlockFeatures()
+                        }
+                        .padding(.horizontal, 24)
+                    } else {
+                        PrimaryButton(title: "Unlock deeper features") {
+                            state.phase = .unlockFeatures
+                        }
+                        .padding(.horizontal, 24)
                     }
-                    .padding(.horizontal, 24)
                 }
                 .padding(.vertical, 28)
             }
