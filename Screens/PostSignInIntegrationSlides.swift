@@ -10,7 +10,7 @@ struct PostSignInIntegrationSlidesView: View {
             VStack(spacing: 0) {
                 HStack {
                     Spacer()
-                    Button("Skip all") {
+                    Button("Skip for now") {
                         state.exitPostSignInSlidesToHome()
                     }
                     .font(BrandTheme.buttonLabel(.subheadline))
@@ -18,7 +18,7 @@ struct PostSignInIntegrationSlidesView: View {
                     .padding(.trailing, 8)
                 }
                 .padding(.top, 8)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, BrandTheme.contentGutter)
 
                 TabView(selection: $page) {
                     featurePage(
@@ -26,34 +26,34 @@ struct PostSignInIntegrationSlidesView: View {
                         stock: .health,
                         title: "Health sync",
                         detail:
-                            "Connect wearables so sessions can respond to heart rate, rest, and recovery."
+                            "If you connect a wearable, sessions can notice heart rate, rest, and recovery — and ease off when you’re worn out."
                     ) { state.wantsHealthSync = true }
                     featurePage(
                         index: 1,
                         stock: .iot,
                         title: "IoT & space",
                         detail:
-                            "Pair lighting like Philips Hue so scenes can follow your session — warm dim for calm, soft shifts with breath."
+                            "Hook up Hue, HomeKit, or similar — warm dim when you need calm, tiny shifts with your breath."
                     ) { state.wantsIoT = true }
                     featurePage(
                         index: 2,
                         stock: .personalisation,
                         title: "Personalisation",
                         detail:
-                            "Your taste and timing refine over time so sound and visuals match you faster."
+                            "Over time, Mellority picks up how you like things to sound and move — fewer wrong guesses each visit."
                     ) { state.wantsPersonalisation = true }
                     featurePage(
                         index: 3,
                         stock: .snippetsMemory,
                         title: "Snippets + memory",
                         detail:
-                            "Save short peaks from sessions and build a gentle memory of what grounded you."
+                            "Save short peaks from a session — the bit that actually helped — and keep a light memory of it."
                     ) { state.wantsSnippetsMemory = true }
                     featurePage(
                         index: 4,
                         stock: .replayCalm,
                         title: "Replay your calm",
-                        detail: "Return to a saved tone or moment — a calm you can revisit."
+                        detail: "Open a saved tone or moment when you need to land there again."
                     ) { state.wantsReplayCalm = true }
                     summaryPage(index: 5)
                 }
@@ -94,7 +94,7 @@ struct PostSignInIntegrationSlidesView: View {
                         onConnect()
                         advanceFrom(index)
                     }
-                    SecondaryButton(title: "Skip this one") {
+                    SecondaryButton(title: "Not now") {
                         advanceFrom(index)
                     }
                 }
@@ -109,9 +109,9 @@ struct PostSignInIntegrationSlidesView: View {
     private func summaryPage(index: Int) -> some View {
         CenteredScrollScreen {
             VStack(spacing: 20) {
-                FadeInTitle(text: "You’re set", delay: 0)
+                FadeInTitle(text: "Got it", delay: 0)
                 FadeInLine(
-                    text: "We’ll honour these choices. You can change them anytime.",
+                    text: "We’ll keep these choices — you can tweak them whenever you like.",
                     delay: 0.08
                 )
 
@@ -143,7 +143,7 @@ struct PostSignInIntegrationSlidesView: View {
                 .font(.subheadline)
                 .foregroundStyle(BrandTheme.brownMuted)
             Spacer()
-            Text(on ? "Interested" : "Skipped")
+            Text(on ? "Sounds good" : "Skipped")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(on ? BrandTheme.goldDeep : BrandTheme.brownMuted)
         }

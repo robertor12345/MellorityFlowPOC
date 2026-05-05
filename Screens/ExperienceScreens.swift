@@ -7,9 +7,9 @@ struct ProcessingFastView: View {
     @State private var progress: CGFloat = 0
     @State private var tick = 0
     private let messages = [
-        "Tuning to your mood…",
-        "Softening the sound field…",
-        "Balancing motion with breath…",
+        "Finding the right tone…",
+        "Letting the sound soften…",
+        "Letting movement match your breath…",
         "Almost there…",
     ]
 
@@ -17,25 +17,25 @@ struct ProcessingFastView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(spacing: 28) {
-                    FadeInTitle(text: state.isCareStaffSession ? "Unhurried start" : "Starting session", delay: 0)
+                    FadeInTitle(text: state.isCareStaffSession ? "Ease in slowly" : "Just a moment", delay: 0)
                     FadeInLine(
                         text: state.isCareStaffSession
-                            ? "Softening sound and motion so nothing feels sudden — stay present with them."
-                            : "Subtle AI feedback while we prepare — quick, not busy.",
+                            ? "Sound and motion stay gentle so nothing arrives too fast — stay with them."
+                            : "We’re getting things ready — won’t take long.",
                         font: .caption,
                         delay: 0.1
                     )
                     if state.isCareStaffSession, let p = state.carePatient(id: state.activeCarePatientId) {
                         VStack(spacing: 6) {
-                            Text("For \(p.displayName) · gentle guide ≈ \(state.carePlannedDurationMinutes) min (pause or end anytime).")
+                            Text("With \(p.displayName) — roughly \(state.carePlannedDurationMinutes) min if it helps (pause or stop anytime).")
                             if state.carePrepVRImmersiveRoute {
-                                Text("VR / headset path flagged — same calm pipeline when hardware is paired.")
+                                Text("Headset path noted — same calm when your gear is connected.")
                             }
                             if state.carePrepRoomDisplayMirroring {
-                                Text("Room mirroring flagged — extend visuals to wall or bedside display when connected.")
+                                Text("Room screen noted — we can stretch visuals to the wall or bedside when it’s hooked up.")
                             }
                             if state.iotPhilipsHueEnabled || state.iotHomeKitEnabled || state.iotMatterEnabled {
-                                Text("Lighting integrations on — calm scenes can track this moment when bridges are live.")
+                                Text("Lights are linked — scenes can drift with this session when your bridge is live.")
                             }
                         }
                         .font(.caption2)
@@ -47,7 +47,7 @@ struct ProcessingFastView: View {
                     ProgressView(value: progress, total: 1)
                         .tint(BrandTheme.goldDeep)
                         .scaleEffect(x: 1, y: 1.2, anchor: .center)
-                        .padding(.horizontal, 40)
+                        .padding(.horizontal, max(0, 40 - BrandTheme.contentGutter))
                         .frame(maxWidth: .infinity)
 
                     Text(messages[tick % messages.count])
@@ -131,14 +131,15 @@ struct ImmersiveSessionView: View {
                             .clipShape(Capsule())
                     }
                 }
-                .padding()
+                .padding(.horizontal, BrandTheme.contentGutter)
+                .padding(.vertical, 12)
 
                 if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
                     VStack(spacing: 4) {
-                        Text("One-to-one calm · \(patient.displayName)")
+                        Text("Together · \(patient.displayName)")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(BrandTheme.brown)
-                        Text("≈ \(state.carePlannedDurationMinutes) min guide — honour their pace")
+                        Text("About \(state.carePlannedDurationMinutes) min if it helps — follow their pace")
                             .font(.caption2)
                             .foregroundStyle(BrandTheme.brownMuted)
                         if state.carePrepVRImmersiveRoute || state.carePrepRoomDisplayMirroring {
@@ -165,24 +166,24 @@ struct ImmersiveSessionView: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1)
                     )
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, BrandTheme.contentGutter)
                 }
 
                 Spacer(minLength: 0)
 
                 VStack(spacing: 12) {
                     if showCopy {
-                        Text("Immersive space")
+                        Text("You’re here")
                             .font(BrandTheme.title(.title2))
                             .foregroundStyle(BrandTheme.brown)
                             .transition(.opacity.combined(with: .offset(y: 8)))
-                        Text("Real-time adaptation — the core magic")
+                        Text("Everything shifts gently as you go.")
                             .font(.caption)
                             .foregroundStyle(BrandTheme.brownMuted)
                             .multilineTextAlignment(.center)
                             .transition(.opacity)
                     }
-                    Text("Meditation audio · nature video · heart rate")
+                    Text("Music · nature video · heart rate")
                         .font(.caption2)
                         .foregroundStyle(BrandTheme.brownMuted)
                         .multilineTextAlignment(.center)
@@ -217,17 +218,17 @@ struct ImmersiveSessionView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, BrandTheme.contentGutter)
 
                 SessionBottomConfigMenu(state: state)
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, BrandTheme.contentGutter)
                     .padding(.top, 10)
 
                 PrimaryButton(title: "End session") {
                     state.endSession()
                     state.phase = .insight
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, BrandTheme.contentGutter)
                 .padding(.top, 20)
                 .padding(.bottom, 8)
                 .safeAreaPadding(.bottom, 16)
@@ -297,7 +298,8 @@ struct ReplayCalmSessionView: View {
 
                     Spacer()
                 }
-                .padding()
+                .padding(.horizontal, BrandTheme.contentGutter)
+                .padding(.vertical, 12)
 
                 Spacer(minLength: 0)
 
@@ -312,7 +314,7 @@ struct ReplayCalmSessionView: View {
                             .foregroundStyle(BrandTheme.cream.opacity(0.95))
                             .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
                     }
-                    Text("Same nature visuals and meditation audio as your session.")
+                    Text("Same nature loop and music you had a minute ago.")
                         .font(.caption)
                         .foregroundStyle(BrandTheme.cream.opacity(0.9))
                         .multilineTextAlignment(.center)
@@ -350,17 +352,17 @@ struct ReplayCalmSessionView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, BrandTheme.contentGutter)
 
                 SessionBottomConfigMenu(state: state)
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, BrandTheme.contentGutter)
                     .padding(.top, 10)
 
                 PrimaryButton(title: "End replay") {
                     ambientAudio.stop()
                     state.phase = .insight
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, BrandTheme.contentGutter)
                 .padding(.top, 20)
                 .padding(.bottom, 8)
                 .safeAreaPadding(.bottom, 16)

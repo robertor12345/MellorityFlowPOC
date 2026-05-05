@@ -17,7 +17,7 @@ struct SessionBottomConfigMenu: View {
                 HStack(spacing: 8) {
                     Image(systemName: "slider.horizontal.3")
                         .font(.caption.weight(.semibold))
-                    Text(expanded ? "Hide" : "Session options")
+                    Text(expanded ? "Hide" : "Session settings")
                         .font(.caption.weight(.semibold))
                     Image(systemName: expanded ? "chevron.compact.down" : "chevron.compact.up")
                         .font(.caption2.weight(.bold))
@@ -36,7 +36,7 @@ struct SessionBottomConfigMenu: View {
                 )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(expanded ? "Collapse session options" : "Expand session options")
+            .accessibilityLabel(expanded ? "Hide session settings" : "Show session settings")
 
             if expanded {
                 VStack(alignment: .leading, spacing: 14) {
@@ -45,7 +45,7 @@ struct SessionBottomConfigMenu: View {
                             Label("Home lighting", systemImage: "lightbulb.led.fill")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(BrandTheme.brown)
-                            Text("Sync calm scenes to your lights — Philips Hue, HomeKit, and compatible bridges.")
+                            Text("Let your lights follow the calm — Hue, HomeKit, or anything on the same bridge.")
                                 .font(.caption2)
                                 .foregroundStyle(BrandTheme.brownMuted)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -61,10 +61,10 @@ struct SessionBottomConfigMenu: View {
                                 .font(.title3)
                                 .foregroundStyle(BrandTheme.goldDeep)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Share visuals")
+                                Text("Share a snapshot")
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brown)
-                                Text("Post your session look to social apps (uses system share sheet).")
+                                Text("Send a line about this session through the usual share sheet.")
                                     .font(.caption2)
                                     .foregroundStyle(BrandTheme.brownMuted)
                             }
@@ -105,7 +105,7 @@ struct SessionBottomConfigMenu: View {
         let mood = state.selectedMoodsOrdered.isEmpty
             ? "Calm"
             : state.selectedMoodsOrdered.joined(separator: ", ")
-        let text = "My Mellority calm session — mood: \(mood)."
+        let text = "Quiet moment with Mellority — feeling: \(mood)."
         return [text]
     }
 }

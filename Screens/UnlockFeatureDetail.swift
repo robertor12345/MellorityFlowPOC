@@ -34,15 +34,15 @@ enum UnlockFeaturePanel: String, Identifiable {
     var detail: String {
         switch self {
         case .health:
-            return "Connect wearables so Mellority can use heart rate, sleep, and recovery to gently tune sessions — softer when you’re depleted, steadier when you’re ready to focus."
+            return "Wearables can share heart rate, sleep, and recovery so sessions ease up when you’re wiped and steady when you’re not."
         case .iot:
-            return "Link lights such as Philips Hue or HomeKit scenes so colour and dimming can follow your breath and the arc of the session — warm shifts without you reaching for a switch."
+            return "Lights like Hue or HomeKit can warm, dim, and drift with your breath — less fumbling for switches mid-session."
         case .personalisation:
-            return "Your preferences and timing refine over replays: sound layers, pacing, and visuals converge on what actually lands for you, faster each time you return."
+            return "Mellority notices what you actually return to — pacing, layers, visuals — and stops guessing wrong over time."
         case .snippets:
-            return "Save short peaks from a session — a phrase, texture, or stillness you want to remember — and build a light-touch journal of what grounded you."
+            return "Clip the moments that mattered — a texture, a phrase, a stillness — and keep a gentle log of what held you."
         case .replayCalm:
-            return "Return to a saved tone, loop, or moment whenever you need it — a calm you can reopen like a favourite room."
+            return "Reopen a tone or stretch that worked before — like walking back into a room that still feels safe."
         }
     }
 }

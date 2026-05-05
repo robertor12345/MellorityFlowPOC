@@ -23,6 +23,7 @@ struct SplashScreenView: View {
                     .opacity(titleIn ? 1 : 0)
                     .offset(y: titleIn ? 0 : 14)
             }
+            .padding(.horizontal, BrandTheme.contentGutter)
         }
         .opacity(exitFade ? 0 : 1)
         .task {

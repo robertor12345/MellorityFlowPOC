@@ -6,8 +6,21 @@ struct LaunchIntroView: View {
 
     @State private var didFinish = false
     @State private var anchor = Date()
-    /// Total runtime before calling `onFinished` (seconds).
-    private let totalDuration: Double = 11.5
+
+    /// Full intro length (1/3 of original ~11.5s timeline).
+    private let totalDuration: Double = 11.5 / 3
+    private let fadeOutWindow: Double = 1.2 / 3
+    /// Third line + progress choreography (same ratios, shorter clock).
+    private let thirdLineAfter: Double = 4.2 / 3
+    private let titleFadeIn: Double = 0.8 / 3
+    private let titleScaleDuration: Double = 1.4 / 3
+    private let subtitleFadeStart: Double = 2.0 / 3
+    private let subtitleFadeEnd: Double = 3.6 / 3
+    private let thirdLineOpacityStart: Double = 5.0 / 3
+    private let thirdLineOpacityEnd: Double = 7.0 / 3
+    private let thirdLineOpacitySpan: Double = 2.0 / 3
+    private let chromeFadeStart: Double = 1.0 / 3
+    private let chromeFadeSpan: Double = 2.0 / 3
 
     var body: some View {
         ZStack {
@@ -17,7 +30,7 @@ struct LaunchIntroView: View {
 
             TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
                 let elapsed = timeline.date.timeIntervalSince(anchor)
-                let fadeOut = min(1, max(0, (elapsed - (totalDuration - 1.2)) / 1.2))
+                let fadeOut = min(1, max(0, (elapsed - (totalDuration - fadeOutWindow)) / fadeOutWindow))
 
                 VStack(spacing: 28) {
                     Spacer(minLength: 0)
@@ -38,14 +51,14 @@ struct LaunchIntroView: View {
                         .opacity(titleOpacity(elapsed: elapsed))
                         .scaleEffect(titleScale(elapsed: elapsed))
 
-                    Text("Wellness audio, refined.")
+                    Text("Sound you can live in.")
                         .font(.title3.weight(.medium))
                         .foregroundStyle(BrandTheme.brown)
                         .opacity(subtitleOpacity(elapsed: elapsed))
                         .offset(y: subtitleOffset(elapsed: elapsed))
 
-                    if elapsed > 4.2 {
-                        Text("Settle in. Your space is preparing.")
+                    if elapsed > thirdLineAfter {
+                        Text("Take a slow breath — we’re almost there.")
                             .font(.subheadline)
                             .foregroundStyle(BrandTheme.brownMuted)
                             .opacity(lineOpacity(elapsed: elapsed))
@@ -55,10 +68,11 @@ struct LaunchIntroView: View {
                     Spacer(minLength: 0)
 
                     progressBar(progress: min(1, elapsed / totalDuration))
-                        .padding(.horizontal, 36)
+                        .padding(.horizontal, max(0, 36 - BrandTheme.contentGutter))
                         .padding(.bottom, 52)
                         .opacity(bottomChromeOpacity(elapsed: elapsed))
                 }
+                .padding(.horizontal, BrandTheme.contentGutter)
                 .opacity(1 - fadeOut)
             }
         }
@@ -88,38 +102,42 @@ struct LaunchIntroView: View {
     }
 
     private func titleOpacity(elapsed: TimeInterval) -> Double {
-        if elapsed < 0.8 { return min(1, elapsed / 0.8) }
+        if elapsed < titleFadeIn { return min(1, elapsed / titleFadeIn) }
         return 1
     }
 
     private func titleScale(elapsed: TimeInterval) -> CGFloat {
-        if elapsed < 1.4 {
-            let t = CGFloat(elapsed / 1.4)
+        if elapsed < titleScaleDuration {
+            let t = CGFloat(elapsed / titleScaleDuration)
             return 0.94 + 0.06 * easeOutCubic(t)
         }
         return 1
     }
 
     private func subtitleOpacity(elapsed: TimeInterval) -> Double {
-        if elapsed < 2 { return 0 }
-        if elapsed < 3.6 { return (elapsed - 2) / 1.6 }
+        if elapsed < subtitleFadeStart { return 0 }
+        let subSpan = subtitleFadeEnd - subtitleFadeStart
+        if elapsed < subtitleFadeEnd { return (elapsed - subtitleFadeStart) / subSpan }
         return 1
     }
 
     private func subtitleOffset(elapsed: TimeInterval) -> CGFloat {
-        if elapsed < 3.6 { return CGFloat(12 - (elapsed - 2) * 8) }
+        if elapsed < subtitleFadeEnd {
+            let subSpan = subtitleFadeEnd - subtitleFadeStart
+            return CGFloat(12 - (elapsed - subtitleFadeStart) * (12 / subSpan))
+        }
         return 0
     }
 
     private func lineOpacity(elapsed: TimeInterval) -> Double {
-        if elapsed < 5 { return 0 }
-        if elapsed < 7 { return (elapsed - 5) / 2 }
+        if elapsed < thirdLineOpacityStart { return 0 }
+        if elapsed < thirdLineOpacityEnd { return (elapsed - thirdLineOpacityStart) / thirdLineOpacitySpan }
         return 1
     }
 
     private func bottomChromeOpacity(elapsed: TimeInterval) -> Double {
-        if elapsed < 1 { return 0 }
-        return min(1, (elapsed - 1) / 2)
+        if elapsed < chromeFadeStart { return 0 }
+        return min(1, (elapsed - chromeFadeStart) / chromeFadeSpan)
     }
 
     private func easeOutCubic(_ t: CGFloat) -> CGFloat {

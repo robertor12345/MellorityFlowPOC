@@ -11,6 +11,7 @@ struct CenteredScrollScreen<Content: View>: View {
                     Spacer(minLength: 0)
                     content()
                         .frame(maxWidth: .infinity)
+                        .padding(.horizontal, BrandTheme.contentGutter)
                     Spacer(minLength: 0)
                 }
                 .frame(minWidth: geo.size.width, minHeight: geo.size.height)

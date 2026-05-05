@@ -21,8 +21,8 @@ struct HomeView: View {
                     )
                     FadeInLine(
                         text: state.isSignedIn
-                            ? "You’re signed in — sync when you’re ready."
-                            : "No account needed to begin.",
+                            ? "You’re signed in — we’ll sync when you’re ready."
+                            : "You don’t need an account to try this.",
                         font: .subheadline,
                         delay: 0.28
                     )
@@ -80,7 +80,7 @@ struct OptionalSignInSheet: View {
 
                     FadeInTitle(text: "Sign in", delay: 0)
                     FadeInLine(
-                        text: "Sign in to sync preferences across your devices when available.",
+                        text: "So your preferences can follow you across devices, when that’s available.",
                         font: .subheadline,
                         color: BrandTheme.brownMuted,
                         delay: 0.08
@@ -103,7 +103,7 @@ struct OptionalSignInSheet: View {
                             labeledField(
                                 title: "Password",
                                 content: {
-                                    SecureField("Required to sign in", text: $state.password)
+                                    SecureField("Password", text: $state.password)
                                         .textContentType(.password)
                                         .focused($focusedField, equals: .password)
                                         .submitLabel(.go)
@@ -164,8 +164,8 @@ struct EntryModeView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(spacing: 22) {
-                    FadeInTitle(text: "Choose Entry Mode", delay: 0)
-                    FadeInLine(text: "Camera: pick or take a photo, confirm, then session — or Quick Start for mood only.", delay: 0.12)
+                    FadeInTitle(text: "How would you like to begin?", delay: 0)
+                    FadeInLine(text: "Use a photo as a gentle anchor, or skip straight to how you’re feeling.", delay: 0.12)
 
                     if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
                         BrandCard {
@@ -174,13 +174,13 @@ struct EntryModeView: View {
                                     .font(.title3)
                                     .foregroundStyle(BrandTheme.goldDeep)
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("One-to-one calm moment")
+                                    Text("Together for a little while")
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(BrandTheme.brown)
                                     Text("\(patient.displayName) — \(patient.careContextLabel)")
                                         .font(.caption)
                                         .foregroundStyle(BrandTheme.brownMuted)
-                                    Text("Their profile recalls light, scent, touch and sound gently — nothing sudden. Mood tags add a soft layer for today only.")
+                                    Text("Their notes cover light, scent, touch, and sound — keep things soft. Mood tags are just for today.")
                                         .font(.caption2)
                                         .foregroundStyle(BrandTheme.brownMuted.opacity(0.95))
                                 }
@@ -193,15 +193,15 @@ struct EntryModeView: View {
                     VStack(spacing: 14) {
                         entryCard(
                             title: "Camera",
-                            subtitle: "Upload or take a photo, confirm, then your session starts.",
+                            subtitle: "Pick or take a photo, then we’ll shape the session around it.",
                             systemImage: "camera.fill",
                             delay: 0.2
                         ) {
                             state.phase = .captureMoment
                         }
                         entryCard(
-                            title: "Quick Start",
-                            subtitle: "Skip capture — mood only.",
+                            title: "Quick start",
+                            subtitle: "No photo — just tell us how you’re doing.",
                             systemImage: "bolt.fill",
                             delay: 0.32
                         ) {
@@ -251,17 +251,17 @@ struct MoodSelectView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(spacing: 22) {
-                    FadeInTitle(text: "How do you feel?", delay: 0)
-                    FadeInLine(text: "We’ll adapt sound and motion to this — in seconds.", delay: 0.06)
+                    FadeInTitle(text: "How are you feeling?", delay: 0)
+                    FadeInLine(text: "Sound and movement will gently follow whatever you pick.", delay: 0.06)
                     if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
-                        Text("With \(patient.displayName) — no rush. Together, tap what feels closest right now.")
+                        Text("With \(patient.displayName), there’s no rush. Tap what feels closest — you can choose more than one.")
                             .font(.caption)
                             .foregroundStyle(BrandTheme.goldDeep)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
                     FadeInLine(
-                        text: "There’s no wrong answer — tap any words that fit. You can choose more than one.",
+                        text: "No wrong answers — just tap anything that fits.",
                         font: .caption,
                         color: BrandTheme.brownMuted.opacity(0.95),
                         delay: 0.14
@@ -396,8 +396,8 @@ struct InsightView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(spacing: 24) {
-                    FadeInTitle(text: "Your calm", delay: 0)
-                    FadeInLine(text: "A quiet snapshot — not a dashboard.", delay: 0.1)
+                    FadeInTitle(text: "How that felt", delay: 0)
+                    FadeInLine(text: "A small pause — not a report card.", delay: 0.1)
 
                     ZStack {
                         Circle()
@@ -425,7 +425,7 @@ struct InsightView: View {
                     .frame(maxWidth: .infinity)
 
                     FadeInLine(
-                        text: "Sound and space eased with your breath — real-time adaptation, gently.",
+                        text: "Sound and space shifted with you — softly, as you breathed.",
                         font: .subheadline,
                         delay: 0.22
                     )
@@ -444,8 +444,8 @@ struct InsightView: View {
                                     .foregroundStyle(BrandTheme.brown)
                                     Text(
                                         state.replayExperienceAvailable
-                                            ? "Same nature visuals and meditation audio as the session you just finished."
-                                            : "Finish a session first — then you can replay it here."
+                                            ? "The same nature visuals and music you just had — nothing new to figure out."
+                                            : "Finish a session first, and you can slip back into it here."
                                     )
                                     .font(.caption)
                                     .foregroundStyle(BrandTheme.brownMuted)
@@ -461,17 +461,17 @@ struct InsightView: View {
                     }
 
                     if state.isCareStaffSession {
-                        PrimaryButton(title: "Note how it felt & tune next calm") {
+                        PrimaryButton(title: "Jot a note & nudge the next session") {
                             state.phase = .careSessionFeedback
                         }
                         .padding(.horizontal, 24)
 
-                        SecondaryButton(title: "Unlock deeper features") {
+                        SecondaryButton(title: "More options") {
                             state.leaveInsightToUnlockFeatures()
                         }
                         .padding(.horizontal, 24)
                     } else {
-                        PrimaryButton(title: "Unlock deeper features") {
+                        PrimaryButton(title: "More options") {
                             state.phase = .unlockFeatures
                         }
                         .padding(.horizontal, 24)
@@ -490,19 +490,19 @@ struct UnlockFeaturesView: View {
     @State private var openFeaturePanel: UnlockFeaturePanel?
 
     private let rows: [(ConnectedFeatureStock, String, String)] = [
-        (.health, "Health sync", "Wearables and resting signals, when you choose."),
-        (.iot, "IoT", "Light and space that follow your session."),
-        (.personalisation, "Personalisation", "Taste and timing that learn with you."),
-        (.snippetsMemory, "Snippets + memory layer", "Short highlights tied to how you felt."),
-        (.replayCalm, "Replay your calm", "Return to a saved calm moment anytime."),
+        (.health, "Health sync", "Wearables and rest — only if you want them in the mix."),
+        (.iot, "IoT", "Lights and space that move with the session."),
+        (.personalisation, "Personalisation", "Learns what actually lands with you."),
+        (.snippetsMemory, "Snippets + memory", "Little moments worth keeping."),
+        (.replayCalm, "Replay your calm", "Slip back into a session that worked."),
     ]
 
     var body: some View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(alignment: .center, spacing: 18) {
-                    FadeInTitle(text: "Unlock Deeper Features", delay: 0)
-                    FadeInLine(text: "Tap a feature to learn more — add when you’re ready.", delay: 0.08)
+                    FadeInTitle(text: "Go further when you’re ready", delay: 0)
+                    FadeInLine(text: "Tap to read more — turn something on only if it feels right.", delay: 0.08)
 
                     ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                         Button {
@@ -541,7 +541,7 @@ struct UnlockFeaturesView: View {
                         state.resetToHome()
                     }
                     if !state.isSignedIn {
-                        SecondaryButton(title: "Sign in for sync") {
+                        SecondaryButton(title: "Sign in to sync") {
                             state.showSignInSheet = true
                         }
                         .padding(.horizontal, 20)

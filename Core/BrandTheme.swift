@@ -47,4 +47,7 @@ enum BrandTheme {
     static func buttonLabel(_ style: Font.TextStyle = .headline) -> Font {
         .system(style, design: .rounded, weight: .semibold)
     }
+
+    /// Minimum horizontal inset from the safe area for body copy and primary actions.
+    static let contentGutter: CGFloat = 22
 }

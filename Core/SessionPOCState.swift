@@ -272,8 +272,8 @@ final class SessionPOCState: ObservableObject {
 
     func addSnippet() {
         let peaks = [
-            ("A quiet moment", "Sound eased with your breath", "—"),
-            ("Soft focus", "Tempo matched your mood", "—"),
+            ("A quiet stretch", "Sound eased with your out-breath", "—"),
+            ("Soft focus", "Tempo stayed beside you", "—"),
         ]
         let pick = peaks.randomElement() ?? peaks[0]
         snippets.append(SnippetHighlight(title: pick.0, subtitle: pick.1, timecode: pick.2))

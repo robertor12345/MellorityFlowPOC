@@ -11,7 +11,7 @@ struct CarePatientListView: View {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "One-to-one calm", delay: 0)
                     FadeInLine(
-                        text: "Unhurried moments for people you support — sound, smart lighting, and optional immersive routes. Not a medical device.",
+                        text: "Quiet, unhurried time with someone you care for — sound, lights, optional VR or displays. Not a medical device.",
                         font: .caption,
                         color: BrandTheme.brownMuted,
                         delay: 0.08
@@ -66,7 +66,7 @@ struct CarePatientListView: View {
     }
 
     private func lastSessionSummary(_ last: CareSessionRecord) -> String {
-        var parts = ["Last moment", last.moodSummary, "\(last.calmPercent)% ease"]
+        var parts = ["Last visit", last.moodSummary, "\(last.calmPercent)% at ease"]
         if let s = last.settledness {
             parts.append("settled \(s)%")
         }
@@ -89,9 +89,9 @@ struct CareSessionPrepView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(alignment: .leading, spacing: 20) {
-                    FadeInTitle(text: "Link the environment", delay: 0)
+                    FadeInTitle(text: "Room & kit", delay: 0)
                     FadeInLine(
-                        text: "Mellority is designed to sit alongside smart homes and immersive hardware — calm scenes on lights, optional breath-sync, and VR or room displays when your home supports them. Use preparation options to match the space you have in mind.",
+                        text: "If you use smart lights, a headset, or a TV in the room, set that up here so the session matches the space. None of this is required — it’s just so Mellority knows what you have.",
                         font: .caption,
                         color: BrandTheme.brownMuted,
                         delay: 0.06
@@ -125,14 +125,14 @@ struct CareSessionPrepView: View {
 
                     BrandCard {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("Pair bridges so a calm scene can run with the session — warm dim, slow fades, no harsh snaps.")
+                            Text("Pair a bridge if you have one — then a calm scene can drift with the session: warmer dim, slow fades, no sudden bright flashes.")
                                 .font(.caption)
                                 .foregroundStyle(BrandTheme.brownMuted)
                             iotToggle("Philips Hue scenes", isOn: $state.iotPhilipsHueEnabled)
                             iotToggle("Apple HomeKit rooms", isOn: $state.iotHomeKitEnabled)
                             iotToggle("Matter accessories", isOn: $state.iotMatterEnabled)
                             Divider().opacity(0.35)
-                            iotToggle("Let gentle light pulses follow the breath pacing", isOn: $state.iotFollowSessionBreath)
+                            iotToggle("Soft light pulses with the breathing pace", isOn: $state.iotFollowSessionBreath)
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Max scene brightness cap")
@@ -160,16 +160,16 @@ struct CareSessionPrepView: View {
                     BrandCard {
                         VStack(alignment: .leading, spacing: 14) {
                             Text(
-                                "Headsets (for example pass-through VR) or fixed room displays can carry the same nature-led calm with staff beside the person. Production would use your governance, consent, and infection-control policy."
+                                "Some teams use a headset or a wall screen for nature-led calm, with you right beside the person. In a real setting, consent, policy, and infection control come first — this is just the rehearsal."
                             )
                             .font(.caption)
                             .foregroundStyle(BrandTheme.brownMuted)
                             iotToggle(
-                                "This moment: VR / headset-calibrated route (when integrated)",
+                                "VR / headset path (when your kit supports it)",
                                 isOn: $state.carePrepVRImmersiveRoute
                             )
                             iotToggle(
-                                "Mirror visuals to wall / TV / bedside panel",
+                                "Also show on wall, TV, or bedside screen",
                                 isOn: $state.carePrepRoomDisplayMirroring
                             )
                         }
@@ -178,7 +178,7 @@ struct CareSessionPrepView: View {
                     .padding(.horizontal, 4)
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Planned unhurried length")
+                        Text("Rough length")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(BrandTheme.brown)
                         Picker("Minutes", selection: $state.carePlannedDurationMinutes) {
@@ -187,18 +187,18 @@ struct CareSessionPrepView: View {
                             }
                         }
                         .pickerStyle(.segmented)
-                        Text("A soft guide — end early anytime. IoT scenes can wind down with the closing breath.")
+                        Text("Only a guide — stop whenever it feels right. Lights can ease down with the closing breath.")
                             .font(.caption2)
                             .foregroundStyle(BrandTheme.brownMuted)
                     }
                     .padding(.horizontal, 4)
 
-                    Text("Wellness companion — not clinical advice or a medical device. Device names are examples only.")
+                    Text("Wellness support only — not clinical advice or a medical device. Device names here are examples.")
                         .font(.caption2)
                         .foregroundStyle(BrandTheme.brownMuted.opacity(0.9))
                         .padding(.horizontal, 4)
 
-                    PrimaryButton(title: "Continue to photo or quick calm") {
+                    PrimaryButton(title: "Continue — photo or quick session") {
                         state.continueCareSessionFromPrep()
                     }
                     .padding(.horizontal, 24)
@@ -273,7 +273,7 @@ struct CarePatientDetailView: View {
 
                         BrandCard {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Life themes / reminiscence anchors")
+                                Text("Themes that help them land")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 8)], spacing: 8) {
@@ -290,7 +290,7 @@ struct CarePatientDetailView: View {
                                     }
                                 }
                                 if patient.prefersGentleSoundOnsets {
-                                    Text("Sound: prefer very gentle onsets — avoid abrupt changes.")
+                                    Text("Sound: very gentle starts — no sudden jumps.")
                                         .font(.caption2)
                                         .foregroundStyle(BrandTheme.brownMuted)
                                         .padding(.top, 4)
@@ -326,13 +326,13 @@ struct CarePatientDetailView: View {
 
                         BrandCard {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Sound shaping for next visit")
+                                Text("For next time")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 meterRow("Tempo — gentler ↔ slightly brighter", value: patient.musicTempoBias)
                                 meterRow("Nature ↔ abstract", value: patient.natureVsAbstract)
                                 meterRow("Instrumental ↔ voice", value: patient.voiceVsInstrumental)
-                                Text("After each moment together, you can note how they responded and adjust these for the next calm block.")
+                                Text("After you’re together, note how they responded — these sliders help the next visit land softly.")
                                     .font(.caption2)
                                     .foregroundStyle(BrandTheme.brownMuted)
                             }
@@ -348,7 +348,7 @@ struct CarePatientDetailView: View {
 
                             let rows = state.recordsForPatient(patient.id)
                             if rows.isEmpty {
-                                Text("No records yet.")
+                                Text("Nothing here yet.")
                                     .font(.caption)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .padding(.horizontal, 8)
@@ -386,13 +386,13 @@ struct CarePatientDetailView: View {
                             }
                         }
 
-                        PrimaryButton(title: "Lighting, VR & session setup") {
+                        PrimaryButton(title: "Lights, headset & timing") {
                             state.openCareSessionPrep()
                         }
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
                     } else {
-                        FadeInLine(text: "No patient selected.", delay: 0)
+                        FadeInLine(text: "No one’s selected.", delay: 0)
                     }
 
                     SecondaryButton(title: "Back to roster") {
@@ -476,10 +476,10 @@ struct CareSessionFeedbackView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(spacing: 22) {
-                    FadeInTitle(text: "After the calm moment", delay: 0)
+                    FadeInTitle(text: "Afterward", delay: 0)
                     if let patient = targetPatient {
                         FadeInLine(
-                            text: "How did \(patient.displayName) respond? This honours their experience — not a score for staff. Then tune sound for the next visit.",
+                            text: "How did \(patient.displayName) seem? This isn’t a grade for you — it nudges the sound for next time.",
                             font: .caption,
                             color: BrandTheme.brownMuted,
                             delay: 0.08
@@ -487,22 +487,22 @@ struct CareSessionFeedbackView: View {
 
                         BrandCard {
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("In the moment outcomes")
+                                Text("In the moment")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 outcomeSlider(
                                     title: "Seemed settled",
-                                    caption: "Still distressed or restless  ←  →  More at ease",
+                                    caption: "Still unsettled  ←  →  More at ease",
                                     value: $settled
                                 )
                                 outcomeSlider(
-                                    title: "Connection / presence",
-                                    caption: "Withdrawn or distant  ←  →  With you / engaged",
+                                    title: "With you",
+                                    caption: "Withdrawn  ←  →  Present / connected",
                                     value: $engagement
                                 )
                                 outcomeSlider(
-                                    title: "Tolerated the experience",
-                                    caption: "Struggled or wanted to stop  ←  →  Comfortable throughout",
+                                    title: "Comfort in the room",
+                                    caption: "Struggling  ←  →  Comfortable throughout",
                                     value: $comfort
                                 )
                             }
@@ -510,7 +510,7 @@ struct CareSessionFeedbackView: View {
                         }
                         .padding(.horizontal, 4)
 
-                        Text("Sound for the next visit")
+                        Text("Sound for next time")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(BrandTheme.brown)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -524,7 +524,7 @@ struct CareSessionFeedbackView: View {
                             Text("Your note (optional)")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(BrandTheme.brownMuted)
-                            TextField("What soothed them, light, touch, sound — what to repeat or soften?", text: $staffNote, axis: .vertical)
+                            TextField("What helped — light, touch, sound? What would you soften next time?", text: $staffNote, axis: .vertical)
                                 .lineLimit(3 ... 6)
                                 .font(.body)
                                 .foregroundStyle(BrandTheme.brown)
@@ -538,7 +538,7 @@ struct CareSessionFeedbackView: View {
                         }
                         .padding(.horizontal, 4)
 
-                        PrimaryButton(title: "Save note, outcomes & sound") {
+                        PrimaryButton(title: "Save note & sound tweaks") {
                             state.saveCareFeedback(
                                 tempoBias: tempo,
                                 natureVsAbstract: nature,
@@ -551,12 +551,12 @@ struct CareSessionFeedbackView: View {
                         }
                         .padding(.horizontal, 24)
 
-                        SecondaryButton(title: "Skip — log session only") {
+                        SecondaryButton(title: "Skip — keep session only") {
                             state.skipCareFeedback()
                         }
                         .padding(.horizontal, 24)
                     } else {
-                        FadeInLine(text: "Need an active patient to save feedback.", delay: 0)
+                        FadeInLine(text: "Pick someone from the list to save a note.", delay: 0)
                         SecondaryButton(title: "Back") { state.phase = .insight }
                             .padding(.horizontal, 24)
                     }

@@ -28,9 +28,9 @@ struct CapturePhotoView: View {
 
     private var photoPickContent: some View {
         VStack(spacing: 20) {
-            FadeInTitle(text: "A visual anchor", delay: 0)
+            FadeInTitle(text: "A picture to lean on", delay: 0)
             FadeInLine(
-                text: "Choose or take a photo — then confirm to start your session.",
+                text: "Choose one from your library or take something new — then we’ll build the session around it.",
                 delay: 0.1
             )
 
@@ -39,7 +39,7 @@ struct CapturePhotoView: View {
                     Image(systemName: "photo.on.rectangle.angled")
                         .font(.largeTitle)
                         .foregroundStyle(BrandTheme.goldDeep)
-                    Text("Add a photo to continue")
+                    Text("Add a photo to move on")
                         .font(.caption)
                         .foregroundStyle(BrandTheme.brownMuted)
                         .multilineTextAlignment(.center)
@@ -90,7 +90,7 @@ struct CapturePhotoView: View {
         VStack(spacing: 22) {
             FadeInTitle(text: "Use this photo?", delay: 0)
             FadeInLine(
-                text: "We’ll tailor sound and visuals around this anchor.",
+                text: "We’ll shape sound and visuals around this image.",
                 delay: 0.08
             )
 

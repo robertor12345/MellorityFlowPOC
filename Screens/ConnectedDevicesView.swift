@@ -11,7 +11,7 @@ struct ConnectedDevicesView: View {
                 VStack(spacing: 18) {
                     FadeInTitle(text: "Connected devices", delay: 0)
                     FadeInLine(
-                        text: "Choose what Mellority can use. Open a category to fine-tune sources and behaviour.",
+                        text: "Turn on what you’d like Mellority to use. Tap a row to fine-tune.",
                         font: .subheadline,
                         color: BrandTheme.brownMuted,
                         delay: 0.06
@@ -89,13 +89,13 @@ struct ConnectedDevicesView: View {
         case .health:
             return "Wearables, heart rate, sleep — \(state.healthPreferredProvider.rawValue)"
         case .iot:
-            return "Hue, HomeKit, Matter — scenes follow your session"
+            return "Hue, HomeKit, Matter — lights that listen to the session"
         case .personalisation:
-            return "How quickly sound and visuals learn your taste"
+            return "How fast Mellority learns what you like"
         case .snippets:
-            return "Highlights & memory — \(state.snippetsKeepDays.label.lowercased()) retention"
+            return "Keepsakes from sessions — kept for \(state.snippetsKeepDays.label.lowercased())"
         case .replay:
-            return "Replay visuals & audio from your last session"
+            return "Jump back into your last session’s picture and sound"
         }
     }
 
