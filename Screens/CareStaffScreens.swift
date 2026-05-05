@@ -89,13 +89,17 @@ struct CareSessionPrepView: View {
         ScreenFadeIn {
             CenteredScrollScreen {
                 VStack(alignment: .leading, spacing: 20) {
-                    FadeInTitle(text: "Room & kit", delay: 0)
-                    FadeInLine(
-                        text: "If you use smart lights, a headset, or a TV in the room, set that up here so the session matches the space. None of this is required — it’s just so Mellority knows what you have.",
-                        font: .caption,
-                        color: BrandTheme.brownMuted,
-                        delay: 0.06
-                    )
+                    VStack(spacing: 12) {
+                        FadeInTitle(text: "Room & kit", delay: 0)
+                            .frame(maxWidth: .infinity)
+                        FadeInLine(
+                            text: "If you use smart lights, a headset, or a TV in the room, set that up here so the session matches the space. None of this is required — it’s just so Mellority knows what you have.",
+                            font: .caption,
+                            color: BrandTheme.brownMuted,
+                            delay: 0.06
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
 
                     if let patient {
                         BrandCard {

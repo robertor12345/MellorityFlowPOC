@@ -8,50 +8,65 @@ struct HomeView: View {
     var body: some View {
         ScreenFadeIn {
             CenteredScrollScreen {
-                VStack(spacing: 28) {
-                    MellorityLogoImage(maxHeight: 420)
-                        .frame(maxWidth: .infinity)
-
-                    FadeInTitle(text: "Mellority", delay: 0.05)
-                    FadeInLine(
-                        text: "Calm that meets you where you are.",
-                        font: BrandTheme.title(.title3),
-                        color: BrandTheme.brownMuted,
-                        delay: 0.15
-                    )
-                    FadeInLine(
-                        text: state.isSignedIn
-                            ? "You’re signed in — we’ll sync when you’re ready."
-                            : "You don’t need an account to try this.",
-                        font: .subheadline,
-                        delay: 0.28
-                    )
-
-                    VStack(spacing: 12) {
-                        PrimaryButton(title: "Start Session") {
-                            state.enterPersonalSessionFlow()
-                        }
-                        SecondaryButton(title: "One-to-one calm") {
-                            state.phase = .carePatientList
-                        }
-                        if state.isSignedIn {
-                            SecondaryButton(title: "Connected devices") {
-                                state.phase = .connectedDevices
-                            }
-                        }
-                        if !state.isSignedIn {
-                            SecondaryButton(title: "Sign in") {
-                                state.showSignInSheet = true
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
+                GeometryReader { geo in
+                    homeScrollContent(viewportHeight: max(geo.size.height, 400))
+                        .frame(maxWidth: .infinity, minHeight: max(geo.size.height, 400))
                 }
             }
         }
         .sheet(isPresented: $state.showSignInSheet) {
             OptionalSignInSheet(state: state)
+        }
+    }
+
+    @ViewBuilder
+    private func homeScrollContent(viewportHeight: CGFloat) -> some View {
+        let h = viewportHeight
+        let logoMax = min(420, h * 0.40)
+        let topPad = max(12, h * 0.5 - logoMax * 0.52)
+
+        VStack(spacing: 28) {
+            Color.clear.frame(height: topPad)
+
+            MellorityLogoImage(maxHeight: logoMax)
+                .frame(maxWidth: .infinity)
+
+            FadeInLine(
+                text: "Calm that meets you where you are.",
+                font: BrandTheme.title(.title3),
+                color: BrandTheme.brownMuted,
+                delay: 0.12
+            )
+            FadeInLine(
+                text: state.isSignedIn
+                    ? "You’re signed in — we’ll sync when you’re ready."
+                    : "You don’t need an account to try this.",
+                font: .subheadline,
+                delay: 0.24
+            )
+
+            VStack(spacing: 12) {
+                PrimaryButton(title: "Start Session") {
+                    state.enterPersonalSessionFlow()
+                }
+                SecondaryButton(title: "One-to-one calm") {
+                    state.phase = .carePatientList
+                }
+                if state.isSignedIn {
+                    SecondaryButton(title: "Connected devices") {
+                        state.phase = .connectedDevices
+                    }
+                }
+                if !state.isSignedIn {
+                    SecondaryButton(title: "Sign in") {
+                        state.showSignInSheet = true
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+
+            Spacer(minLength: 24)
         }
     }
 }
