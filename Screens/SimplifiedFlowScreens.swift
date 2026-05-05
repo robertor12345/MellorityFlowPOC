@@ -31,7 +31,7 @@ struct HomeView: View {
                         PrimaryButton(title: "Start Session") {
                             state.enterPersonalSessionFlow()
                         }
-                        SecondaryButton(title: "One-to-one calm (demo)") {
+                        SecondaryButton(title: "One-to-one calm") {
                             state.phase = .carePatientList
                         }
                         if state.isSignedIn {

@@ -4,7 +4,7 @@ import SwiftUI
 import UIKit
 
 /// Plays a **royalty-free nature “compilation”** — sequenced HD clips from [Mixkit](https://mixkit.co/license/#videoFree).
-/// **Quick Start** and **photo-anchored** sessions use **different clip pools** so the POC clearly varies visuals by entry path.
+/// **Quick Start** and **photo-anchored** sessions use **different clip pools** so visuals vary clearly by entry path.
 enum NatureVideoCompilation {
     /// Mood / Quick Start path — forests, lakes, drone nature (shuffle still varies per session id).
     static let mixkitQuickStartClipURLs: [URL] = [

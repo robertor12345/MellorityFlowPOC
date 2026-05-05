@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Fast load — under 5s, subtle AI lines
+// MARK: - Fast load — brief interstitial (~1s), subtle AI lines
 
 struct ProcessingFastView: View {
     @ObservedObject var state: SessionPOCState
@@ -63,7 +63,7 @@ struct ProcessingFastView: View {
         }
         .task {
             progress = 0
-            let totalSeconds: Double = 3.2
+            let totalSeconds: Double = 3.2 / 3
             withAnimation(.easeInOut(duration: totalSeconds)) { progress = 1 }
             let steps = messages.count
             let per = UInt64((totalSeconds / Double(steps)) * 1_000_000_000)
@@ -72,7 +72,7 @@ struct ProcessingFastView: View {
                 try? await Task.sleep(nanoseconds: per)
             }
             tick = steps - 1
-            try? await Task.sleep(nanoseconds: 200_000_000)
+            try? await Task.sleep(nanoseconds: UInt64(Double(200_000_000) / 3))
             state.phase = .immersive
         }
     }
@@ -148,7 +148,7 @@ struct ImmersiveSessionView: View {
                                     state.carePrepRoomDisplayMirroring ? "Room display" : nil,
                                 ]
                                 .compactMap(\.self)
-                                .joined(separator: " · ") + " — POC"
+                                .joined(separator: " · ")
                             )
                                 .font(.caption2)
                                 .foregroundStyle(BrandTheme.goldDeep.opacity(0.95))

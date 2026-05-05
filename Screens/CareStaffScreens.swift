@@ -11,7 +11,7 @@ struct CarePatientListView: View {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "One-to-one calm", delay: 0)
                     FadeInLine(
-                        text: "Unhurried moments for people you support — sound, smart lighting, and optional immersive routes (POC mock, not a medical device).",
+                        text: "Unhurried moments for people you support — sound, smart lighting, and optional immersive routes. Not a medical device.",
                         font: .caption,
                         color: BrandTheme.brownMuted,
                         delay: 0.08
@@ -91,7 +91,7 @@ struct CareSessionPrepView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     FadeInTitle(text: "Link the environment", delay: 0)
                     FadeInLine(
-                        text: "Mellority is designed to sit alongside smart homes and immersive hardware — calm scenes on lights, optional breath-sync, and VR or room displays when your home supports them (all POC toggles).",
+                        text: "Mellority is designed to sit alongside smart homes and immersive hardware — calm scenes on lights, optional breath-sync, and VR or room displays when your home supports them. Use preparation options to match the space you have in mind.",
                         font: .caption,
                         color: BrandTheme.brownMuted,
                         delay: 0.06
@@ -193,7 +193,7 @@ struct CareSessionPrepView: View {
                     }
                     .padding(.horizontal, 4)
 
-                    Text("POC wellness companion — not clinical advice or a medical device. Device names are examples only.")
+                    Text("Wellness companion — not clinical advice or a medical device. Device names are examples only.")
                         .font(.caption2)
                         .foregroundStyle(BrandTheme.brownMuted.opacity(0.9))
                         .padding(.horizontal, 4)
@@ -326,7 +326,7 @@ struct CarePatientDetailView: View {
 
                         BrandCard {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Sound shaping for next visit (mock)")
+                                Text("Sound shaping for next visit")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 meterRow("Tempo — gentler ↔ slightly brighter", value: patient.musicTempoBias)

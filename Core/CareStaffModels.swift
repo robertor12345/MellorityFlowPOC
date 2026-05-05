@@ -1,6 +1,6 @@
 import Foundation
 
-/// Person-centred profile for one-to-one calm moments — sensory hints, life themes, and mock sound shaping.
+/// Person-centred profile for one-to-one calm moments — sensory hints, life themes, and adaptive sound shaping preferences.
 struct CarePatientProfile: Identifiable, Equatable {
     let id: UUID
     var displayName: String
@@ -15,7 +15,7 @@ struct CarePatientProfile: Identifiable, Equatable {
     var touchComfortNotes: String
     /// Reminiscence anchors — garden, seaside, faith, baking, etc.
     var comfortThemes: [String]
-    /// When true, mock mixer favours very soft onsets and avoids abrupt changes.
+    /// When true, the mixer favours very soft onsets and avoids abrupt changes.
     var prefersGentleSoundOnsets: Bool
     /// 0 = slower / gentler pacing, 1 = slightly brighter tempo.
     var musicTempoBias: Double

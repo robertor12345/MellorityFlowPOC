@@ -22,7 +22,7 @@ final class SessionPOCState: ObservableObject {
     /// Quick Start mood tags; user may select several (order follows `moodOptions`).
     @Published private(set) var selectedMoods: Set<String> = []
 
-    // MARK: - Care staff (mock POC)
+    // MARK: - Care staff (sample data)
 
     @Published var carePatients: [CarePatientProfile] = CareStaffMockData.initialPatients
     @Published var careSessionRecords: [CareSessionRecord] = CareStaffMockData.initialRecords
@@ -33,9 +33,9 @@ final class SessionPOCState: ObservableObject {
 
     /// Planned calm length (guide only). Paired with `careSessionPrep` IoT / immersive step.
     @Published var carePlannedDurationMinutes: Int = 15
-    /// POC: intend VR / pass-through headset path when integrations exist.
+    /// Prefer VR / pass-through headset path when hardware is paired.
     @Published var carePrepVRImmersiveRoute: Bool = false
-    /// POC: mirror session to room display (panel, TV, bedside screen).
+    /// Mirror session to room display (panel, TV, bedside screen) when available.
     @Published var carePrepRoomDisplayMirroring: Bool = false
 
     /// Selected labels in canonical list order (for display, replay, share).
@@ -193,7 +193,7 @@ final class SessionPOCState: ObservableObject {
     @Published var replayCalmPercentSnapshot: Int = 0
     @Published var replayHeartRateSnapshot: Int = 72
 
-    // MARK: - Connected device detail (mock settings)
+    // MARK: - Connected device detail (local preferences)
 
     enum HealthDataProvider: String, CaseIterable, Identifiable {
         case appleHealth = "Apple Health"

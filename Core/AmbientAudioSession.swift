@@ -3,7 +3,7 @@ import Combine
 
 /// Streams **meditation-style** ambient music with gapless `AVPlayerLooper` looping until `stop()`.
 ///
-/// **POC tracks (both meditation / calm loops):**
+/// **Session tracks (both meditation / calm loops):**
 /// - **Quick Start:** Morsi — [Calm music / `song_2.mp3`](https://opengameart.org/content/calm-music) (CC0).
 /// - **Photo-anchor:** YannZ — *Indie Meditations* [`lvl_5_the_oasis_or_resting_place.mp3`](https://opengameart.org/content/indie-meditations-free-music-pack)
 ///   (CC BY 4.0 — attribution in pack readme). If loading fails, falls back to `song_2.mp3`.
