@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Home — Start Session (no login)
+// MARK: - Home — corporate sign-in + care roster
 
 struct HomeView: View {
     @ObservedObject var state: SessionPOCState
@@ -14,7 +14,9 @@ struct HomeView: View {
                 }
             }
         }
-        .sheet(isPresented: $state.showSignInSheet) {
+        .sheet(isPresented: $state.showSignInSheet, onDismiss: {
+            state.abandonPendingCareRosterSignInIfNeeded()
+        }) {
             OptionalSignInSheet(state: state)
         }
     }
@@ -39,27 +41,21 @@ struct HomeView: View {
             )
             FadeInLine(
                 text: state.isSignedIn
-                    ? "You’re signed in — we’ll sync when you’re ready."
-                    : "You don’t need an account to try this.",
+                    ? "Choose someone to sit with — room & kit are set from their profile."
+                    : "Corporate sign-in opens the roster, room & kit prep, and session notes.",
                 font: .subheadline,
                 delay: 0.24
             )
 
             VStack(spacing: 12) {
-                PrimaryButton(title: "Start Session") {
-                    state.enterPersonalSessionFlow()
-                }
-                SecondaryButton(title: "One-to-one calm") {
-                    state.phase = .carePatientList
-                }
-                if state.isSignedIn {
-                    SecondaryButton(title: "Connected devices") {
-                        state.phase = .connectedDevices
+                if !state.isSignedIn {
+                    PrimaryButton(title: "Corporate sign-in") {
+                        state.showSignInSheet = true
                     }
                 }
-                if !state.isSignedIn {
-                    SecondaryButton(title: "Sign in") {
-                        state.showSignInSheet = true
+                if state.isSignedIn {
+                    PrimaryButton(title: "One-to-one calm") {
+                        state.enterOneToOneCalmFlow()
                     }
                 }
             }
@@ -93,9 +89,9 @@ struct OptionalSignInSheet: View {
                             .foregroundStyle(BrandTheme.brownMuted)
                     }
 
-                    FadeInTitle(text: "Sign in", delay: 0)
+                    FadeInTitle(text: "Corporate sign-in", delay: 0)
                     FadeInLine(
-                        text: "So your preferences can follow you across devices, when that’s available.",
+                        text: "For staff in a care setting — roster, room & kit prep, and session notes. Not for personal-only use.",
                         font: .subheadline,
                         color: BrandTheme.brownMuted,
                         delay: 0.08
@@ -132,6 +128,7 @@ struct OptionalSignInSheet: View {
                     VStack(spacing: 12) {
                         PrimaryButton(title: "Continue", action: signInContinue)
                         SecondaryButton(title: "Cancel") {
+                            state.abandonPendingCareRosterSignInIfNeeded()
                             dismiss()
                         }
                     }
@@ -163,9 +160,7 @@ struct OptionalSignInSheet: View {
     }
 
     private func signInContinue() {
-        state.isSignedIn = true
-        state.showSignInSheet = false
-        state.phase = .postSignInFeatureSlides
+        state.completeOptionalSignInFromSheet()
         dismiss()
     }
 }
@@ -445,131 +440,18 @@ struct InsightView: View {
                         delay: 0.22
                     )
 
-                    if state.replayOfferOnInsight {
-                        Button {
-                            state.phase = .replayCalmSession
-                        } label: {
-                            BrandCard {
-                                VStack(alignment: .center, spacing: 8) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "play.circle.fill")
-                                        Text("Replay your calm")
-                                    }
-                                    .font(.headline)
-                                    .foregroundStyle(BrandTheme.brown)
-                                    Text(
-                                        state.replayExperienceAvailable
-                                            ? "The same nature visuals and music you just had — nothing new to figure out."
-                                            : "Finish a session first, and you can slip back into it here."
-                                    )
-                                    .font(.caption)
-                                    .foregroundStyle(BrandTheme.brownMuted)
-                                    .multilineTextAlignment(.center)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .opacity(state.replayExperienceAvailable ? 1 : 0.5)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(!state.replayExperienceAvailable)
-                        .padding(.horizontal, 20)
+                    PrimaryButton(title: "Jot a note & nudge the next session") {
+                        state.phase = .careSessionFeedback
                     }
+                    .padding(.horizontal, 24)
 
-                    if state.isCareStaffSession {
-                        PrimaryButton(title: "Jot a note & nudge the next session") {
-                            state.phase = .careSessionFeedback
-                        }
-                        .padding(.horizontal, 24)
-
-                        SecondaryButton(title: "More options") {
-                            state.leaveInsightToUnlockFeatures()
-                        }
-                        .padding(.horizontal, 24)
-                    } else {
-                        PrimaryButton(title: "More options") {
-                            state.phase = .unlockFeatures
-                        }
-                        .padding(.horizontal, 24)
+                    SecondaryButton(title: "Skip for now — back to profile") {
+                        state.skipCareFeedback()
                     }
+                    .padding(.horizontal, 24)
                 }
                 .padding(.vertical, 28)
             }
-        }
-    }
-}
-
-// MARK: - Deeper features (post-session)
-
-struct UnlockFeaturesView: View {
-    @ObservedObject var state: SessionPOCState
-    @State private var openFeaturePanel: UnlockFeaturePanel?
-
-    private let rows: [(ConnectedFeatureStock, String, String)] = [
-        (.health, "Health sync", "Wearables and rest — only if you want them in the mix."),
-        (.iot, "IoT", "Lights and space that move with the session."),
-        (.personalisation, "Personalisation", "Learns what actually lands with you."),
-        (.snippetsMemory, "Snippets + memory", "Little moments worth keeping."),
-        (.replayCalm, "Replay your calm", "Slip back into a session that worked."),
-    ]
-
-    var body: some View {
-        ScreenFadeIn {
-            CenteredScrollScreen {
-                VStack(alignment: .center, spacing: 18) {
-                    FadeInTitle(text: "Go further when you’re ready", delay: 0)
-                    FadeInLine(text: "Tap to read more — turn something on only if it feels right.", delay: 0.08)
-
-                    ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
-                        Button {
-                            openFeaturePanel = UnlockFeaturePanel(stockId: row.0.id)
-                        } label: {
-                            BrandCard {
-                                HStack(alignment: .top, spacing: 14) {
-                                    ConnectedFeatureThumbnail(stock: row.0)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack(spacing: 6) {
-                                            Text(row.1)
-                                                .font(.headline)
-                                                .foregroundStyle(BrandTheme.brown)
-                                            Image(systemName: "chevron.right.circle.fill")
-                                                .font(.caption)
-                                                .foregroundStyle(BrandTheme.gold.opacity(0.85))
-                                        }
-                                        Text(row.2)
-                                            .font(.caption)
-                                            .foregroundStyle(BrandTheme.brownMuted)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                    Spacer(minLength: 0)
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .opacity(1)
-                        .offset(y: 0)
-                        .animation(.easeOut(duration: 0.45).delay(0.06 * Double(i)), value: state.phase)
-                    }
-                    .padding(.horizontal, 4)
-                    .frame(maxWidth: .infinity)
-
-                    PrimaryButton(title: "Start another session") {
-                        state.resetToHome()
-                    }
-                    if !state.isSignedIn {
-                        SecondaryButton(title: "Sign in to sync") {
-                            state.showSignInSheet = true
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                }
-                .padding(24)
-            }
-        }
-        .sheet(item: $openFeaturePanel) { panel in
-            UnlockFeatureDetailSheet(panel: panel)
-        }
-        .sheet(isPresented: $state.showSignInSheet) {
-            OptionalSignInSheet(state: state)
         }
     }
 }

@@ -1,25 +1,16 @@
 import SwiftUI
-import Combine
 
-/// In-memory app session — start without signing in.
+/// In-memory state for the **care-home one-to-one** session POC (corporate sign-in).
 final class SessionPOCState: ObservableObject {
     @Published var phase: FlowPhase = .home
     @Published var showSignInSheet = false
 
-    /// Optional account fields (in-memory until sync ships).
     @Published var email = ""
     @Published var password = ""
     @Published var isSignedIn = false
-
-    /// Opt-ins from post–sign-in integration slides.
-    @Published var wantsHealthSync = false
-    @Published var wantsIoT = false
-    @Published var wantsPersonalisation = false
-    @Published var wantsSnippetsMemory = false
-    @Published var wantsReplayCalm = false
+    @Published private(set) var pendingCareRosterAfterSignIn = false
 
     @Published var capturedImage: UIImage?
-    /// Quick Start mood tags; user may select several (order follows `moodOptions`).
     @Published private(set) var selectedMoods: Set<String> = []
 
     // MARK: - Care staff (sample data)
@@ -27,18 +18,13 @@ final class SessionPOCState: ObservableObject {
     @Published var carePatients: [CarePatientProfile] = CareStaffMockData.initialPatients
     @Published var careSessionRecords: [CareSessionRecord] = CareStaffMockData.initialRecords
     @Published var selectedCarePatientId: UUID?
-    /// Set when a guided session is started for a patient; used for feedback + banners.
     @Published var activeCarePatientId: UUID?
     @Published var isCareStaffSession: Bool = false
 
-    /// Planned calm length (guide only). Paired with `careSessionPrep` IoT / immersive step.
     @Published var carePlannedDurationMinutes: Int = 15
-    /// Prefer VR / pass-through headset path when hardware is paired.
     @Published var carePrepVRImmersiveRoute: Bool = false
-    /// Mirror session to room display (panel, TV, bedside screen) when available.
     @Published var carePrepRoomDisplayMirroring: Bool = false
 
-    /// Selected labels in canonical list order (for display, replay, share).
     var selectedMoodsOrdered: [String] {
         moodOptions.filter { selectedMoods.contains($0) }
     }
@@ -62,19 +48,29 @@ final class SessionPOCState: ObservableObject {
         careSessionRecords.filter { $0.patientId == patientId }.sorted { $0.date > $1.date }
     }
 
-    func enterPersonalSessionFlow() {
-        isCareStaffSession = false
-        activeCarePatientId = nil
-        selectedCarePatientId = nil
-        phase = .entryMode
+    func enterOneToOneCalmFlow() {
+        guard isSignedIn else {
+            pendingCareRosterAfterSignIn = true
+            showSignInSheet = true
+            return
+        }
+        pendingCareRosterAfterSignIn = false
+        phase = .carePatientList
+    }
+
+    func completeOptionalSignInFromSheet() {
+        isSignedIn = true
+        showSignInSheet = false
+        pendingCareRosterAfterSignIn = false
+        phase = .carePatientList
+    }
+
+    func abandonPendingCareRosterSignInIfNeeded() {
+        if !isSignedIn { pendingCareRosterAfterSignIn = false }
     }
 
     func goBackFromEntryMode() {
-        if isCareStaffSession {
-            phase = .careSessionPrep
-        } else {
-            phase = .home
-        }
+        phase = .careSessionPrep
     }
 
     func resetCarePrepForNewSession() {
@@ -84,6 +80,10 @@ final class SessionPOCState: ObservableObject {
     }
 
     func openCareSessionPrep() {
+        guard isSignedIn else {
+            phase = .home
+            return
+        }
         resetCarePrepForNewSession()
         phase = .careSessionPrep
     }
@@ -94,6 +94,10 @@ final class SessionPOCState: ObservableObject {
     }
 
     func startCareGuidedSession(for patientId: UUID) {
+        guard isSignedIn else {
+            phase = .home
+            return
+        }
         selectedCarePatientId = patientId
         activeCarePatientId = patientId
         isCareStaffSession = true
@@ -162,15 +166,6 @@ final class SessionPOCState: ObservableObject {
         phase = .carePatientDetail
     }
 
-    func leaveInsightToUnlockFeatures() {
-        if isCareStaffSession, let pid = activeCarePatientId ?? selectedCarePatientId {
-            appendCareSessionRecord(patientId: pid, staffNote: nil)
-        }
-        isCareStaffSession = false
-        activeCarePatientId = nil
-        phase = .unlockFeatures
-    }
-
     private func resetCareSessionFlags() {
         isCareStaffSession = false
         activeCarePatientId = nil
@@ -180,34 +175,12 @@ final class SessionPOCState: ObservableObject {
     @Published var mockHeartRateCurrent: Double = 72
     @Published var calmScore: Double = 0.82
 
-    @Published var snippets: [SnippetHighlight] = []
-
-    /// Session toggle: sync calm scenes with home lights (Hue / HomeKit style).
     @Published var sessionHomeLightsSyncEnabled = false
 
-    // MARK: - Replay last session (visuals + audio)
-
-    /// Set when a session ends; cleared when a new session begins or on full reset.
     @Published var replayExperienceAvailable = false
     @Published var replayMoodSnapshot: String?
     @Published var replayCalmPercentSnapshot: Int = 0
     @Published var replayHeartRateSnapshot: Int = 72
-
-    // MARK: - Connected device detail (local preferences)
-
-    enum HealthDataProvider: String, CaseIterable, Identifiable {
-        case appleHealth = "Apple Health"
-        case whoop = "WHOOP"
-        case fitbit = "Fitbit"
-        case garmin = "Garmin"
-        var id: String { rawValue }
-    }
-
-    @Published var healthShareHeartRate = true
-    @Published var healthShareRestingHR = true
-    @Published var healthShareSleepStages = true
-    @Published var healthShareActivity = false
-    @Published var healthPreferredProvider: HealthDataProvider = .appleHealth
 
     @Published var iotPhilipsHueEnabled = false
     @Published var iotHomeKitEnabled = false
@@ -215,68 +188,23 @@ final class SessionPOCState: ObservableObject {
     @Published var iotFollowSessionBreath = true
     @Published var iotMaxSceneBrightness: Double = 0.88
 
-    @Published var personalisationSessionMemory = true
-    @Published var personalisationAdaptationSpeed: Double = 0.5
-    @Published var personalisationPreferGentleStarts = true
-
-    @Published var snippetsAutoCapturePeaks = true
-    @Published var snippetsKeepDays: SnippetRetention = .thirty
-    @Published var snippetsExportMarkdown = false
-
-    enum SnippetRetention: Int, CaseIterable, Identifiable {
-        case seven = 7
-        case thirty = 30
-        case ninety = 90
-        var id: Int { rawValue }
-        var label: String { "\(rawValue) days" }
-    }
-
-    @Published var replayOfferOnInsight = true
-    @Published var replayRestoreVolume = true
-    @Published var replayShowMetricsOverlay = true
-
-    private var sessionStart: Date?
-
-    /// New ID each `beginSession()` so nature video + players are not reused across sessions.
     @Published var immersiveMediaSessionID = UUID()
-    /// `true` when the user reached the session with a captured/library photo (not Quick Start only).
     @Published private(set) var sessionAnchoredWithPhoto = false
-    /// Snapshot of `immersiveMediaSessionID` when the session ended — used to rebuild the same clip order for **Replay**.
     @Published private(set) var replaySnapshotMediaID: UUID?
-    /// Whether the ended session used the **photo-anchor** visuals + audio path (vs Quick Start).
     @Published private(set) var replaySessionPhotoAnchored = false
 
-    struct SnippetHighlight: Identifiable {
-        let id = UUID()
-        let title: String
-        let subtitle: String
-        let timecode: String
-    }
-
-    /// Labels name a range of valence (including difficult states) so choices feel honest; the session still adapts tone and pace.
     let moodOptions = ["Stressed", "Anxious", "Down", "Overwhelmed", "Tired", "Calm"]
 
     func beginSession() {
         immersiveMediaSessionID = UUID()
         sessionAnchoredWithPhoto = capturedImage != nil
-        sessionStart = Date()
         mockHeartRateStart = Double.random(in: 72 ... 88)
         mockHeartRateCurrent = mockHeartRateStart
-        snippets = []
         sessionHomeLightsSyncEnabled = false
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
         replaySnapshotMediaID = nil
         replaySessionPhotoAnchored = false
-    }
-
-    func addSnippet() {
-        let peaks = [
-            ("A quiet stretch", "Sound eased with your out-breath", "—"),
-            ("Soft focus", "Tempo stayed beside you", "—"),
-        ]
-        let pick = peaks.randomElement() ?? peaks[0]
-        snippets.append(SnippetHighlight(title: pick.0, subtitle: pick.1, timecode: pick.2))
     }
 
     func endSession() {
@@ -305,28 +233,18 @@ final class SessionPOCState: ObservableObject {
         resetCarePrepForNewSession()
     }
 
-    func exitPostSignInSlidesToHome() {
-        phase = .home
-    }
-
-    /// Clears session state so each cold start matches default values (nothing persisted).
     func resetAllForFreshAppLaunch() {
         phase = .home
         showSignInSheet = false
         email = ""
         password = ""
         isSignedIn = false
-        wantsHealthSync = false
-        wantsIoT = false
-        wantsPersonalisation = false
-        wantsSnippetsMemory = false
-        wantsReplayCalm = false
+        pendingCareRosterAfterSignIn = false
         capturedImage = nil
         selectedMoods = []
         mockHeartRateStart = 78
         mockHeartRateCurrent = 72
         calmScore = 0.82
-        snippets = []
         sessionHomeLightsSyncEnabled = false
         replayExperienceAvailable = false
         replayMoodSnapshot = nil
@@ -339,48 +257,30 @@ final class SessionPOCState: ObservableObject {
         selectedCarePatientId = nil
         resetCareSessionFlags()
         resetCarePrepForNewSession()
-        resetConnectedDeviceSettingsToDefaults()
+        resetIoTDefaults()
     }
 
-    private func resetConnectedDeviceSettingsToDefaults() {
-        healthShareHeartRate = true
-        healthShareRestingHR = true
-        healthShareSleepStages = true
-        healthShareActivity = false
-        healthPreferredProvider = .appleHealth
+    private func resetIoTDefaults() {
         iotPhilipsHueEnabled = false
         iotHomeKitEnabled = false
         iotMatterEnabled = false
         iotFollowSessionBreath = true
         iotMaxSceneBrightness = 0.88
-        personalisationSessionMemory = true
-        personalisationAdaptationSpeed = 0.5
-        personalisationPreferGentleStarts = true
-        snippetsAutoCapturePeaks = true
-        snippetsKeepDays = .thirty
-        snippetsExportMarkdown = false
-        replayOfferOnInsight = true
-        replayRestoreVolume = true
-        replayShowMetricsOverlay = true
     }
 }
 
 enum FlowPhase: Int, CaseIterable, Identifiable {
     case home = 0
-    case postSignInFeatureSlides = 1
-    case entryMode = 2
-    case captureMoment = 3
-    case moodSelect = 4
-    case processingFast = 5
-    case immersive = 6
-    case insight = 7
-    case unlockFeatures = 8
-    case connectedDevices = 9
-    case replayCalmSession = 10
-    case carePatientList = 11
-    case carePatientDetail = 12
-    case careSessionFeedback = 13
-    case careSessionPrep = 14
+    case entryMode = 1
+    case captureMoment = 2
+    case moodSelect = 3
+    case processingFast = 4
+    case immersive = 5
+    case insight = 6
+    case carePatientList = 7
+    case carePatientDetail = 8
+    case careSessionFeedback = 9
+    case careSessionPrep = 10
 
     var id: Int { rawValue }
 }

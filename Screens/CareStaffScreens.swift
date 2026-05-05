@@ -65,6 +65,11 @@ struct CarePatientListView: View {
                 .padding(.vertical, 28)
             }
         }
+        .onAppear {
+            if !state.isSignedIn {
+                state.phase = .home
+            }
+        }
     }
 
     private func lastSessionSummary(_ last: CareSessionRecord) -> String {

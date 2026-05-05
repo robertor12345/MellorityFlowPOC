@@ -5,7 +5,7 @@ struct FlowRootView: View {
 
     /// Phases where a sparkle layer on top of cards/scroll content makes sense (not over raw video).
     private static let sparkleOverlayPhases: Set<FlowPhase> = Set(
-        FlowPhase.allCases.filter { $0 != .immersive && $0 != .replayCalmSession }
+        FlowPhase.allCases.filter { $0 != .immersive }
     )
 
     var body: some View {
@@ -15,8 +15,6 @@ struct FlowRootView: View {
                 switch state.phase {
                 case .home:
                     HomeView(state: state)
-                case .postSignInFeatureSlides:
-                    PostSignInIntegrationSlidesView(state: state)
                 case .entryMode:
                     EntryModeView(state: state)
                 case .captureMoment:
@@ -29,12 +27,6 @@ struct FlowRootView: View {
                     ImmersiveSessionView(state: state)
                 case .insight:
                     InsightView(state: state)
-                case .unlockFeatures:
-                    UnlockFeaturesView(state: state)
-                case .connectedDevices:
-                    ConnectedDevicesView(state: state)
-                case .replayCalmSession:
-                    ReplayCalmSessionView(state: state)
                 case .carePatientList:
                     CarePatientListView(state: state)
                 case .carePatientDetail:
@@ -46,7 +38,6 @@ struct FlowRootView: View {
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))
-            // Ambient gold sparkles above UI chrome (hidden for full-screen video phases).
             if Self.sparkleOverlayPhases.contains(state.phase) {
                 GoldAmbientSparklesView(intensity: 0.64)
                     .allowsHitTesting(false)
@@ -66,7 +57,6 @@ struct BrandBackground: View {
         ZStack {
             BrandTheme.backgroundGradient
                 .ignoresSafeArea()
-            // Light base wash only — primary sparkles sit in `FlowRootView` above content.
             GoldAmbientSparklesView(intensity: 0.34)
                 .ignoresSafeArea()
         }
