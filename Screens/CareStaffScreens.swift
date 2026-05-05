@@ -44,6 +44,8 @@ struct CarePatientListView: View {
                                         Text(lastSessionSummary(last))
                                             .font(.caption2)
                                             .foregroundStyle(BrandTheme.brownMuted)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .fixedSize(horizontal: false, vertical: true)
                                     }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -372,15 +374,21 @@ struct CarePatientDetailView: View {
                                             Text("Mood tags: \(rec.moodSummary)")
                                                 .font(.subheadline)
                                                 .foregroundStyle(BrandTheme.brown)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .fixedSize(horizontal: false, vertical: true)
                                             if let line = outcomeLine(rec) {
                                                 Text(line)
                                                     .font(.caption)
                                                     .foregroundStyle(BrandTheme.brownMuted)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .fixedSize(horizontal: false, vertical: true)
                                             }
                                             if let note = rec.staffNote, !note.isEmpty {
                                                 Text(note)
                                                     .font(.caption)
                                                     .foregroundStyle(BrandTheme.brownMuted)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .fixedSize(horizontal: false, vertical: true)
                                             }
                                         }
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -529,7 +537,7 @@ struct CareSessionFeedbackView: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(BrandTheme.brownMuted)
                             TextField("What helped — light, touch, sound? What would you soften next time?", text: $staffNote, axis: .vertical)
-                                .lineLimit(3 ... 6)
+                                .lineLimit(1 ... 10)
                                 .font(.body)
                                 .foregroundStyle(BrandTheme.brown)
                                 .padding(12)

@@ -22,7 +22,7 @@ struct HomeView: View {
     @ViewBuilder
     private func homeScrollContent(viewportHeight: CGFloat) -> some View {
         let h = viewportHeight
-        let logoMax = min(420, h * 0.40)
+        let logoMax = min(560, h * 0.52)
         let topPad = max(12, h * 0.5 - logoMax * 0.52)
 
         VStack(spacing: 28) {
