@@ -36,12 +36,14 @@ struct CarePatientProfile: Identifiable, Equatable {
     var genrePlaylistGroups: [CareGenrePlaylistGroup]
 }
 
-/// Saved playlist linked to a genre for staff / resident calm sessions (POC stubs).
+/// Saved playlist linked to a genre for resident calm sessions (POC stubs).
 struct CarePlaylistEntry: Identifiable, Equatable {
     let id: UUID
     var title: String
     var trackCount: Int
     var durationMinutes: Int
+    /// Song titles for the in-app playlist player (subset is fine for POC demos).
+    var trackTitles: [String]
 }
 
 /// Playlists grouped under one genre on a patient’s profile.
@@ -93,14 +95,32 @@ enum CareStaffMockData {
                 CareGenrePlaylistGroup(
                     genre: .classical,
                     playlists: [
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111101")!, title: "Soft piano · morning", trackCount: 14, durationMinutes: 42),
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111102")!, title: "Strings — unhurried", trackCount: 11, durationMinutes: 38),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111101")!,
+                            title: "Soft piano · morning",
+                            trackCount: 14,
+                            durationMinutes: 42,
+                            trackTitles: ["Before sunrise", "Kitchen light", "Slow arpeggio", "Grey sky calm", "Tea steam", "Window rain"]
+                        ),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111102")!,
+                            title: "Strings — unhurried",
+                            trackCount: 11,
+                            durationMinutes: 38,
+                            trackTitles: ["Cello entry", "Quiet bowing", "Second theme", "Soft release", "Held chord out"]
+                        ),
                     ]
                 ),
                 CareGenrePlaylistGroup(
                     genre: .gospel,
                     playlists: [
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111103")!, title: "Hymns — gentle choir", trackCount: 9, durationMinutes: 33),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111103")!,
+                            title: "Hymns — gentle choir",
+                            trackCount: 9,
+                            durationMinutes: 33,
+                            trackTitles: ["Gathering hum", "Soft refrain", "Organ pad", "Amen sway", "Room hush"]
+                        ),
                     ]
                 ),
             ]
@@ -126,14 +146,32 @@ enum CareStaffMockData {
                 CareGenrePlaylistGroup(
                     genre: .jazz,
                     playlists: [
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222201")!, title: "50s lounge — brushed drums", trackCount: 12, durationMinutes: 48),
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222202")!, title: "Late-night sax — very slow", trackCount: 8, durationMinutes: 36),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222201")!,
+                            title: "50s lounge — brushed drums",
+                            trackCount: 12,
+                            durationMinutes: 48,
+                            trackTitles: ["Hi-hat swell", "Walking line", "Muted brass", "Night ride", "Last call sway", "Dim lights"]
+                        ),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222202")!,
+                            title: "Late-night sax — very slow",
+                            trackCount: 8,
+                            durationMinutes: 36,
+                            trackTitles: ["Single reed breath", "Blue room", "Curtain fringe", "Soft cadence"]
+                        ),
                     ]
                 ),
                 CareGenrePlaylistGroup(
                     genre: .soul,
                     playlists: [
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222203")!, title: "Warm vocals, soft band", trackCount: 10, durationMinutes: 40),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222203")!,
+                            title: "Warm vocals, soft band",
+                            trackCount: 10,
+                            durationMinutes: 40,
+                            trackTitles: ["Intro Rhodes", "Verse hush", "Chorus lift", "Outro lamp", "Silk tail"]
+                        ),
                     ]
                 ),
             ]
@@ -159,13 +197,25 @@ enum CareStaffMockData {
                 CareGenrePlaylistGroup(
                     genre: .classical,
                     playlists: [
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc3333-3333-4333-8333-333333333301")!, title: "Ocean + piano blend", trackCount: 15, durationMinutes: 45),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc3333-3333-4333-8333-333333333301")!,
+                            title: "Ocean + piano blend",
+                            trackCount: 15,
+                            durationMinutes: 45,
+                            trackTitles: ["Tide in", "Sparse keys", "Gull distance", "Sand light", "Wave fold", "Dock rope"]
+                        ),
                     ]
                 ),
                 CareGenrePlaylistGroup(
                     genre: .pop,
                     playlists: [
-                        CarePlaylistEntry(id: UUID(uuidString: "cccc3333-3333-4333-8333-333333333302")!, title: "Light nostalgia — soft hooks", trackCount: 13, durationMinutes: 44),
+                        CarePlaylistEntry(
+                            id: UUID(uuidString: "cccc3333-3333-4333-8333-333333333302")!,
+                            title: "Light nostalgia — soft hooks",
+                            trackCount: 13,
+                            durationMinutes: 44,
+                            trackTitles: ["Old radio fuzz", "Tape warmth", "Hum-along", "Summer brake", "Street lights"]
+                        ),
                     ]
                 ),
             ]

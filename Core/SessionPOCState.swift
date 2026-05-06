@@ -36,6 +36,9 @@ final class SessionPOCState: ObservableObject {
     @Published var carePrepVRImmersiveRoute: Bool = false
     @Published var carePrepRoomDisplayMirroring: Bool = false
 
+    /// Where `leaveResidentProfileToStaff()` returns (face grid vs staff detail).
+    @Published var residentStaffReturnPhase: FlowPhase = .carePatientList
+
     var selectedMoodsOrdered: [String] {
         moodOptions.filter { selectedMoods.contains($0) }
     }
@@ -46,9 +49,29 @@ final class SessionPOCState: ObservableObject {
 
     func openResidentProfile() {
         guard let pid = selectedCarePatientId else { return }
+        residentStaffReturnPhase = .carePatientDetail
+        enterResidentInstrumentSurface(patientId: pid)
+    }
+
+    func leaveResidentProfileToStaff() {
+        clearResidentSessionSurfaceState()
+        phase = residentStaffReturnPhase
+    }
+
+    /// After choosing a genre symbol and playlist, jump into the existing calm-room pipeline.
+    func prepareResidentImmersiveFromPlaylist(genre: ResidentMusicGenre) {
+        residentSessionGenre = genre
+        if residentTraffic == nil { residentTraffic = .mid }
+        if residentFace == nil { residentFace = .neutral }
+        beginResidentSessionFromMood()
+        phase = .processingFast
+    }
+
+    private func enterResidentInstrumentSurface(patientId: UUID) {
         isResidentSession = true
         isCareStaffSession = false
-        activeCarePatientId = pid
+        selectedCarePatientId = patientId
+        activeCarePatientId = patientId
         residentSessionGenre = nil
         residentTraffic = nil
         residentFace = nil
@@ -58,16 +81,6 @@ final class SessionPOCState: ObservableObject {
         capturedImage = nil
         replaceSelectedMoods([])
         phase = .residentProfile
-    }
-
-    func leaveResidentProfileToStaff() {
-        clearResidentSessionSurfaceState()
-        phase = .carePatientDetail
-    }
-
-    func confirmResidentGenre(_ genre: ResidentMusicGenre) {
-        residentSessionGenre = genre
-        phase = .moodSelect
     }
 
     func syncResidentMoodPickToMoods() {
@@ -169,8 +182,8 @@ final class SessionPOCState: ObservableObject {
             phase = .home
             return
         }
-        selectedCarePatientId = patientId
-        phase = .carePatientDetail
+        residentStaffReturnPhase = .careFaceLinkedPick
+        enterResidentInstrumentSurface(patientId: patientId)
     }
 
     func completeOptionalSignInFromSheet() {

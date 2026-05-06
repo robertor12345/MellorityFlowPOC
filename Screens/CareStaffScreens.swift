@@ -23,7 +23,7 @@ struct CarePatientListView: View {
                     .padding(.horizontal, 24)
 
                     FadeInLine(
-                        text: "After face enrollment on the device, pick the person by their photo — their profile opens with playlists grouped by genre.",
+                        text: "Starts the resident session (floating instrument symbols); it does not open the staff profile first.",
                         font: .caption2,
                         color: BrandTheme.brownMuted.opacity(0.9),
                         delay: 0.1
@@ -111,7 +111,7 @@ struct CareFaceLinkedPickView: View {
                 VStack(spacing: 20) {
                     FadeInTitle(text: "Who’s with you?", delay: 0)
                     FadeInLine(
-                        text: "Profiles here were created when their face was captured on this device. Tap someone to open their profile and genre playlists.",
+                        text: "Profiles here were created when their face was captured on this device. Tap someone to start their session — floating instruments and playlists open next.",
                         font: .caption,
                         color: BrandTheme.brownMuted,
                         delay: 0.06
@@ -362,7 +362,7 @@ struct CarePatientDetailView: View {
 
                         BrandCard {
                             VStack(alignment: .leading, spacing: 14) {
-                                Text("Resident iPad (POC)")
+                                Text("Resident session (handoff)")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 Stepper(value: Binding(
@@ -373,16 +373,7 @@ struct CarePatientDetailView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(BrandTheme.brown)
                                 }
-                                Picker("Favourite genre", selection: Binding(
-                                    get: { patient.favouriteMusicGenre },
-                                    set: { state.setFavouriteGenre(for: patient.id, genre: $0) }
-                                )) {
-                                    ForEach(ResidentMusicGenre.allCases) { g in
-                                        Text(g.accessibilityLabel).tag(g)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                Text(musicEraHint(for: patient))
+                                Text("Music and playlists are chosen on the resident surface — not edited here.")
                                     .font(.caption2)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -565,30 +556,18 @@ struct CarePatientDetailView: View {
         }
     }
 
-    private func musicEraHint(for patient: CarePatientProfile) -> String {
-        let y = Calendar.current.component(.year, from: Date())
-        let birthYear = y - patient.residentAgeYears
-        let peakLo = birthYear + 15
-        let peakHi = birthYear + 30
-        return "Music era bias for snippets: peak discovery years roughly \(peakLo)–\(peakHi) (from age and today’s year)."
-    }
-
     private func orderedPlaylistGroups(_ patient: CarePatientProfile) -> [CareGenrePlaylistGroup] {
-        patient.genrePlaylistGroups.sorted { a, b in
-            if a.genre == patient.favouriteMusicGenre { return true }
-            if b.genre == patient.favouriteMusicGenre { return false }
-            return a.genre.rawValue < b.genre.rawValue
-        }
+        patient.genrePlaylistGroups.sorted { $0.genre.rawValue < $1.genre.rawValue }
     }
 
     private func genrePlaylistsCard(_ patient: CarePatientProfile) -> some View {
         let groups = orderedPlaylistGroups(patient)
         return BrandCard {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Playlists by genre")
+                Text("Playlists on file (by genre)")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(BrandTheme.brownMuted)
-                Text("Calm blocks linked to each style — favourite genre is listed first.")
+                Text("These appear as floating instruments for the resident — staff does not change them here.")
                     .font(.caption2)
                     .foregroundStyle(BrandTheme.brownMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -597,7 +576,7 @@ struct CarePatientDetailView: View {
                     if index > 0 {
                         Divider().opacity(0.35)
                     }
-                    genrePlaylistSection(group: group, patient: patient)
+                    genrePlaylistSection(group: group)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -605,7 +584,7 @@ struct CarePatientDetailView: View {
         .padding(.horizontal, 4)
     }
 
-    private func genrePlaylistSection(group: CareGenrePlaylistGroup, patient: CarePatientProfile) -> some View {
+    private func genrePlaylistSection(group: CareGenrePlaylistGroup) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: group.genre.iconName)
@@ -614,14 +593,6 @@ struct CarePatientDetailView: View {
                 Text(group.genre.accessibilityLabel)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(BrandTheme.brown)
-                if group.genre == patient.favouriteMusicGenre {
-                    Text("Favourite")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(BrandTheme.goldDeep)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(BrandTheme.goldSoft.opacity(0.5)))
-                }
                 Spacer(minLength: 0)
             }
             ForEach(group.playlists) { pl in
@@ -633,7 +604,7 @@ struct CarePatientDetailView: View {
                         Text(pl.title)
                             .font(.subheadline)
                             .foregroundStyle(BrandTheme.brown)
-                        Text("\(pl.trackCount) tracks · about \(pl.durationMinutes) min")
+                        Text("\(pl.trackTitles.count) tracks in player · about \(pl.durationMinutes) min")
                             .font(.caption2)
                             .foregroundStyle(BrandTheme.brownMuted)
                     }

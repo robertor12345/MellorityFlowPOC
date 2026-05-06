@@ -1,14 +1,19 @@
 import SwiftUI
 
-// MARK: - Resident profile hub (icon-first; staff exit top-trailing)
+// MARK: - Resident session: floating instrument symbols → playlist + playback
 
 struct ResidentProfileView: View {
     @ObservedObject var state: SessionPOCState
-    @State private var genreSheet = false
-    @State private var pulseNote: String?
+    @State private var activeSheet: ResidentMusicSheetRoute?
 
     private var patient: CarePatientProfile? {
         state.carePatient(id: state.selectedCarePatientId)
+    }
+
+    private var genresOnFile: [ResidentMusicGenre] {
+        guard let patient else { return [] }
+        let set = Set(patient.genrePlaylistGroups.map(\.genre))
+        return ResidentMusicGenre.allCases.filter { set.contains($0) }
     }
 
     var body: some View {
@@ -16,11 +21,16 @@ struct ResidentProfileView: View {
             BrandTheme.backgroundGradient
                 .ignoresSafeArea()
 
-            if let patient {
-                floatingNotes(themes: patient.comfortThemes)
+            TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                GeometryReader { geo in
+                    ForEach(Array(genresOnFile.enumerated()), id: \.offset) { index, genre in
+                        floatingInstrumentButton(genre: genre, index: index, phase: t, in: geo.size)
+                    }
+                }
             }
 
-            VStack(spacing: 0) {
+            VStack {
                 HStack {
                     Spacer()
                     Button {
@@ -37,154 +47,275 @@ struct ResidentProfileView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
-
                 Spacer()
-
-                Button {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                        genreSheet = true
-                    }
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [BrandTheme.goldSoft.opacity(0.95), BrandTheme.goldDeep.opacity(0.75)],
-                                    center: .center,
-                                    startRadius: 20,
-                                    endRadius: 120
-                                )
-                            )
-                            .frame(width: 140, height: 140)
-                            .shadow(color: BrandTheme.gold.opacity(0.45), radius: 24, y: 8)
-                        Image(systemName: "music.note.list")
-                            .font(.system(size: 52, weight: .medium))
-                            .foregroundStyle(BrandTheme.brown)
-                            .symbolRenderingMode(.hierarchical)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Choose music style")
-
-                Spacer()
-                Spacer()
-            }
-
-            if genreSheet {
-                genrePickerOverlay
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: genreSheet)
-    }
-
-    @ViewBuilder
-    private func floatingNotes(themes: [String]) -> some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            ForEach(Array(themes.enumerated()), id: \.offset) { i, theme in
-                let xFrac = noteXFraction(index: i, count: themes.count)
-                let yFrac = noteYFraction(index: i)
-                notePill(theme, isPulsing: pulseNote == theme)
-                    .position(x: w * xFrac, y: h * yFrac)
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.72)) {
-                            pulseNote = theme
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            pulseNote = nil
-                        }
-                    }
-                    .accessibilityLabel(theme)
+        .sheet(item: $activeSheet) { route in
+            switch route.kind {
+            case .choosePlaylist(let genre, let playlists):
+                ResidentPlaylistPickSheet(
+                    genre: genre,
+                    playlists: playlists,
+                    onSelect: { pl in
+                        activeSheet = ResidentMusicSheetRoute(kind: .player(genre: genre, playlist: pl))
+                    },
+                    onDismiss: { activeSheet = nil }
+                )
+            case .player(let genre, let playlist):
+                ResidentPlaylistPlayerSheet(
+                    state: state,
+                    genre: genre,
+                    playlist: playlist,
+                    onDismiss: { activeSheet = nil }
+                )
             }
         }
-        .allowsHitTesting(true)
     }
 
-    private func noteXFraction(index: Int, count: Int) -> CGFloat {
-        let base = CGFloat(index + 1) / CGFloat(max(count + 1, 2))
-        return min(0.88, max(0.12, base + CGFloat(sin(Double(index) * 1.7)) * 0.08))
+    private func floatingInstrumentButton(
+        genre: ResidentMusicGenre,
+        index: Int,
+        phase: TimeInterval,
+        in size: CGSize
+    ) -> some View {
+        let x = instrumentX(index: index, count: genresOnFile.count, phase: phase, width: size.width)
+        let y = instrumentY(index: index, phase: phase, height: size.height)
+        let sway = sin(phase * 0.48 + Double(index) * 0.94) * 5
+        let bob = sin(phase * 0.82 + Double(index) * 0.61) * 6
+
+        return Button {
+            guard let group = patient?.genrePlaylistGroups.first(where: { $0.genre == genre }) else { return }
+            if group.playlists.count == 1, let only = group.playlists.first {
+                activeSheet = ResidentMusicSheetRoute(kind: .player(genre: genre, playlist: only))
+            } else {
+                activeSheet = ResidentMusicSheetRoute(kind: .choosePlaylist(genre: genre, playlists: group.playlists))
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(genre.accent.opacity(0.38))
+                    .frame(width: 88, height: 88)
+                    .shadow(color: genre.accent.opacity(0.35), radius: 14, y: 6)
+                Image(systemName: genre.iconName)
+                    .font(.system(size: 38, weight: .medium))
+                    .foregroundStyle(BrandTheme.brown)
+                    .symbolRenderingMode(.hierarchical)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(genre.accessibilityLabel)
+        .position(x: x, y: y + bob)
+        .rotationEffect(.degrees(sway))
     }
 
-    private func noteYFraction(index: Int) -> CGFloat {
+    private func instrumentX(index: Int, count: Int, phase: TimeInterval, width: CGFloat) -> CGFloat {
+        let base = Double(index + 1) / Double(max(count + 1, 2))
+        let wobble = sin( phase * 0.31 + Double(index) * 1.1) * 0.06
+        let frac = min(0.9, max(0.1, base + wobble))
+        return width * CGFloat(frac)
+    }
+
+    private func instrumentY(index: Int, phase: TimeInterval, height: CGFloat) -> CGFloat {
         let row = index % 3
-        return CGFloat(0.22 + Double(row) * 0.16 + sin(Double(index)) * 0.04)
+        let baseY = 0.28 + Double(row) * 0.2 + sin(Double(index) * 0.7 + phase * 0.17) * 0.04
+        return height * CGFloat(min(0.78, max(0.22, baseY)))
+    }
+}
+
+// MARK: - Sheet routing
+
+struct ResidentMusicSheetRoute: Identifiable {
+    enum Kind {
+        case choosePlaylist(genre: ResidentMusicGenre, playlists: [CarePlaylistEntry])
+        case player(genre: ResidentMusicGenre, playlist: CarePlaylistEntry)
     }
 
-    private func notePill(_ text: String, isPulsing: Bool) -> some View {
-        Text(text)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(BrandTheme.brown.opacity(0.92))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(BrandTheme.cream.opacity(0.88))
-                    .shadow(color: BrandTheme.brown.opacity(0.12), radius: isPulsing ? 12 : 6, y: 3)
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(BrandTheme.gold.opacity(isPulsing ? 0.55 : 0.28), lineWidth: isPulsing ? 2 : 1)
-            )
-            .scaleEffect(isPulsing ? 1.08 : 1)
+    let id: String
+    let kind: Kind
+
+    init(kind: Kind) {
+        self.kind = kind
+        switch kind {
+        case .choosePlaylist(let g, _):
+            self.id = "pick-\(g.rawValue)"
+        case .player(let g, let pl):
+            self.id = "play-\(g.rawValue)-\(pl.id.uuidString)"
+        }
     }
+}
 
-    private var genrePickerOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.35)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation { genreSheet = false }
-                }
+// MARK: - Pick playlist (only when multiple for a genre)
 
-            VStack(spacing: 18) {
-                Capsule()
-                    .fill(BrandTheme.brownMuted.opacity(0.35))
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 10)
+private struct ResidentPlaylistPickSheet: View {
+    let genre: ResidentMusicGenre
+    let playlists: [CarePlaylistEntry]
+    let onSelect: (CarePlaylistEntry) -> Void
+    let onDismiss: () -> Void
 
-                LazyVGrid(
-                    columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
-                    spacing: 16
-                ) {
-                    ForEach(ResidentMusicGenre.allCases) { genre in
-                        let fav = patient?.favouriteMusicGenre == genre
-                        Button {
-                            genreSheet = false
-                            state.confirmResidentGenre(genre)
-                        } label: {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(genre.accent.opacity(0.35))
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .stroke(
-                                        fav ? BrandTheme.gold : BrandTheme.brown.opacity(0.15),
-                                        lineWidth: fav ? 3 : 1
-                                    )
-                                Image(systemName: genre.iconName)
-                                    .font(.title)
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(playlists) { pl in
+                    Button {
+                        onSelect(pl)
+                    } label: {
+                        HStack {
+                            Image(systemName: genre.iconName)
+                                .foregroundStyle(genre.accent)
+                            VStack(alignment: .leading) {
+                                Text(pl.title)
                                     .foregroundStyle(BrandTheme.brown)
-                                    .symbolRenderingMode(.hierarchical)
+                                Text("\(pl.trackCount) tracks · ~\(pl.durationMinutes) min")
+                                    .font(.caption)
+                                    .foregroundStyle(BrandTheme.brownMuted)
                             }
-                            .frame(height: 76)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(genre.accessibilityLabel)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 24)
             }
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(BrandTheme.cream.opacity(0.98))
-                    .shadow(color: .black.opacity(0.12), radius: 20, y: -4)
-            )
-            .padding(.horizontal, 12)
-            .frame(maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, 8)
+            .navigationTitle("Pick a list")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { onDismiss() }
+                }
+            }
         }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - Player + track list
+
+private struct ResidentPlaylistPlayerSheet: View {
+    @ObservedObject var state: SessionPOCState
+    let genre: ResidentMusicGenre
+    let playlist: CarePlaylistEntry
+    let onDismiss: () -> Void
+
+    @StateObject private var audio = AmbientAudioSession()
+    @State private var currentIndex = 0
+    @State private var isPlaying = false
+    @State private var streamStarted = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                List {
+                    Section {
+                        ForEach(Array(playlist.trackTitles.enumerated()), id: \.offset) { idx, title in
+                            HStack {
+                                Image(systemName: idx == currentIndex ? "waveform" : "music.note")
+                                    .foregroundStyle(idx == currentIndex ? BrandTheme.goldDeep : BrandTheme.brownMuted)
+                                Text(title)
+                                    .foregroundStyle(BrandTheme.brown)
+                                Spacer()
+                                if idx == currentIndex, isPlaying {
+                                    ProgressView()
+                                        .scaleEffect(0.85)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                currentIndex = idx
+                                restartPlaybackFromCurrent()
+                            }
+                        }
+                    } header: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Image(systemName: genre.iconName)
+                                    .foregroundStyle(genre.accent)
+                                Text(playlist.title)
+                                    .font(.headline)
+                                    .foregroundStyle(BrandTheme.brown)
+                            }
+                            Text("\(playlist.trackCount) tracks · about \(playlist.durationMinutes) min")
+                                .font(.caption)
+                                .foregroundStyle(BrandTheme.brownMuted)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                VStack(spacing: 14) {
+                    HStack(spacing: 36) {
+                        Button {
+                            stepTrack(delta: -1)
+                        } label: {
+                            Image(systemName: "backward.fill")
+                                .font(.title2)
+                        }
+                        .disabled(playlist.trackTitles.isEmpty)
+
+                        Button {
+                            guard !playlist.trackTitles.isEmpty else { return }
+                            if !streamStarted {
+                                audio.startFresh(photoAnchored: false)
+                                streamStarted = true
+                                isPlaying = true
+                            } else if isPlaying {
+                                audio.pausePlayback()
+                                isPlaying = false
+                            } else {
+                                audio.resumePlayback()
+                                isPlaying = true
+                            }
+                        } label: {
+                            Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                .font(.system(size: 54))
+                                .foregroundStyle(BrandTheme.goldDeep)
+                        }
+
+                        Button {
+                            stepTrack(delta: 1)
+                        } label: {
+                            Image(systemName: "forward.fill")
+                                .font(.title2)
+                        }
+                        .disabled(playlist.trackTitles.isEmpty)
+                    }
+                    .foregroundStyle(BrandTheme.brown)
+                    .padding(.vertical, 6)
+
+                    PrimaryButton(title: "Calm room visuals") {
+                        audio.stop()
+                        state.prepareResidentImmersiveFromPlaylist(genre: genre)
+                        onDismiss()
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .padding(.bottom, 12)
+                .background(BrandTheme.cream.opacity(0.95))
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        audio.stop()
+                        onDismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .onDisappear {
+            audio.stop()
+        }
+    }
+
+    private func stepTrack(delta: Int) {
+        guard !playlist.trackTitles.isEmpty else { return }
+        let n = playlist.trackTitles.count
+        currentIndex = (currentIndex + delta + n) % n
+        restartPlaybackFromCurrent()
+    }
+
+    private func restartPlaybackFromCurrent() {
+        guard !playlist.trackTitles.isEmpty else { return }
+        audio.stop()
+        audio.startFresh(photoAnchored: false)
+        streamStarted = true
+        isPlaying = true
     }
 }

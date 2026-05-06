@@ -38,6 +38,16 @@ final class AmbientAudioSession: ObservableObject {
         startStream(allowPhotoFallback: photoAnchored)
     }
 
+    /// Pause the current stream without tearing down the looper (playlist POC controls).
+    func pausePlayback() {
+        queuePlayer?.pause()
+    }
+
+    /// Resume after `pausePlayback()`.
+    func resumePlayback() {
+        queuePlayer?.play()
+    }
+
     func stop() {
         tearDownPlaybackOnly()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
