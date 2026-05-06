@@ -5,7 +5,7 @@ struct FlowRootView: View {
 
     /// Phases where a sparkle layer on top of cards/scroll content makes sense (not over raw video).
     private static let sparkleOverlayPhases: Set<FlowPhase> = Set(
-        FlowPhase.allCases.filter { $0 != .immersive }
+        FlowPhase.allCases.filter { $0 != .immersive && $0 != .residentProfile }
     )
 
     var body: some View {
@@ -35,6 +35,10 @@ struct FlowRootView: View {
                     CareSessionFeedbackView(state: state)
                 case .careSessionPrep:
                     CareSessionPrepView(state: state)
+                case .residentProfile:
+                    ResidentProfileView(state: state)
+                case .careFaceLinkedPick:
+                    CareFaceLinkedPickView(state: state)
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))

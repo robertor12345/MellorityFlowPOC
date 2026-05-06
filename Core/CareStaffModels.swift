@@ -1,5 +1,8 @@
 import Foundation
 
+// Stock portrait assets live in `App/Assets.xcassets` (POC placeholders). Replace with
+// your own licensed imagery and consent before shipping.
+
 /// Person-centred profile for one-to-one calm moments — sensory hints, life themes, and adaptive sound shaping preferences.
 struct CarePatientProfile: Identifiable, Equatable {
     let id: UUID
@@ -23,6 +26,29 @@ struct CarePatientProfile: Identifiable, Equatable {
     var natureVsAbstract: Double
     /// 0 = mostly instrumental, 1 = more voice-forward content.
     var voiceVsInstrumental: Double
+    /// Approximate age for era-biased snippet algorithm (peak years ~15–30 from birth year implied).
+    var residentAgeYears: Int
+    /// Preferred genre for resident iPad playlists.
+    var favouriteMusicGenre: ResidentMusicGenre
+    /// Asset name in `Assets.xcassets` (stock portrait for face-linked roster POC).
+    var stockPortraitAssetName: String
+    /// Curated playlists keyed by genre — shown when staff opens this profile (e.g. from face-linked photo).
+    var genrePlaylistGroups: [CareGenrePlaylistGroup]
+}
+
+/// Saved playlist linked to a genre for staff / resident calm sessions (POC stubs).
+struct CarePlaylistEntry: Identifiable, Equatable {
+    let id: UUID
+    var title: String
+    var trackCount: Int
+    var durationMinutes: Int
+}
+
+/// Playlists grouped under one genre on a patient’s profile.
+struct CareGenrePlaylistGroup: Identifiable, Equatable {
+    var id: ResidentMusicGenre { genre }
+    var genre: ResidentMusicGenre
+    var playlists: [CarePlaylistEntry]
 }
 
 struct CareSessionRecord: Identifiable, Equatable {
@@ -59,7 +85,25 @@ enum CareStaffMockData {
             prefersGentleSoundOnsets: true,
             musicTempoBias: 0.35,
             natureVsAbstract: 0.22,
-            voiceVsInstrumental: 0.4
+            voiceVsInstrumental: 0.4,
+            residentAgeYears: 82,
+            favouriteMusicGenre: .classical,
+            stockPortraitAssetName: "StockPortraitElena",
+            genrePlaylistGroups: [
+                CareGenrePlaylistGroup(
+                    genre: .classical,
+                    playlists: [
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111101")!, title: "Soft piano · morning", trackCount: 14, durationMinutes: 42),
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111102")!, title: "Strings — unhurried", trackCount: 11, durationMinutes: 38),
+                    ]
+                ),
+                CareGenrePlaylistGroup(
+                    genre: .gospel,
+                    playlists: [
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc1111-1111-4111-8111-111111111103")!, title: "Hymns — gentle choir", trackCount: 9, durationMinutes: 33),
+                    ]
+                ),
+            ]
         ),
         CarePatientProfile(
             id: james,
@@ -74,7 +118,25 @@ enum CareStaffMockData {
             prefersGentleSoundOnsets: true,
             musicTempoBias: 0.2,
             natureVsAbstract: 0.55,
-            voiceVsInstrumental: 0.15
+            voiceVsInstrumental: 0.15,
+            residentAgeYears: 76,
+            favouriteMusicGenre: .jazz,
+            stockPortraitAssetName: "StockPortraitJames",
+            genrePlaylistGroups: [
+                CareGenrePlaylistGroup(
+                    genre: .jazz,
+                    playlists: [
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222201")!, title: "50s lounge — brushed drums", trackCount: 12, durationMinutes: 48),
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222202")!, title: "Late-night sax — very slow", trackCount: 8, durationMinutes: 36),
+                    ]
+                ),
+                CareGenrePlaylistGroup(
+                    genre: .soul,
+                    playlists: [
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc2222-2222-4222-8222-222222222203")!, title: "Warm vocals, soft band", trackCount: 10, durationMinutes: 40),
+                    ]
+                ),
+            ]
         ),
         CarePatientProfile(
             id: sam,
@@ -89,7 +151,24 @@ enum CareStaffMockData {
             prefersGentleSoundOnsets: true,
             musicTempoBias: 0.5,
             natureVsAbstract: 0.3,
-            voiceVsInstrumental: 0.65
+            voiceVsInstrumental: 0.65,
+            residentAgeYears: 71,
+            favouriteMusicGenre: .classical,
+            stockPortraitAssetName: "StockPortraitSam",
+            genrePlaylistGroups: [
+                CareGenrePlaylistGroup(
+                    genre: .classical,
+                    playlists: [
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc3333-3333-4333-8333-333333333301")!, title: "Ocean + piano blend", trackCount: 15, durationMinutes: 45),
+                    ]
+                ),
+                CareGenrePlaylistGroup(
+                    genre: .pop,
+                    playlists: [
+                        CarePlaylistEntry(id: UUID(uuidString: "cccc3333-3333-4333-8333-333333333302")!, title: "Light nostalgia — soft hooks", trackCount: 13, durationMinutes: 44),
+                    ]
+                ),
+            ]
         ),
     ]
 

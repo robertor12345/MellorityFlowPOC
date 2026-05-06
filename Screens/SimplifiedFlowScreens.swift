@@ -260,59 +260,163 @@ struct MoodSelectView: View {
     var body: some View {
         ScreenFadeIn {
             CenteredScrollScreen {
-                VStack(spacing: 22) {
-                    FadeInTitle(text: "How are you feeling?", delay: 0)
-                    FadeInLine(text: "Sound and movement will gently follow whatever you pick.", delay: 0.06)
-                    if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
-                        Text("With \(patient.displayName), there’s no rush. Tap what feels closest — you can choose more than one.")
-                            .font(.caption)
-                            .foregroundStyle(BrandTheme.goldDeep)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-                    FadeInLine(
-                        text: "No wrong answers — just tap anything that fits.",
-                        font: .caption,
-                        color: BrandTheme.brownMuted.opacity(0.95),
-                        delay: 0.14
-                    )
-
-                    TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
-                        let t = timeline.date.timeIntervalSinceReferenceDate
-                        VStack(spacing: 26) {
-                            ForEach(Array(state.moodOptions.enumerated()), id: \.offset) { index, mood in
-                                FloatingMoodLabel(
-                                    title: mood,
-                                    index: index,
-                                    phase: t,
-                                    isSelected: state.selectedMoods.contains(mood)
-                                ) {
-                                    state.toggleMoodSelection(mood)
-                                }
-                                .animation(.spring(response: 0.4, dampingFraction: 0.78), value: state.selectedMoods)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 12)
-                    }
-                    .padding(.horizontal, 8)
-
-                    PrimaryButton(title: "Begin") {
-                        state.beginSession()
-                        state.phase = .processingFast
-                    }
-                    .disabled(state.selectedMoods.isEmpty)
-                    .opacity(state.selectedMoods.isEmpty ? 0.45 : 1)
-                    .padding(.horizontal, 24)
-
-                    SecondaryButton(title: "Back") {
-                        state.phase = state.capturedImage != nil ? .captureMoment : .entryMode
-                    }
-                    .padding(.horizontal, 24)
+                if state.isResidentSession {
+                    residentMoodSurface
+                } else {
+                    staffMoodSurface
                 }
-                .padding(.vertical, 28)
             }
         }
+    }
+
+    @ViewBuilder
+    private var residentMoodSurface: some View {
+        VStack(spacing: 28) {
+            Color.clear.frame(height: 8)
+
+            VStack(spacing: 14) {
+                HStack(spacing: 18) {
+                    ForEach(ResidentTrafficMood.allCases) { t in
+                        trafficOrb(t, isOn: state.residentTraffic == t)
+                    }
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("How intense things feel")
+
+                HStack(spacing: 22) {
+                    ForEach(ResidentFaceMood.allCases) { f in
+                        faceOrb(f, isOn: state.residentFace == f)
+                    }
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Face mood")
+
+                TextField("", text: $state.residentVoiceLine, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1 ... 3)
+                    .font(.body)
+                    .foregroundStyle(BrandTheme.brown.opacity(0.92))
+                    .padding(12)
+                    .background(BrandTheme.cream.opacity(0.22))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(BrandTheme.gold.opacity(0.18), lineWidth: 1)
+                    )
+                    .accessibilityLabel("Optional few words")
+            }
+            .padding(.horizontal, 20)
+
+            PrimaryButton(title: "Begin") {
+                state.beginResidentSessionFromMood()
+                state.phase = .processingFast
+            }
+            .disabled(!residentMoodReady)
+            .opacity(residentMoodReady ? 1 : 0.45)
+            .padding(.horizontal, 24)
+
+            SecondaryButton(title: "Back") {
+                state.residentSessionGenre = nil
+                state.phase = .residentProfile
+            }
+            .padding(.horizontal, 24)
+
+            Spacer(minLength: 20)
+        }
+        .padding(.vertical, 24)
+    }
+
+    private var residentMoodReady: Bool {
+        state.residentTraffic != nil && state.residentFace != nil
+    }
+
+    private func trafficOrb(_ t: ResidentTrafficMood, isOn: Bool) -> some View {
+        Button {
+            state.residentTraffic = t
+        } label: {
+            Image(systemName: t.iconName)
+                .font(.system(size: 36))
+                .foregroundStyle(t.color)
+                .padding(14)
+                .background(
+                    Circle()
+                        .fill(BrandTheme.cream.opacity(isOn ? 0.95 : 0.55))
+                        .overlay(Circle().stroke(t.color.opacity(isOn ? 0.95 : 0.35), lineWidth: isOn ? 4 : 1))
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func faceOrb(_ f: ResidentFaceMood, isOn: Bool) -> some View {
+        Button {
+            state.residentFace = f
+        } label: {
+            Image(systemName: f.iconName)
+                .font(.system(size: 34))
+                .foregroundStyle(BrandTheme.brown.opacity(isOn ? 1 : 0.5))
+                .padding(12)
+                .background(
+                    Circle()
+                        .fill(BrandTheme.cream.opacity(isOn ? 0.95 : 0.5))
+                        .overlay(Circle().stroke(BrandTheme.gold.opacity(isOn ? 0.65 : 0.2), lineWidth: isOn ? 3 : 1))
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var staffMoodSurface: some View {
+        VStack(spacing: 22) {
+            FadeInTitle(text: "How are you feeling?", delay: 0)
+            FadeInLine(text: "Sound and movement will gently follow whatever you pick.", delay: 0.06)
+            if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
+                Text("With \(patient.displayName), there’s no rush. Tap what feels closest — you can choose more than one.")
+                    .font(.caption)
+                    .foregroundStyle(BrandTheme.goldDeep)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            FadeInLine(
+                text: "No wrong answers — just tap anything that fits.",
+                font: .caption,
+                color: BrandTheme.brownMuted.opacity(0.95),
+                delay: 0.14
+            )
+
+            TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                VStack(spacing: 26) {
+                    ForEach(Array(state.moodOptions.enumerated()), id: \.offset) { index, mood in
+                        FloatingMoodLabel(
+                            title: mood,
+                            index: index,
+                            phase: t,
+                            isSelected: state.selectedMoods.contains(mood)
+                        ) {
+                            state.toggleMoodSelection(mood)
+                        }
+                        .animation(.spring(response: 0.4, dampingFraction: 0.78), value: state.selectedMoods)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 12)
+            }
+            .padding(.horizontal, 8)
+
+            PrimaryButton(title: "Begin") {
+                state.beginSession()
+                state.phase = .processingFast
+            }
+            .disabled(state.selectedMoods.isEmpty)
+            .opacity(state.selectedMoods.isEmpty ? 0.45 : 1)
+            .padding(.horizontal, 24)
+
+            SecondaryButton(title: "Back") {
+                state.phase = state.capturedImage != nil ? .captureMoment : .entryMode
+            }
+            .padding(.horizontal, 24)
+        }
+        .padding(.vertical, 28)
     }
 }
 

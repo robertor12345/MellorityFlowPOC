@@ -13,6 +13,17 @@ final class SessionPOCState: ObservableObject {
     @Published var capturedImage: UIImage?
     @Published private(set) var selectedMoods: Set<String> = []
 
+    // MARK: - Resident iPad (low-text)
+
+    @Published var isResidentSession = false
+    @Published var residentSessionGenre: ResidentMusicGenre?
+    @Published var residentTraffic: ResidentTrafficMood?
+    @Published var residentFace: ResidentFaceMood?
+    @Published var residentVoiceLine: String = ""
+    /// Short “living playlist” segment index (POC: ~10s × 10 loops).
+    @Published var residentLivingLoopIndex: Int = 0
+    @Published var residentLivingTickInSegment: Int = 0
+
     // MARK: - Care staff (sample data)
 
     @Published var carePatients: [CarePatientProfile] = CareStaffMockData.initialPatients
@@ -27,6 +38,91 @@ final class SessionPOCState: ObservableObject {
 
     var selectedMoodsOrdered: [String] {
         moodOptions.filter { selectedMoods.contains($0) }
+    }
+
+    func replaceSelectedMoods(_ moods: Set<String>) {
+        selectedMoods = moods
+    }
+
+    func openResidentProfile() {
+        guard let pid = selectedCarePatientId else { return }
+        isResidentSession = true
+        isCareStaffSession = false
+        activeCarePatientId = pid
+        residentSessionGenre = nil
+        residentTraffic = nil
+        residentFace = nil
+        residentVoiceLine = ""
+        residentLivingLoopIndex = 0
+        residentLivingTickInSegment = 0
+        capturedImage = nil
+        replaceSelectedMoods([])
+        phase = .residentProfile
+    }
+
+    func leaveResidentProfileToStaff() {
+        clearResidentSessionSurfaceState()
+        phase = .carePatientDetail
+    }
+
+    func confirmResidentGenre(_ genre: ResidentMusicGenre) {
+        residentSessionGenre = genre
+        phase = .moodSelect
+    }
+
+    func syncResidentMoodPickToMoods() {
+        let t = residentTraffic ?? .mid
+        let f = residentFace ?? .neutral
+        var moods: Set<String> = []
+        switch (t, f) {
+        case (.low, .sad): moods = ["Overwhelmed", "Stressed"]
+        case (.low, .neutral): moods = ["Anxious", "Tired"]
+        case (.low, .happy): moods = ["Tired", "Calm"]
+        case (.mid, .sad): moods = ["Down", "Anxious"]
+        case (.mid, .neutral): moods = ["Tired"]
+        case (.mid, .happy): moods = ["Calm", "Tired"]
+        case (.high, .sad): moods = ["Down", "Calm"]
+        case (.high, .neutral): moods = ["Calm"]
+        case (.high, .happy): moods = ["Calm"]
+        }
+        replaceSelectedMoods(moods)
+    }
+
+    func beginResidentSessionFromMood() {
+        syncResidentMoodPickToMoods()
+        if selectedMoods.isEmpty { replaceSelectedMoods(["Calm"]) }
+        isCareStaffSession = true
+        isResidentSession = true
+        residentLivingLoopIndex = 0
+        residentLivingTickInSegment = 0
+        beginSession()
+    }
+
+    func setResidentAge(for patientId: UUID, age: Int) {
+        guard let i = carePatients.firstIndex(where: { $0.id == patientId }) else { return }
+        var patients = carePatients
+        patients[i].residentAgeYears = age
+        carePatients = patients
+    }
+
+    func setFavouriteGenre(for patientId: UUID, genre: ResidentMusicGenre) {
+        guard let i = carePatients.firstIndex(where: { $0.id == patientId }) else { return }
+        var patients = carePatients
+        patients[i].favouriteMusicGenre = genre
+        carePatients = patients
+    }
+
+    func tickLivingPlaylistSegment() {
+        residentLivingTickInSegment += 1
+        if residentLivingTickInSegment > 9 {
+            residentLivingTickInSegment = 0
+            residentLivingLoopIndex = min(9, residentLivingLoopIndex + 1)
+        }
+    }
+
+    func resetLivingPlaylistCounters() {
+        residentLivingLoopIndex = 0
+        residentLivingTickInSegment = 0
     }
 
     func toggleMoodSelection(_ mood: String) {
@@ -56,6 +152,25 @@ final class SessionPOCState: ObservableObject {
         }
         pendingCareRosterAfterSignIn = false
         phase = .carePatientList
+    }
+
+    /// Branch for staff after a resident profile was created / linked from face capture (POC).
+    func openFaceLinkedProfilePicker() {
+        guard isSignedIn else {
+            phase = .home
+            return
+        }
+        selectedCarePatientId = nil
+        phase = .careFaceLinkedPick
+    }
+
+    func selectCarePatientFromFacePick(_ patientId: UUID) {
+        guard isSignedIn else {
+            phase = .home
+            return
+        }
+        selectedCarePatientId = patientId
+        phase = .carePatientDetail
     }
 
     func completeOptionalSignInFromSheet() {
@@ -152,6 +267,7 @@ final class SessionPOCState: ObservableObject {
         isCareStaffSession = false
         activeCarePatientId = nil
         selectedCarePatientId = pid
+        clearResidentSessionSurfaceState()
         phase = .carePatientDetail
     }
 
@@ -163,7 +279,17 @@ final class SessionPOCState: ObservableObject {
         isCareStaffSession = false
         activeCarePatientId = nil
         if let pid { selectedCarePatientId = pid }
+        clearResidentSessionSurfaceState()
         phase = .carePatientDetail
+    }
+
+    private func clearResidentSessionSurfaceState() {
+        isResidentSession = false
+        residentSessionGenre = nil
+        residentTraffic = nil
+        residentFace = nil
+        residentVoiceLine = ""
+        resetLivingPlaylistCounters()
     }
 
     private func resetCareSessionFlags() {
@@ -205,6 +331,9 @@ final class SessionPOCState: ObservableObject {
         replayMoodSnapshot = nil
         replaySnapshotMediaID = nil
         replaySessionPhotoAnchored = false
+        if isResidentSession {
+            resetLivingPlaylistCounters()
+        }
     }
 
     func endSession() {
@@ -229,6 +358,7 @@ final class SessionPOCState: ObservableObject {
         replaySnapshotMediaID = nil
         replaySessionPhotoAnchored = false
         resetCareSessionFlags()
+        clearResidentSessionSurfaceState()
         selectedCarePatientId = nil
         resetCarePrepForNewSession()
     }
@@ -256,6 +386,7 @@ final class SessionPOCState: ObservableObject {
         careSessionRecords = CareStaffMockData.initialRecords
         selectedCarePatientId = nil
         resetCareSessionFlags()
+        clearResidentSessionSurfaceState()
         resetCarePrepForNewSession()
         resetIoTDefaults()
     }
@@ -281,6 +412,8 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case carePatientDetail = 8
     case careSessionFeedback = 9
     case careSessionPrep = 10
+    case residentProfile = 11
+    case careFaceLinkedPick = 12
 
     var id: Int { rawValue }
 }

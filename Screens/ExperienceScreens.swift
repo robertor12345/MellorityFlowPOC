@@ -118,6 +118,10 @@ struct ImmersiveSessionView: View {
                     .accessibilityLabel(ambientAudio.isMuted ? "Unmute audio" : "Mute audio")
 
                     Spacer()
+
+                    if state.isResidentSession, let genre = state.residentSessionGenre {
+                        residentPlaylistBadge(genre: genre)
+                    }
                 }
                 .padding(.horizontal, BrandTheme.contentGutter)
                 .padding(.vertical, 12)
@@ -242,5 +246,29 @@ struct ImmersiveSessionView: View {
             hrTimer = nil
             ambientAudio.stop()
         }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+            guard state.isResidentSession else { return }
+            state.tickLivingPlaylistSegment()
+        }
+    }
+
+    private func residentPlaylistBadge(genre: ResidentMusicGenre) -> some View {
+        let bar = state.residentLivingTickInSegment + 1
+        return HStack(spacing: 8) {
+            Image(systemName: genre.iconName)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(genre.accent)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Piece \(state.residentLivingLoopIndex + 1) of 10")
+                    .font(.caption2.weight(.semibold))
+                Text("Bar \(bar) / 10")
+                    .font(.caption2.monospacedDigit())
+            }
+            .foregroundStyle(BrandTheme.cream)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }

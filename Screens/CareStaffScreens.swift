@@ -17,6 +17,20 @@ struct CarePatientListView: View {
                         delay: 0.08
                     )
 
+                    PrimaryButton(title: "Face-linked profiles") {
+                        state.openFaceLinkedProfilePicker()
+                    }
+                    .padding(.horizontal, 24)
+
+                    FadeInLine(
+                        text: "After face enrollment on the device, pick the person by their photo — their profile opens with playlists grouped by genre.",
+                        font: .caption2,
+                        color: BrandTheme.brownMuted.opacity(0.9),
+                        delay: 0.1
+                    )
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
+
                     ForEach(state.carePatients) { patient in
                         Button {
                             state.selectedCarePatientId = patient.id
@@ -24,10 +38,13 @@ struct CarePatientListView: View {
                         } label: {
                             BrandCard {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Image(systemName: "person.crop.circle.fill")
-                                            .font(.title2)
-                                            .foregroundStyle(BrandTheme.goldDeep)
+                                    HStack(alignment: .center, spacing: 12) {
+                                        Image(patient.stockPortraitAssetName)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 52, height: 52)
+                                            .clipShape(Circle())
+                                            .overlay(Circle().stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1))
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(patient.displayName)
                                                 .font(BrandTheme.title(.headline))
@@ -78,6 +95,87 @@ struct CarePatientListView: View {
             parts.append("settled \(s)%")
         }
         return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - Face-linked profile pick (after face enrollment, POC)
+
+struct CareFaceLinkedPickView: View {
+    @ObservedObject var state: SessionPOCState
+
+    private let columns = [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
+
+    var body: some View {
+        ScreenFadeIn {
+            CenteredScrollScreen {
+                VStack(spacing: 20) {
+                    FadeInTitle(text: "Who’s with you?", delay: 0)
+                    FadeInLine(
+                        text: "Profiles here were created when their face was captured on this device. Tap someone to open their profile and genre playlists.",
+                        font: .caption,
+                        color: BrandTheme.brownMuted,
+                        delay: 0.06
+                    )
+
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(state.carePatients) { patient in
+                            Button {
+                                state.selectCarePatientFromFacePick(patient.id)
+                            } label: {
+                                faceLinkedCard(patient)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+
+                    SecondaryButton(title: "Back to full roster") {
+                        state.phase = .carePatientList
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+                }
+                .padding(.vertical, 28)
+            }
+        }
+        .onAppear {
+            if !state.isSignedIn { state.phase = .home }
+        }
+    }
+
+    private func faceLinkedCard(_ patient: CarePatientProfile) -> some View {
+        VStack(spacing: 10) {
+            Image(patient.stockPortraitAssetName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 140, height: 140)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(BrandTheme.gold.opacity(0.45), lineWidth: 2)
+                )
+                .shadow(color: BrandTheme.brown.opacity(0.12), radius: 8, y: 4)
+
+            VStack(spacing: 2) {
+                Text(patient.displayName)
+                    .font(BrandTheme.title(.headline))
+                    .foregroundStyle(BrandTheme.brown)
+                Text(patient.careContextLabel)
+                    .font(.caption)
+                    .foregroundStyle(BrandTheme.brownMuted)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(BrandTheme.cream.opacity(0.92))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+        )
     }
 }
 
@@ -252,6 +350,50 @@ struct CarePatientDetailView: View {
                         FadeInTitle(text: patient.displayName, delay: 0)
                         FadeInLine(text: patient.careContextLabel, font: .subheadline, delay: 0.06)
 
+                        Image(patient.stockPortraitAssetName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 100, height: 100)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(BrandTheme.gold.opacity(0.42), lineWidth: 2))
+                            .shadow(color: BrandTheme.brown.opacity(0.12), radius: 10, y: 4)
+
+                        genrePlaylistsCard(patient)
+
+                        BrandCard {
+                            VStack(alignment: .leading, spacing: 14) {
+                                Text("Resident iPad (POC)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                Stepper(value: Binding(
+                                    get: { patient.residentAgeYears },
+                                    set: { state.setResidentAge(for: patient.id, age: $0) }
+                                ), in: 55 ... 105) {
+                                    Text("Approx. age: \(patient.residentAgeYears)")
+                                        .font(.subheadline)
+                                        .foregroundStyle(BrandTheme.brown)
+                                }
+                                Picker("Favourite genre", selection: Binding(
+                                    get: { patient.favouriteMusicGenre },
+                                    set: { state.setFavouriteGenre(for: patient.id, genre: $0) }
+                                )) {
+                                    ForEach(ResidentMusicGenre.allCases) { g in
+                                        Text(g.accessibilityLabel).tag(g)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                Text(musicEraHint(for: patient))
+                                    .font(.caption2)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                PrimaryButton(title: "Open resident calm surface") {
+                                    state.openResidentProfile()
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.horizontal, 4)
+
                         BrandCard {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Comfort & senses")
@@ -419,6 +561,85 @@ struct CarePatientDetailView: View {
                     .padding(.horizontal, 24)
                 }
                 .padding(.vertical, 28)
+            }
+        }
+    }
+
+    private func musicEraHint(for patient: CarePatientProfile) -> String {
+        let y = Calendar.current.component(.year, from: Date())
+        let birthYear = y - patient.residentAgeYears
+        let peakLo = birthYear + 15
+        let peakHi = birthYear + 30
+        return "Music era bias for snippets: peak discovery years roughly \(peakLo)–\(peakHi) (from age and today’s year)."
+    }
+
+    private func orderedPlaylistGroups(_ patient: CarePatientProfile) -> [CareGenrePlaylistGroup] {
+        patient.genrePlaylistGroups.sorted { a, b in
+            if a.genre == patient.favouriteMusicGenre { return true }
+            if b.genre == patient.favouriteMusicGenre { return false }
+            return a.genre.rawValue < b.genre.rawValue
+        }
+    }
+
+    private func genrePlaylistsCard(_ patient: CarePatientProfile) -> some View {
+        let groups = orderedPlaylistGroups(patient)
+        return BrandCard {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Playlists by genre")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(BrandTheme.brownMuted)
+                Text("Calm blocks linked to each style — favourite genre is listed first.")
+                    .font(.caption2)
+                    .foregroundStyle(BrandTheme.brownMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
+                    if index > 0 {
+                        Divider().opacity(0.35)
+                    }
+                    genrePlaylistSection(group: group, patient: patient)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func genrePlaylistSection(group: CareGenrePlaylistGroup, patient: CarePatientProfile) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: group.genre.iconName)
+                    .font(.title3)
+                    .foregroundStyle(group.genre.accent)
+                Text(group.genre.accessibilityLabel)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(BrandTheme.brown)
+                if group.genre == patient.favouriteMusicGenre {
+                    Text("Favourite")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(BrandTheme.goldDeep)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(BrandTheme.goldSoft.opacity(0.5)))
+                }
+                Spacer(minLength: 0)
+            }
+            ForEach(group.playlists) { pl in
+                HStack(alignment: .firstTextBaseline) {
+                    Image(systemName: "music.note.list")
+                        .font(.caption)
+                        .foregroundStyle(BrandTheme.brownMuted)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(pl.title)
+                            .font(.subheadline)
+                            .foregroundStyle(BrandTheme.brown)
+                        Text("\(pl.trackCount) tracks · about \(pl.durationMinutes) min")
+                            .font(.caption2)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 4)
             }
         }
     }
