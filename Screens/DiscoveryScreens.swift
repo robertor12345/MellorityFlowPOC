@@ -4,6 +4,7 @@ import SwiftUI
 
 struct DiscoveryCalibrationView: View {
     @ObservedObject var state: SessionPOCState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var audio = AmbientAudioSession()
     @State private var sliceStartedAt = Date()
     @State private var sliceDeadlineTask: Task<Void, Never>?
@@ -13,50 +14,70 @@ struct DiscoveryCalibrationView: View {
     @State private var affirmationGlowTick: UInt = 0
     /// Bumps snippet after tap: 2s listen + affirmation glow (~0.4s) → commit.
     @State private var postPickAdvanceTask: Task<Void, Never>?
+    @State private var discoveryExitOverlayActive = false
+    @State private var discoveryCompletionExitTask: Task<Void, Never>?
 
     private let clipFadeOut: TimeInterval = 0.38
     private let clipFadeIn: TimeInterval = 0.46
 
     var body: some View {
-        ScreenFadeIn {
-            VStack(spacing: 0) {
-                // Top chrome stays light; main content is centred as a vertical cluster.
-                HStack {
-                    Spacer(minLength: 16)
-                    discoveryHeaderIntrinsic
-                        .frame(maxWidth: 520)
-                    Spacer(minLength: 16)
-                }
-
-                Spacer(minLength: 20)
-
-                HStack(spacing: 0) {
-                    Spacer(minLength: 16)
-                    VStack(spacing: 22) {
-                        progressSection
-                        sentimentRow
+        ZStack {
+            ScreenFadeIn {
+                VStack(spacing: 0) {
+                    // Top chrome stays light; main content is centred as a vertical cluster.
+                    HStack {
+                        Spacer(minLength: 16)
+                        discoveryHeaderIntrinsic
+                            .frame(maxWidth: 520)
+                        Spacer(minLength: 16)
                     }
-                    .frame(maxWidth: 520)
-                    .opacity(clipContentOpacity)
-                    Spacer(minLength: 16)
-                }
 
-                Spacer(minLength: 20)
+                    Spacer(minLength: 20)
+
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 16)
+                        VStack(spacing: 22) {
+                            progressSection
+                            sentimentRow
+                        }
+                        .frame(maxWidth: 520)
+                        .opacity(clipContentOpacity)
+                        Spacer(minLength: 16)
+                    }
+
+                    Spacer(minLength: 20)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if discoveryExitOverlayActive {
+                DiscoveryMusicalExitTypographyOverlay()
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                    .zIndex(10)
+            }
         }
+        .animation(.easeInOut(duration: 0.4), value: discoveryExitOverlayActive)
         .onAppear {
             audio.volumeMultiplier = 1.12
             clipFadeNonce = 0
             clipContentOpacity = 0
             Task { await runDiscoveryClipTransition(skipFadeOut: true) }
         }
-        .onChange(of: state.discoverySnippetIndex) { _, _ in
-            Task { await runDiscoveryClipTransition(skipFadeOut: false) }
+        .onChange(of: state.discoverySnippetIndex) { _, newIdx in
+            if newIdx >= DiscoveryFlowPOC.snippetCount {
+                scheduleDiscoveryCompletionExitSequence()
+            } else {
+                Task { await runDiscoveryClipTransition(skipFadeOut: false) }
+            }
         }
         .onChange(of: state.phase) { _, phase in
             if phase != .careDiscoveryCalibration {
                 cancelPostPickAdvance()
+                discoveryCompletionExitTask?.cancel()
+                discoveryCompletionExitTask = nil
+                discoveryExitOverlayActive = false
                 sliceDeadlineTask?.cancel()
                 sliceDeadlineTask = nil
                 audio.stop()
@@ -64,6 +85,9 @@ struct DiscoveryCalibrationView: View {
         }
         .onDisappear {
             cancelPostPickAdvance()
+            discoveryCompletionExitTask?.cancel()
+            discoveryCompletionExitTask = nil
+            discoveryExitOverlayActive = false
             sliceDeadlineTask?.cancel()
             sliceDeadlineTask = nil
             audio.volumeMultiplier = 1
@@ -150,6 +174,47 @@ struct DiscoveryCalibrationView: View {
         postPickAdvanceTask = nil
     }
 
+    /// Discovery is complete in `state` (tuning already applied). Fade out UI, show falling musical type, then open the resident playlist surface.
+    private func scheduleDiscoveryCompletionExitSequence() {
+        discoveryCompletionExitTask?.cancel()
+        let prefersReducedMotion = reduceMotion
+        discoveryCompletionExitTask = Task { @MainActor in
+            guard state.phase == .careDiscoveryCalibration else { return }
+            guard state.discoverySnippetIndex >= DiscoveryFlowPOC.snippetCount else { return }
+
+            sliceDeadlineTask?.cancel()
+            sliceDeadlineTask = nil
+            cancelPostPickAdvance()
+            audio.stop()
+
+            let contentFade = prefersReducedMotion ? 0.32 : 0.44
+            withAnimation(.easeOut(duration: contentFade)) {
+                clipContentOpacity = 0
+            }
+            try? await Task.sleep(nanoseconds: UInt64((contentFade + 0.06) * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            guard state.phase == .careDiscoveryCalibration else { return }
+
+            discoveryExitOverlayActive = true
+            let overlayDwellNanoseconds = prefersReducedMotion ? 1_150_000_000 : 2_120_000_000
+
+            try? await Task.sleep(nanoseconds: overlayDwellNanoseconds)
+            guard !Task.isCancelled else { return }
+            guard state.phase == .careDiscoveryCalibration else { return }
+
+            let outro = prefersReducedMotion ? 0.24 : 0.38
+            withAnimation(.easeOut(duration: outro)) {
+                discoveryExitOverlayActive = false
+            }
+            let outroNanos = UInt64(max(240_000_000, min(900_000_000, outro * 940_000_000)))
+            try? await Task.sleep(nanoseconds: outroNanos)
+            guard !Task.isCancelled else { return }
+            guard state.phase == .careDiscoveryCalibration else { return }
+
+            state.openResidentProfile()
+        }
+    }
+
     /// Cross-fades the equalizer + mood row between clips (`skipFadeOut` for first paint).
     @MainActor
     private func runDiscoveryClipTransition(skipFadeOut: Bool) async {
@@ -212,6 +277,154 @@ struct DiscoveryCalibrationView: View {
             audio.stop()
             state.commitDiscoverySnippetSlice()
         }
+    }
+}
+
+// MARK: - Discovery → resident typography exit
+
+/// Falling Unicode musical glyphs — typography only, no lyric copy.
+private struct DiscoveryMusicalExitTypographyOverlay: View {
+    private struct Flake: Identifiable {
+        let id: Int
+        let text: String
+        let lateral: CGFloat
+        let fontSize: CGFloat
+        let cascade: CGFloat
+        let sway: CGFloat
+        let spinSeed: CGFloat
+        let pacing: CGFloat
+    }
+
+    private let flakes: [Flake]
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init() {
+        let marks = ["♪", "♫", "♬", "♩", "♭", "♯", "♮"]
+        flakes = (0 ..< 44).map { i in
+            var seed = UInt64(i * 1_973_917 + 52)
+
+            func bump() -> UInt64 {
+                seed = seed &* 6364136223846793005 &+ 1_442_695_040_888_963_407
+                return seed
+            }
+
+            func unit() -> CGFloat {
+                CGFloat(Double(bump() % 8192) / 8192.0)
+            }
+
+            let markIndex = Int(bump() % UInt64(max(1, marks.count)))
+
+            return Flake(
+                id: i,
+                text: marks[markIndex],
+                lateral: unit(),
+                fontSize: unit() * 32 + 20,
+                cascade: unit(),
+                sway: unit() * CGFloat.pi * 2,
+                spinSeed: unit() * CGFloat.pi * 2,
+                pacing: 0.32 + unit() * 0.62
+            )
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: 1 / 34, paused: false)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                let w = geo.size.width
+                let h = geo.size.height
+
+                ZStack {
+                    LinearGradient(
+                        colors: [
+                            BrandTheme.cream.opacity(0),
+                            BrandTheme.cream.opacity(0.76),
+                            BrandTheme.goldSoft.opacity(0.26),
+                            BrandTheme.creamDeep.opacity(0.92),
+                            BrandTheme.brown.opacity(0.08),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .ignoresSafeArea()
+
+                    Group {
+                        if reduceMotion {
+                            ForEach(flakes) { f in
+                                let xNorm = CGFloat(0.04 + Double(f.lateral) * 0.92)
+                                let bob =
+                                    CGFloat(
+                                        sin(
+                                            t * (0.94 + Double(f.id % 11) * 0.038)
+                                                + Double(f.spinSeed)
+                                        ) * 8
+                                    ) / max(h, 340)
+                                let yNorm = CGFloat(0.06 + Double(f.cascade) * 0.88) + bob
+                                Text(f.text)
+                                    .font(.system(size: f.fontSize, weight: .light, design: .serif))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [
+                                                BrandTheme.gold.opacity(0.68),
+                                                BrandTheme.brown.opacity(0.45),
+                                                BrandTheme.goldDeep.opacity(0.56),
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .opacity(0.32 + Double(sin(t * 2.05 + Double(f.id))) * 0.12)
+                                    .rotationEffect(
+                                        .degrees(sin(t * 0.7 + Double(f.sway)) * (f.id.isMultiple(of: 2) ? -6 : 6))
+                                    )
+                                    .position(x: xNorm * w, y: yNorm * h)
+                            }
+                        } else {
+                            let cycleDuration = 7.85
+                            ForEach(flakes) { f in
+                                let local = Double(f.cascade) + t * Double(f.pacing)
+                                let u = CGFloat((local.truncatingRemainder(dividingBy: cycleDuration)) / cycleDuration)
+
+                                /// Quick fade above the hull, fall through viewport, dissipate toward bottom edge.
+                                let rise = min(1, Double(u * 11))
+                                let tail = max(0, Double((u - 0.88) / 0.14))
+                                let alpha = CGFloat(min(1, rise)) * CGFloat(max(0.05, 1 - tail * tail))
+
+                                let x =
+                                    CGFloat(0.04 + Double(f.lateral) * 0.92) * w
+                                    + CGFloat(sin(t * 0.93 + Double(f.sway))) * CGFloat(26 + CGFloat(f.id % 17))
+                                let extra = CGFloat(f.id % 5) * 4
+                                let y = CGFloat(-extra) + CGFloat(h + 160 + Double(extra)) * u
+
+                                let spin = CGFloat(sin(t * 1.06 + Double(f.spinSeed) + Double(f.id) * 0.71) * (15 + CGFloat(f.id % 9)))
+
+                                Text(f.text)
+                                    .font(.system(size: f.fontSize, weight: .light, design: .serif))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [
+                                                BrandTheme.gold.opacity(0.92),
+                                                BrandTheme.brown.opacity(0.5),
+                                                BrandTheme.goldDeep.opacity(0.62),
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .opacity(Double(alpha))
+                                    .rotationEffect(.degrees(spin))
+                                    .blur(radius: CGFloat(max(0, tail * 4.8)))
+                                    .position(x: x, y: y)
+                                    .shadow(color: BrandTheme.gold.opacity(0.18), radius: 3 + CGFloat(f.id % 5), y: 1)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }
 

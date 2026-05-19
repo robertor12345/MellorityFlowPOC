@@ -508,9 +508,20 @@ struct ResidentProfileView: View {
         let roleScale: CGFloat =
             emphasis == .hero ? 1.02 : emphasis == .sideStrip ? 0.98 : 1
         let endR = diskDiameter * 0.62
+        let heroOuterRingPad: CGFloat =
+            emphasis == .hero ? CircularPlaylistEqualizerRing.outwardRibbon : 0
+        let glyphStackSquare = diskDiameter + heroOuterRingPad * 2
 
         return Button(action: action) {
             ZStack {
+                if emphasis == .hero {
+                    CircularPlaylistEqualizerRing(
+                        phase: phase,
+                        accent: genre.accent,
+                        diskDiameter: diskDiameter,
+                        outwardMax: CircularPlaylistEqualizerRing.outwardRibbon
+                    )
+                }
                 Circle()
                     .fill(
                         RadialGradient(
@@ -549,6 +560,18 @@ struct ResidentProfileView: View {
                     )
                     .symbolRenderingMode(.hierarchical)
             }
+            .frame(width: glyphStackSquare, height: glyphStackSquare)
+            .contentShape(
+                Circle()
+                    .path(
+                        in: CGRect(
+                            x: (glyphStackSquare - diskDiameter) / 2,
+                            y: (glyphStackSquare - diskDiameter) / 2,
+                            width: diskDiameter,
+                            height: diskDiameter
+                        )
+                    )
+            )
         }
         .buttonStyle(.plain)
         .accessibilityLabel(genre.accessibilityLabel)
@@ -559,4 +582,71 @@ struct ResidentProfileView: View {
     }
 }
 
+// MARK: - Circular equalizer (active playlist hero only)
+
+/// Radial spectrum bars seated just outside the hero disk rim — drawing stays localized so periphery glyphs are not obscured or given a larger overlap hit target (see `contentShape`).
+private struct CircularPlaylistEqualizerRing: View {
+    static let outwardRibbon: CGFloat = 22
+
+    let phase: TimeInterval
+    let accent: Color
+    let diskDiameter: CGFloat
+    let outwardMax: CGFloat
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var barCount: Int { 26 }
+    /// Bar radial stroke thickness (tangential breadth).
+    private var lineBreadth: CGFloat { 3 }
+
+    private var innerRadius: CGFloat { diskDiameter * 0.5 + lineBreadth * 0.42 }
+
+    var body: some View {
+        let span = diskDiameter + outwardMax * 2
+        Canvas { context, size in
+            let center = CGPoint(x: size.width / 2, y: size.height / 2)
+            for i in 0 ..< barCount {
+                let θ = CGFloat(i) / CGFloat(barCount) * 2 * .pi - .pi / 2
+                let len = barOutwardLength(index: i)
+                let inner = CGPoint(
+                    x: center.x + cos(θ) * innerRadius,
+                    y: center.y + sin(θ) * innerRadius
+                )
+                let outer = CGPoint(
+                    x: center.x + cos(θ) * (innerRadius + len),
+                    y: center.y + sin(θ) * (innerRadius + len)
+                )
+                var seg = Path()
+                seg.move(to: inner)
+                seg.addLine(to: outer)
+                let chatter = CGFloat(0.54 + (sin(phase * 11.3 + Double(i) * 0.63)) * 0.24)
+                let color: Color =
+                    (i % 3 == 0)
+                        ? accent.opacity(Double(0.58 + chatter * 0.22))
+                        : BrandTheme.gold.opacity(Double(0.42 + chatter * 0.35))
+                context.stroke(
+                    seg,
+                    with: .color(color),
+                    style: StrokeStyle(lineWidth: lineBreadth, lineCap: .round)
+                )
+            }
+        }
+        .frame(width: span, height: span)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func barOutwardLength(index: Int) -> CGFloat {
+        guard reduceMotion == false else {
+            return outwardMax * 0.62
+        }
+        let ω = 8.1
+        let wave =
+            sin(phase * ω + Double(index) * 0.74)
+                + 0.36 * cos(phase * (ω * 1.51) + Double(index + 4) * 0.53)
+                + 0.2 * sin(phase * (ω * 2.14) + Double(index))
+        let t = CGFloat((wave + 1.35) / 2.72)
+        return max(5, outwardMax * (0.22 + min(1, t)))
+    }
+}
 

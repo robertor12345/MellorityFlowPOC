@@ -449,7 +449,7 @@ final class SessionPOCState: ObservableObject {
                 DiscoveryPlaylistTuning.applyDiscoveryResults(discoveryResults, to: &patient)
                 carePatients[ix] = patient
             }
-            openResidentProfile()
+            /// Resident instrument surface opens from `DiscoveryCalibrationView` after the exit typography animation completes.
         }
     }
 
