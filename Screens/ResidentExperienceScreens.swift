@@ -185,16 +185,44 @@ private enum GlyphFloatLayout {
         constellation(count: 1, in: size).hub
     }
 
-    /// Stack small “side” glyphs in a vertical column hugging left or right safe inset.
-    static func sideGlyphColumnCenters(count: Int, left: Bool, diameter: CGFloat, gap: CGFloat, in size: CGSize) -> [CGPoint] {
+    /// Stack small “side” glyphs in vertical columns near the playable left/right edges, while honouring **horizontal clearance**
+    /// from the centred hero glyph (both use `hub`, `heroDiameter` for the hero’s active size).
+    static func sideGlyphColumnCenters(
+        count: Int,
+        left: Bool,
+        diameter: CGFloat,
+        gap: CGFloat,
+        hub: CGPoint,
+        heroDiameter: CGFloat,
+        minimumHorizontalGapToHero: CGFloat,
+        in size: CGSize
+    ) -> [CGPoint] {
         guard count > 0 else { return [] }
         let playable = playableRect(in: size)
         let r = diameter / 2
-        let cx = left ? playable.minX + r + 8 : playable.maxX - r - 8
+        let heroR = heroDiameter / 2
+        let horizontalEdgePad: CGFloat = 8
+
+        let cxPreferred: CGFloat
+        if left {
+            let snugToEdge = playable.minX + r + horizontalEdgePad
+            let maxCenterX = hub.x - heroR - minimumHorizontalGapToHero - r
+            cxPreferred = min(snugToEdge, maxCenterX)
+        } else {
+            let snugToEdge = playable.maxX - r - horizontalEdgePad
+            let minCenterX = hub.x + heroR + minimumHorizontalGapToHero + r
+            cxPreferred = max(snugToEdge, minCenterX)
+        }
+
+        let cx = min(
+            max(cxPreferred, playable.minX + r + 4),
+            playable.maxX - r - 4
+        )
+
         let stride = diameter + gap
         let midY = playable.midY
         let span = CGFloat(count - 1) * stride
-        return (0..<count).map { i in
+        return (0 ..< count).map { i in
             CGPoint(x: cx, y: midY - span / 2 + CGFloat(i) * stride)
         }
     }
@@ -369,12 +397,17 @@ struct ResidentProfileView: View {
             let leftCount = (others.count + 1) / 2
             let leftOthers = Array(others.prefix(leftCount))
             let rightOthers = Array(others.dropFirst(leftCount))
+            /// Minimum horizontal **edge-to-edge** air between hero disk and inactive disks (clamped inside playable hull).
+            let heroToSideMinimumGap: CGFloat = 52
             if let li = leftOthers.firstIndex(of: genre) {
                 let pts = GlyphFloatLayout.sideGlyphColumnCenters(
                     count: leftOthers.count,
                     left: true,
                     diameter: sideDisk,
-                    gap: 8,
+                    gap: 14,
+                    hub: idleHub,
+                    heroDiameter: heroDisk,
+                    minimumHorizontalGapToHero: heroToSideMinimumGap,
                     in: size
                 )
                 if li < pts.count {
@@ -386,7 +419,10 @@ struct ResidentProfileView: View {
                     count: rightOthers.count,
                     left: false,
                     diameter: sideDisk,
-                    gap: 8,
+                    gap: 14,
+                    hub: idleHub,
+                    heroDiameter: heroDisk,
+                    minimumHorizontalGapToHero: heroToSideMinimumGap,
                     in: size
                 )
                 if ri < pts.count {
@@ -427,7 +463,11 @@ struct ResidentProfileView: View {
         emphasis: GlyphEmphasis,
         action: @escaping () -> Void
     ) -> some View {
-        let Δ = GlyphFloatLayout.animatedDelta(index: index, base: baseCenter, hub: constellationHub, phase: phase)
+        let rawΔ = GlyphFloatLayout.animatedDelta(index: index, base: baseCenter, hub: constellationHub, phase: phase)
+        /// Side glyphs sit nearer the hero horizontally — tame drift so orbit doesn’t chew into clearance.
+        let motionScale: CGFloat =
+            emphasis == .sideStrip ? 0.46 : emphasis == .hero ? 0.82 : 1
+        let Δ = CGSize(width: rawΔ.width * motionScale, height: rawΔ.height * motionScale)
         let pos = CGPoint(x: baseCenter.x + Δ.width, y: baseCenter.y + Δ.height)
         let rot = GlyphFloatLayout.rotationDynamics(index: index, phase: phase)
         let driftScale = GlyphFloatLayout.scalePulse(index: index, phase: phase)
