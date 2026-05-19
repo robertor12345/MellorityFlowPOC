@@ -1,12 +1,5 @@
 import SwiftUI
-import AudioToolbox
 
-private enum DiscoverySelectionFeedback {
-    /// System “Peek” acknowledgement — audible over streamed clip when a mood face is tapped.
-    static func playTapChime() {
-        AudioServicesPlaySystemSound(SystemSoundID(1104))
-    }
-}
 // MARK: - Discovery calibration (timed snippets + traffic-light smileys — no readable copy for participants)
 
 struct DiscoveryCalibrationView: View {
@@ -313,7 +306,7 @@ private struct TrafficSmileyFaceButton: View {
 
     var body: some View {
         Button {
-            DiscoverySelectionFeedback.playTapChime()
+            DiscoveryEtherealTapChime.playLight()
             if reduceMotion {
                 glowBurst = 0.85
                 Task { @MainActor in
