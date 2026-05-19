@@ -2,6 +2,185 @@ import SwiftUI
 
 // MARK: - Resident session: floating calm glyphs → in-app playlist panels (no system chrome)
 
+private enum GlyphFloatLayout {
+    static let glyphRadius: CGFloat = 46
+    /// Resting clearance between disk edges (motion budget is capped below this).
+    private static let restingEdgeSeparation: CGFloat = 54
+
+    private static func minCenterDistance(resting: Bool = true) -> CGFloat {
+        2 * glyphRadius + (resting ? restingEdgeSeparation : 20)
+    }
+
+    /// Playscreen inset so glyphs stay below staff affordances and safe edges.
+    private static func playableRect(in size: CGSize) -> CGRect {
+        let padX = max(BrandTheme.contentGutter, 28)
+        let side = glyphRadius + 22 + padX
+        let top: CGFloat = 124
+        let bottom: CGFloat = 44
+        return CGRect(
+            x: side,
+            y: top,
+            width: max(120, size.width - side * 2),
+            height: max(220, size.height - top - bottom)
+        )
+    }
+
+    /// Evenly spaced on an ellipse inside `playable`, with pairwise separation guarded by relaxation.
+    static func constellation(count: Int, in size: CGSize) -> (centers: [CGPoint], hub: CGPoint) {
+        guard count > 0 else { return ([], .zero) }
+        let playable = playableRect(in: size)
+        let hub = CGPoint(x: playable.midX, y: playable.midY)
+        switch count {
+        case 1:
+            return ([hub], hub)
+        default:
+            let minD = minCenterDistance()
+            let sinHalfChord = CGFloat(sin(Double.pi / Double(count)))
+            let maxEllipseX = playable.width / 2 - glyphRadius - 14
+            let maxEllipseY = playable.height / 2 - glyphRadius - 16
+            // Mean radius needed so neighbouring arc chord ≥ resting minimum.
+            let radiusChord = CGFloat(minD * 1.06) / (2 * max(sinHalfChord, CGFloat(1e-3)))
+            var rx = min(maxEllipseX * 0.97, radiusChord)
+            var ry = min(maxEllipseY * 0.95, radiusChord * CGFloat(0.91))
+            rx = max(rx, CGFloat(72 + count * 2))
+            ry = max(min(ry, maxEllipseY), CGFloat(58 + count * 2))
+
+            var pts = ellipsePoints(count: count, hub: hub, rx: rx, ry: ry)
+            pts = pts.map { clampToPlayable($0, playable: playable) }
+            pts = relaxCenters(pts, playable: playable, minDist: minD * 1.03, iterations: 14)
+
+            let spread = pairwiseMinSpacing(pts)
+            if spread < minD * 1.015, count >= 2 {
+                let scale: CGFloat = 1.085
+                let rx2 = min(maxEllipseX * 0.99, rx * scale)
+                let ry2 = min(maxEllipseY * 0.97, ry * scale)
+                var pts2 = ellipsePoints(count: count, hub: hub, rx: rx2, ry: ry2)
+                pts2 = pts2.map { clampToPlayable($0, playable: playable) }
+                pts = relaxCenters(pts2, playable: playable, minDist: minD * 1.03, iterations: 16)
+            }
+            return (pts, hub)
+        }
+    }
+
+    private static func pairwiseMinSpacing(_ pts: [CGPoint]) -> CGFloat {
+        guard pts.count >= 2 else { return CGFloat.greatestFiniteMagnitude }
+        var m = CGFloat.greatestFiniteMagnitude
+        for i in pts.indices {
+            for j in (i &+ 1) ..< pts.count {
+                m = min(m, hypot(pts[j].x - pts[i].x, pts[j].y - pts[i].y))
+            }
+        }
+        return m
+    }
+
+    private static func ellipsePoints(count: Int, hub: CGPoint, rx: CGFloat, ry: CGFloat) -> [CGPoint] {
+        guard count > 0 else { return [] }
+        let start = -CGFloat.pi / 2 + 0.16
+        return (0..<count).map { i in
+            let θ = start + CGFloat(i) * (2 * .pi / CGFloat(count))
+            return CGPoint(x: hub.x + cos(θ) * rx, y: hub.y + sin(θ) * ry)
+        }
+    }
+
+    private static func clampToPlayable(_ p: CGPoint, playable: CGRect) -> CGPoint {
+        CGPoint(
+            x: min(max(playable.minX + glyphRadius + 8, p.x), playable.maxX - glyphRadius - 8),
+            y: min(max(playable.minY + glyphRadius + 8, p.y), playable.maxY - glyphRadius - 8)
+        )
+    }
+
+    /// Push overlaps apart gently while respecting the playable hull.
+    private static func relaxCenters(_ pts: [CGPoint], playable: CGRect, minDist: CGFloat, iterations: Int) -> [CGPoint] {
+        var p = pts
+        guard p.count >= 2 else { return p }
+        for _ in 0 ..< iterations {
+            for i in p.indices {
+                var ax: CGFloat = 0
+                var ay: CGFloat = 0
+                for j in p.indices where j != i {
+                    let dx = p[i].x - p[j].x
+                    let dy = p[i].y - p[j].y
+                    let dist = hypot(dx, dy)
+                    guard dist > 0.001, dist < minDist else { continue }
+                    let push = (minDist - dist) / dist * 0.42
+                    ax += dx * push
+                    ay += dy * push
+                }
+                p[i].x += ax
+                p[i].y += ay
+                p[i] = clampToPlayable(p[i], playable: playable)
+            }
+        }
+        return p
+    }
+
+    /// Multi-layer motion that keeps typical displacement modest so relaxation margins hold.
+    static func animatedDelta(index: Int, base: CGPoint, hub: CGPoint, phase: TimeInterval) -> CGSize {
+        let ω1 = 0.19 + Double(index % 7) * 0.063
+        let ω2 = 0.247 + Double((index ^ 5) % 9) * 0.058
+        let ω3 = 0.089 + Double((index + 2) % 11) * 0.031
+
+        let drift = CGSize(
+            width: CGFloat(sin(phase * 0.049 + Double(index % 13) + 2.08) * 11),
+            height: CGFloat(cos(phase * 0.043 + Double(index % 17) + 1.71) * 9.5)
+        )
+
+        let vx = base.x - hub.x
+        let vy = base.y - hub.y
+        let len = hypot(vx, vy)
+        let tx = len > 0.5 ? -vy / len : 0
+        let ty = len > 0.5 ? vx / len : 1
+
+        let tangentialCarrier =
+            sin(phase * ω3 + Double(index))
+            + 0.34 * cos(phase * ω3 * 1.618 + Double(index + 9))
+            + 0.26 * sin(phase * (ω3 + 0.067) + Double(index))
+
+        let tangentialAmp = CGFloat(tangentialCarrier * Double(7 + index % 3))
+
+        let normCarrier = CGFloat(0.42 * cos(phase * ω2 + Double(index)))
+        let alongX = len > 0.5 ? vx / len : 1
+        let alongY = len > 0.5 ? vy / len : 0
+
+        let ripple = CGSize(
+            width: CGFloat(sin(phase * ω1 + Double(index))) * CGFloat(7 + CGFloat(index % 4)),
+            height: CGFloat(cos(phase * ω2 + Double(index) * 0.93)) * CGFloat(7 + CGFloat((index >> 1) % 5))
+        )
+
+        let orbital = CGSize(
+            width: tx * tangentialAmp + alongX * normCarrier,
+            height: ty * tangentialAmp + alongY * normCarrier
+        )
+
+        var Δ = CGSize(
+            width: drift.width + ripple.width + orbital.width,
+            height: drift.height + ripple.height + orbital.height
+        )
+        Δ = clampMotionVector(Δ, maxLength: motionCap)
+        return Δ
+    }
+
+    /// Limits how far glyphs wander from lattice rest so pairwise separation survives motion + scale pulses.
+    private static let motionCap: CGFloat = 19
+
+    private static func clampMotionVector(_ Δ: CGSize, maxLength: CGFloat) -> CGSize {
+        let length = hypot(Δ.width, Δ.height)
+        guard length > maxLength, length > 0.001 else { return Δ }
+        let s = maxLength / length
+        return CGSize(width: Δ.width * s, height: Δ.height * s)
+    }
+
+    static func rotationDynamics(index: Int, phase: TimeInterval) -> Double {
+        sin(phase * 0.21 + Double(index) * 0.97) * 6.2
+            + cos(phase * 0.33 + Double(index) * 0.63) * 4.1
+            + sin(phase * 0.11 + Double(index) * 2.71) * 3.2
+    }
+
+    static func scalePulse(index: Int, phase: TimeInterval) -> CGFloat {
+        CGFloat(1 + 0.028 * sin(phase * (0.24 + Double(index % 11) * 0.036) + Double(index)))
+    }
+}
+
 struct ResidentProfileView: View {
     @ObservedObject var state: SessionPOCState
     @State private var activeOverlay: ResidentMusicSheetRoute?
@@ -29,8 +208,17 @@ struct ResidentProfileView: View {
             TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 GeometryReader { geo in
+                    let layout = GlyphFloatLayout.constellation(count: genresOnFile.count, in: geo.size)
                     ForEach(Array(genresOnFile.enumerated()), id: \.offset) { index, genre in
-                        floatingGlyphButton(genre: genre, index: index, phase: t, in: geo.size)
+                        if index < layout.centers.count {
+                            floatingGlyphButton(
+                                genre: genre,
+                                index: index,
+                                baseCenter: layout.centers[index],
+                                constellationHub: layout.hub,
+                                phase: t
+                            )
+                        }
                     }
                 }
             }
@@ -112,13 +300,14 @@ struct ResidentProfileView: View {
     private func floatingGlyphButton(
         genre: ResidentMusicGenre,
         index: Int,
-        phase: TimeInterval,
-        in size: CGSize
+        baseCenter: CGPoint,
+        constellationHub: CGPoint,
+        phase: TimeInterval
     ) -> some View {
-        let x = glyphX(index: index, count: genresOnFile.count, phase: phase, width: size.width)
-        let y = glyphY(index: index, phase: phase, height: size.height)
-        let sway = sin(phase * 0.38 + Double(index) * 0.87) * 4
-        let bob = sin(phase * 0.68 + Double(index) * 0.53) * 5
+        let Δ = GlyphFloatLayout.animatedDelta(index: index, base: baseCenter, hub: constellationHub, phase: phase)
+        let pos = CGPoint(x: baseCenter.x + Δ.width, y: baseCenter.y + Δ.height)
+        let rot = GlyphFloatLayout.rotationDynamics(index: index, phase: phase)
+        let scale = GlyphFloatLayout.scalePulse(index: index, phase: phase)
 
         return Button {
             guard let group = patient?.genrePlaylistGroups.first(where: { $0.genre == genre }) else { return }
@@ -168,21 +357,9 @@ struct ResidentProfileView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(genre.accessibilityLabel)
-        .position(x: x, y: y + bob)
-        .rotationEffect(.degrees(sway))
-    }
-
-    private func glyphX(index: Int, count: Int, phase: TimeInterval, width: CGFloat) -> CGFloat {
-        let base = Double(index + 1) / Double(max(count + 1, 2))
-        let wobble = sin(phase * 0.27 + Double(index) * 1.05) * 0.055
-        let frac = min(0.9, max(0.1, base + wobble))
-        return width * CGFloat(frac)
-    }
-
-    private func glyphY(index: Int, phase: TimeInterval, height: CGFloat) -> CGFloat {
-        let row = index % 3
-        let baseY = 0.28 + Double(row) * 0.2 + sin(Double(index) * 0.65 + phase * 0.14) * 0.038
-        return height * CGFloat(min(0.78, max(0.22, baseY)))
+        .position(x: pos.x, y: pos.y)
+        .rotationEffect(.degrees(rot))
+        .scaleEffect(scale, anchor: .center)
     }
 }
 
