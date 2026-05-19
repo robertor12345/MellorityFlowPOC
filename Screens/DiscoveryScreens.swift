@@ -1,5 +1,12 @@
 import SwiftUI
+import AudioToolbox
 
+private enum DiscoverySelectionFeedback {
+    /// System “Peek” acknowledgement — audible over streamed clip when a mood face is tapped.
+    static func playTapChime() {
+        AudioServicesPlaySystemSound(SystemSoundID(1104))
+    }
+}
 // MARK: - Discovery calibration (timed snippets + traffic-light smileys — no readable copy for participants)
 
 struct DiscoveryCalibrationView: View {
@@ -7,6 +14,12 @@ struct DiscoveryCalibrationView: View {
     @StateObject private var audio = AmbientAudioSession()
     @State private var sliceStartedAt = Date()
     @State private var sliceDeadlineTask: Task<Void, Never>?
+    @State private var clipContentOpacity = 0.0
+    /// Cancels superseded fade runs when snippets advance quickly (tap vs timer).
+    @State private var clipFadeNonce: UInt = 0
+
+    private let clipFadeOut: TimeInterval = 0.38
+    private let clipFadeIn: TimeInterval = 0.46
 
     var body: some View {
         ScreenFadeIn {
@@ -28,6 +41,7 @@ struct DiscoveryCalibrationView: View {
                         sentimentRow
                     }
                     .frame(maxWidth: 520)
+                    .opacity(clipContentOpacity)
                     Spacer(minLength: 16)
                 }
 
@@ -37,10 +51,12 @@ struct DiscoveryCalibrationView: View {
         }
         .onAppear {
             audio.volumeMultiplier = 1.12
-            beginSlice(resetStartTime: true)
+            clipFadeNonce = 0
+            clipContentOpacity = 0
+            Task { await runDiscoveryClipTransition(skipFadeOut: true) }
         }
         .onChange(of: state.discoverySnippetIndex) { _, _ in
-            beginSlice(resetStartTime: true)
+            Task { await runDiscoveryClipTransition(skipFadeOut: false) }
         }
         .onChange(of: state.phase) { _, phase in
             if phase != .careDiscoveryCalibration {
@@ -112,6 +128,43 @@ struct DiscoveryCalibrationView: View {
         audio.stop()
         state.setDiscoveryPick(mood)
         state.commitDiscoverySnippetSlice()
+    }
+
+    /// Cross-fades the equalizer + mood row between clips (`skipFadeOut` for first paint).
+    @MainActor
+    private func runDiscoveryClipTransition(skipFadeOut: Bool) async {
+        clipFadeNonce += 1
+        let token = clipFadeNonce
+
+        guard state.phase == .careDiscoveryCalibration else {
+            clipContentOpacity = 1
+            return
+        }
+        guard state.discoverySnippetIndex < DiscoveryFlowPOC.snippetCount else {
+            clipContentOpacity = 1
+            return
+        }
+
+        if !skipFadeOut {
+            withAnimation(.easeOut(duration: clipFadeOut)) {
+                clipContentOpacity = 0
+            }
+            let ns = UInt64((clipFadeOut * 1000 + 35) * 1_000_000)
+            try? await Task.sleep(nanoseconds: ns)
+            guard token == clipFadeNonce else { return }
+            guard state.phase == .careDiscoveryCalibration else { return }
+            guard state.discoverySnippetIndex < DiscoveryFlowPOC.snippetCount else {
+                clipContentOpacity = 1
+                return
+            }
+        }
+
+        beginSlice(resetStartTime: true)
+
+        guard token == clipFadeNonce else { return }
+        withAnimation(.easeIn(duration: clipFadeIn)) {
+            clipContentOpacity = 1
+        }
     }
 
     private func beginSlice(resetStartTime: Bool) {
@@ -254,22 +307,66 @@ private struct TrafficSmileyFaceButton: View {
     let isSelected: Bool
     var action: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pressPopScale: CGFloat = 1
+    @State private var glowBurst: CGFloat = 0
+
     var body: some View {
-        Button(action: action) {
-            MinimalTrafficFace(sentiment: sentiment)
-                .frame(width: 96, height: 96)
-                .padding(6)
-                .background(
-                    Circle()
-                        .fill(BrandTheme.cream.opacity(isSelected ? 0.92 : 0.45))
-                        .overlay(
-                            Circle().strokeBorder(
-                                sentiment.ringColor.opacity(isSelected ? 0.95 : 0.42),
-                                lineWidth: isSelected ? 3.5 : 1.8
+        Button {
+            DiscoverySelectionFeedback.playTapChime()
+            if reduceMotion {
+                glowBurst = 0.85
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 220_000_000)
+                    withAnimation(.easeOut(duration: 0.35)) { glowBurst = 0 }
+                }
+            } else {
+                withAnimation(.spring(response: 0.29, dampingFraction: 0.52)) {
+                    pressPopScale = 1.16
+                    glowBurst = 1
+                }
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 115_000_000)
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.68)) {
+                        pressPopScale = 1
+                    }
+                    try? await Task.sleep(nanoseconds: 340_000_000)
+                    withAnimation(.easeOut(duration: 0.36)) {
+                        glowBurst = 0
+                    }
+                }
+            }
+            action()
+        } label: {
+            ZStack {
+                Circle()
+                    .strokeBorder(
+                        sentiment.ringColor.opacity(0.62 * glowBurst + 0.08),
+                        lineWidth: 3 + glowBurst * 18
+                    )
+                    .frame(width: 126, height: 126)
+                    .blur(radius: glowBurst * 10)
+
+                MinimalTrafficFace(sentiment: sentiment)
+                    .frame(width: 96, height: 96)
+                    .padding(6)
+                    .background(
+                        Circle()
+                            .fill(BrandTheme.cream.opacity(isSelected ? 0.92 : 0.45))
+                            .overlay(
+                                Circle().strokeBorder(
+                                    sentiment.ringColor.opacity(isSelected ? 0.98 : (0.42 + glowBurst * 0.5)),
+                                    lineWidth: isSelected ? 4 : (1.8 + glowBurst * 3)
+                                )
                             )
-                        )
-                        .shadow(color: sentiment.ringColor.opacity(isSelected ? 0.42 : 0.12), radius: isSelected ? 12 : 4, y: 3)
-                )
+                            .shadow(
+                                color: sentiment.ringColor.opacity(0.12 + glowBurst * 0.55),
+                                radius: (isSelected ? 12 : 4) + glowBurst * 28,
+                                y: 3 + glowBurst * 8
+                            )
+                    )
+            }
+            .scaleEffect(pressPopScale)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(sentiment.accessibilitySummary + " mood")

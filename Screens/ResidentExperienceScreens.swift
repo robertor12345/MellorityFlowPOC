@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Resident session: genre glyphs play immediately → hero centers, others tuck to edges
+// MARK: - Resident session: genre glyphs play immediately → idle & playing layouts span the playable hull
 
 private enum GlyphFloatLayout {
     static let glyphRadius: CGFloat = 46
@@ -82,16 +82,26 @@ private enum GlyphFloatLayout {
         }
     }
 
-    private static func clampToPlayable(_ p: CGPoint, playable: CGRect) -> CGPoint {
+    private static func clampToPlayable(_ p: CGPoint, playable: CGRect, glyphR: CGFloat) -> CGPoint {
         let edge: CGFloat = 4
         return CGPoint(
-            x: min(max(playable.minX + glyphRadius + edge, p.x), playable.maxX - glyphRadius - edge),
-            y: min(max(playable.minY + glyphRadius + edge, p.y), playable.maxY - glyphRadius - edge)
+            x: min(max(playable.minX + glyphR + edge, p.x), playable.maxX - glyphR - edge),
+            y: min(max(playable.minY + glyphR + edge, p.y), playable.maxY - glyphR - edge)
         )
     }
 
+    private static func clampToPlayable(_ p: CGPoint, playable: CGRect) -> CGPoint {
+        clampToPlayable(p, playable: playable, glyphR: glyphRadius)
+    }
+
     /// Push overlaps apart gently while respecting the playable hull.
-    private static func relaxCenters(_ pts: [CGPoint], playable: CGRect, minDist: CGFloat, iterations: Int) -> [CGPoint] {
+    private static func relaxCenters(
+        _ pts: [CGPoint],
+        playable: CGRect,
+        minDist: CGFloat,
+        iterations: Int,
+        clampRadius: CGFloat = glyphRadius
+    ) -> [CGPoint] {
         var p = pts
         guard p.count >= 2 else { return p }
         for _ in 0 ..< iterations {
@@ -109,7 +119,7 @@ private enum GlyphFloatLayout {
                 }
                 p[i].x += ax
                 p[i].y += ay
-                p[i] = clampToPlayable(p[i], playable: playable)
+                p[i] = clampToPlayable(p[i], playable: playable, glyphR: clampRadius)
             }
         }
         return p
@@ -171,6 +181,19 @@ private enum GlyphFloatLayout {
         return CGSize(width: Δ.width * s, height: Δ.height * s)
     }
 
+    /// Keeps a disk center ≥ `minRadius` from `hub` (clears centred hero occupancy).
+    private static func ensureMinRadialDistanceFromHub(_ p: CGPoint, hub: CGPoint, minRadius: CGFloat) -> CGPoint {
+        let dx = p.x - hub.x
+        let dy = p.y - hub.y
+        let d = hypot(dx, dy)
+        guard d > 1e-3 else {
+            return CGPoint(x: hub.x + minRadius, y: hub.y)
+        }
+        guard d < minRadius else { return p }
+        let scale = minRadius / d
+        return CGPoint(x: hub.x + dx * scale, y: hub.y + dy * scale)
+    }
+
     static func rotationDynamics(index: Int, phase: TimeInterval) -> Double {
         sin(phase * 0.21 + Double(index) * 0.97) * 6.2
             + cos(phase * 0.33 + Double(index) * 0.63) * 4.1
@@ -186,46 +209,63 @@ private enum GlyphFloatLayout {
         constellation(count: 1, in: size).hub
     }
 
-    /// Stack small “side” glyphs in vertical columns near the playable left/right edges, while honouring **horizontal clearance**
-    /// from the centred hero glyph (both use `hub`, `heroDiameter` for the hero’s active size).
-    static func sideGlyphColumnCenters(
-        count: Int,
-        left: Bool,
-        diameter: CGFloat,
-        gap: CGFloat,
-        hub: CGPoint,
+    /// While one genre occupies **`hub`** as hero, lays out the inactive picks on an **ellipse** through the playable hull —
+    /// same spreading idea as idle `constellation`, but with pairwise spacing for the smaller periphery disks and a ring floor outside the hero.
+    static func focusedInactivePeriphery(
+        inactiveCount: Int,
         heroDiameter: CGFloat,
-        minimumHorizontalGapToHero: CGFloat,
+        hub: CGPoint,
         in size: CGSize
     ) -> [CGPoint] {
-        guard count > 0 else { return [] }
+        guard inactiveCount > 0 else { return [] }
         let playable = playableRect(in: size)
-        let r = diameter / 2
-        let heroR = heroDiameter / 2
-        let horizontalEdgePad: CGFloat = 8
+        let inactiveR: CGFloat = 32
+        let minPairSep = CGFloat(2 * inactiveR + restingEdgeSeparation * 0.94)
+        let minOrbitRadius = CGFloat(heroDiameter * 0.5 + inactiveR + 54)
 
-        let cxPreferred: CGFloat
-        if left {
-            let snugToEdge = playable.minX + r + horizontalEdgePad
-            let maxCenterX = hub.x - heroR - minimumHorizontalGapToHero - r
-            cxPreferred = min(snugToEdge, maxCenterX)
-        } else {
-            let snugToEdge = playable.maxX - r - horizontalEdgePad
-            let minCenterX = hub.x + heroR + minimumHorizontalGapToHero + r
-            cxPreferred = max(snugToEdge, minCenterX)
+        if inactiveCount == 1 {
+            var solo = CGPoint(
+                x: playable.minX + inactiveR + 14 + playable.width * 0.08,
+                y: playable.minY + inactiveR + 18 + playable.height * 0.16
+            )
+            solo = ensureMinRadialDistanceFromHub(solo, hub: hub, minRadius: minOrbitRadius)
+            return [clampToPlayable(solo, playable: playable, glyphR: inactiveR)]
         }
 
-        let cx = min(
-            max(cxPreferred, playable.minX + r + 4),
-            playable.maxX - r - 4
-        )
+        let sinHalfChord = CGFloat(sin(Double.pi / Double(inactiveCount)))
+        let maxEllipseX = playable.width / 2 - inactiveR - 8
+        let maxEllipseY = playable.height / 2 - inactiveR - 10
+        let radiusChord = CGFloat(minPairSep * 1.06) / (2 * max(sinHalfChord, CGFloat(1e-3)))
 
-        let stride = diameter + gap
-        let midY = playable.midY
-        let span = CGFloat(count - 1) * stride
-        return (0 ..< count).map { i in
-            CGPoint(x: cx, y: midY - span / 2 + CGFloat(i) * stride)
+        var rx = min(maxEllipseX * 0.995, radiusChord * 1.52)
+        var ry = min(maxEllipseY * 0.99, radiusChord * CGFloat(1.36))
+        rx = max(rx, maxEllipseX * 0.84)
+        ry = max(ry, maxEllipseY * 0.8)
+        rx = max(rx, min(minOrbitRadius * 1.06, maxEllipseX * 0.998))
+        ry = max(ry, min(minOrbitRadius * CGFloat(1.02), maxEllipseY * 0.998))
+
+        var pts = ellipsePoints(count: inactiveCount, hub: hub, rx: rx, ry: ry)
+        pts = pts.map { ensureMinRadialDistanceFromHub($0, hub: hub, minRadius: minOrbitRadius) }
+        pts = pts.map { clampToPlayable($0, playable: playable, glyphR: inactiveR) }
+        pts = relaxCenters(pts, playable: playable, minDist: minPairSep * 1.03, iterations: 26, clampRadius: inactiveR)
+
+        pts = pts.map { ensureMinRadialDistanceFromHub($0, hub: hub, minRadius: minOrbitRadius) }
+        pts = pts.map { clampToPlayable($0, playable: playable, glyphR: inactiveR) }
+
+        let spread = pairwiseMinSpacing(pts)
+        if spread < minPairSep * 1.012, inactiveCount >= 2 {
+            let scale: CGFloat = 1.14
+            let rx2 = min(maxEllipseX * 0.999, rx * scale)
+            let ry2 = min(maxEllipseY * 0.99, ry * scale)
+            var pts2 = ellipsePoints(count: inactiveCount, hub: hub, rx: rx2, ry: ry2)
+            pts2 = pts2.map { ensureMinRadialDistanceFromHub($0, hub: hub, minRadius: minOrbitRadius) }
+            pts2 = pts2.map { clampToPlayable($0, playable: playable, glyphR: inactiveR) }
+            pts = relaxCenters(pts2, playable: playable, minDist: minPairSep * 1.03, iterations: 22, clampRadius: inactiveR)
+
+            pts = pts.map { ensureMinRadialDistanceFromHub($0, hub: hub, minRadius: minOrbitRadius) }
+            pts = pts.map { clampToPlayable($0, playable: playable, glyphR: inactiveR) }
         }
+        return pts
     }
 }
 
@@ -245,6 +285,11 @@ struct ResidentProfileView: View {
         return ResidentMusicGenre.allCases.filter { set.contains($0) }
     }
 
+    private enum ResidentMusicGlyphSizing {
+        /// Hero disk while a playlist plays — must stay in sync with `glyphFrames` hero metrics.
+        static let heroDiskDiameter: CGFloat = 154
+    }
+
     var body: some View {
         ZStack {
             BrandTheme.backgroundGradient
@@ -260,6 +305,18 @@ struct ResidentProfileView: View {
                 GeometryReader { geo in
                     let hub = GlyphFloatLayout.musicGlyphHub(in: geo.size)
                     let idle = GlyphFloatLayout.constellation(count: genresOnFile.count, in: geo.size)
+                    let playingPeriphery: [CGPoint] = {
+                        guard let sg = selectedPlayingGenre else { return [] }
+                        let others = genresOnFile.filter { $0 != sg }
+                        guard others.isEmpty == false else { return [] }
+                        return GlyphFloatLayout.focusedInactivePeriphery(
+                            inactiveCount: others.count,
+                            heroDiameter: ResidentMusicGlyphSizing.heroDiskDiameter,
+                            hub: hub,
+                            in: geo.size
+                        )
+                    }()
+
                     ForEach(Array(genresOnFile.enumerated()), id: \.offset) { index, genre in
                         let emphasis = glyphRole(for: genre)
                         let (computedCenter, disk, icon) = glyphFrames(
@@ -267,7 +324,8 @@ struct ResidentProfileView: View {
                             index: index,
                             in: geo.size,
                             idleCenters: idle.centers,
-                            idleHub: idle.hub
+                            idleHub: idle.hub,
+                            peripheryPlayingCenters: playingPeriphery
                         )
                         let anchor = emphasis == .hero ? hub : computedCenter
 
@@ -359,7 +417,7 @@ struct ResidentProfileView: View {
         }
     }
 
-    /// Rest (even drift) versus hero centre burst versus shrunken neighbours on the hull sides.
+    /// Rest drift, hero bloom, or **periphery** positions when another genre’s playlist is audible.
     private enum GlyphEmphasis {
         case idle
         case hero
@@ -376,11 +434,12 @@ struct ResidentProfileView: View {
         index: Int,
         in size: CGSize,
         idleCenters: [CGPoint],
-        idleHub: CGPoint
+        idleHub: CGPoint,
+        peripheryPlayingCenters: [CGPoint]
     ) -> (CGPoint, CGFloat, CGFloat) {
         let idleDisk: CGFloat = 92
         let idleIcon: CGFloat = 38
-        let heroDisk: CGFloat = 154
+        let heroDisk = ResidentMusicGlyphSizing.heroDiskDiameter
         let heroIcon: CGFloat = 62
         let sideDisk: CGFloat = 64
         let sideIcon: CGFloat = 26
@@ -394,46 +453,20 @@ struct ResidentProfileView: View {
         case .hero:
             return (idleHub, heroDisk, heroIcon)
         case .sideStrip:
-            let others = genresOnFile.filter { $0 != selectedPlayingGenre }
-            let leftCount = (others.count + 1) / 2
-            let leftOthers = Array(others.prefix(leftCount))
-            let rightOthers = Array(others.dropFirst(leftCount))
-            /// Minimum horizontal **edge-to-edge** air between hero disk and inactive disks (clamped inside playable hull).
-            let heroToSideMinimumGap: CGFloat = 156
-            if let li = leftOthers.firstIndex(of: genre) {
-                let pts = GlyphFloatLayout.sideGlyphColumnCenters(
-                    count: leftOthers.count,
-                    left: true,
-                    diameter: sideDisk,
-                    gap: 42,
-                    hub: idleHub,
-                    heroDiameter: heroDisk,
-                    minimumHorizontalGapToHero: heroToSideMinimumGap,
-                    in: size
-                )
-                if li < pts.count {
-                    return (pts[li], sideDisk, sideIcon)
+            guard let sg = selectedPlayingGenre else {
+                guard index < idleCenters.count else {
+                    return (idleHub, sideDisk, sideIcon)
                 }
+                return (idleCenters[index], sideDisk, sideIcon)
             }
-            if let ri = rightOthers.firstIndex(of: genre) {
-                let pts = GlyphFloatLayout.sideGlyphColumnCenters(
-                    count: rightOthers.count,
-                    left: false,
-                    diameter: sideDisk,
-                    gap: 42,
-                    hub: idleHub,
-                    heroDiameter: heroDisk,
-                    minimumHorizontalGapToHero: heroToSideMinimumGap,
-                    in: size
-                )
-                if ri < pts.count {
-                    return (pts[ri], sideDisk, sideIcon)
+            let inactiveOrdered = genresOnFile.filter { $0 != sg }
+            guard let idx = inactiveOrdered.firstIndex(of: genre), idx < peripheryPlayingCenters.count else {
+                guard index < idleCenters.count else {
+                    return (idleHub, sideDisk, sideIcon)
                 }
+                return (idleCenters[index], sideDisk, sideIcon)
             }
-            guard index < idleCenters.count else {
-                return (idleHub, sideDisk, sideIcon)
-            }
-            return (idleCenters[index], sideDisk, sideIcon)
+            return (peripheryPlayingCenters[idx], sideDisk, sideIcon)
         }
     }
 
@@ -465,9 +498,9 @@ struct ResidentProfileView: View {
         action: @escaping () -> Void
     ) -> some View {
         let rawΔ = GlyphFloatLayout.animatedDelta(index: index, base: baseCenter, hub: constellationHub, phase: phase)
-        /// Side glyphs sit nearer the hero horizontally — tame drift so orbit doesn’t chew into clearance.
+        /// Periphery icons still orbit the hull — drift can be lighter now that anchors sit farther out.
         let motionScale: CGFloat =
-            emphasis == .sideStrip ? 0.46 : emphasis == .hero ? 0.82 : 1
+            emphasis == .sideStrip ? 0.58 : emphasis == .hero ? 0.82 : 1
         let Δ = CGSize(width: rawΔ.width * motionScale, height: rawΔ.height * motionScale)
         let pos = CGPoint(x: baseCenter.x + Δ.width, y: baseCenter.y + Δ.height)
         let rot = GlyphFloatLayout.rotationDynamics(index: index, phase: phase)
