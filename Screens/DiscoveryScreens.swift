@@ -11,18 +11,29 @@ struct DiscoveryCalibrationView: View {
     var body: some View {
         ScreenFadeIn {
             VStack(spacing: 0) {
-                discoveryHeader
+                // Top chrome stays light; main content is centred as a vertical cluster.
+                HStack {
+                    Spacer(minLength: 16)
+                    discoveryHeaderIntrinsic
+                        .frame(maxWidth: 520)
+                    Spacer(minLength: 16)
+                }
 
-                ScrollView {
+                Spacer(minLength: 20)
+
+                HStack(spacing: 0) {
+                    Spacer(minLength: 16)
                     VStack(spacing: 22) {
                         progressSection
                         sentimentRow
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 28)
-                    .padding(.top, 12)
+                    .frame(maxWidth: 520)
+                    Spacer(minLength: 16)
                 }
+
+                Spacer(minLength: 20)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
             audio.volumeMultiplier = 1.12
@@ -46,58 +57,25 @@ struct DiscoveryCalibrationView: View {
         }
     }
 
-    /// Staff exit only — icon-only; instructions live off-device for the POC.
-    private var discoveryHeader: some View {
+    /// Brand mark only — no exits during calibration so the clip flow isn’t interrupted.
+    private var discoveryHeaderIntrinsic: some View {
         HStack {
-            Button(action: leaveDiscovery) {
-                Image(systemName: "xmark.circle.fill")
-                    .symbolRenderingMode(.hierarchical)
-                    .font(.title2.weight(.light))
-                    .foregroundStyle(BrandTheme.brownMuted)
-            }
-            .accessibilityLabel("Leave discovery")
-            .accessibilityHint("Returns to staff profile.")
-
-            Spacer()
-
+            Spacer(minLength: 0)
             MellorityLogoImage(maxHeight: 32)
                 .opacity(0.88)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 4)
         .padding(.top, 14)
         .padding(.bottom, 6)
     }
 
     private var progressSection: some View {
         VStack(spacing: 0) {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { timeline in
-                let elapsed = timeline.date.timeIntervalSince(sliceStartedAt)
-                let frac = CGFloat(min(1, max(0, elapsed / DiscoveryFlowPOC.snippetDurationSeconds)))
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(BrandTheme.creamDeep.opacity(0.55))
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [BrandTheme.goldSoft, BrandTheme.gold, BrandTheme.goldDeep],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: max(12, frac * geo.size.width))
-                            .shadow(color: BrandTheme.gold.opacity(0.22), radius: 4, y: 1)
-                            .animation(.linear(duration: 1.0 / 30.0), value: frac)
-                    }
-                    .frame(height: 10)
-                    .clipShape(Capsule())
-                }
-                .frame(height: 10)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Listen progress")
-            }
+            DiscoveryClipEtherealEqualizer(sliceAnchor: sliceStartedAt)
+                .padding(.vertical, 4)
         }
         .padding(18)
         .background(
@@ -117,7 +95,7 @@ struct DiscoveryCalibrationView: View {
                     sentiment: mood,
                     isSelected: state.discoveryPendingPick == mood
                 ) {
-                    state.setDiscoveryPick(mood)
+                    advanceToNextDiscoveryClip(selected: mood)
                 }
             }
         }
@@ -125,11 +103,15 @@ struct DiscoveryCalibrationView: View {
         .padding(.vertical, 8)
     }
 
-    private func leaveDiscovery() {
+    /// Locks in the tapped mood immediately and advances to the next clip (does not wait for 30s).
+    private func advanceToNextDiscoveryClip(selected mood: DiscoveryTrafficSentiment) {
+        guard state.phase == .careDiscoveryCalibration else { return }
+        guard state.discoverySnippetIndex < DiscoveryFlowPOC.snippetCount else { return }
         sliceDeadlineTask?.cancel()
         sliceDeadlineTask = nil
         audio.stop()
-        state.abandonDiscoveryCalibration()
+        state.setDiscoveryPick(mood)
+        state.commitDiscoverySnippetSlice()
     }
 
     private func beginSlice(resetStartTime: Bool) {
@@ -160,6 +142,110 @@ struct DiscoveryCalibrationView: View {
     }
 }
 
+// MARK: - Ethereal equalizer (discovery clip progress)
+
+private struct DiscoveryClipEtherealEqualizer: View {
+    let sliceAnchor: Date
+    private let barCount = 26
+    private let barSpacing: CGFloat = 4
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 45.0, paused: false)) { timeline in
+            let elapsed = timeline.date.timeIntervalSince(sliceAnchor)
+            let frac = CGFloat(min(1, max(0, elapsed / DiscoveryFlowPOC.snippetDurationSeconds)))
+            let t = timeline.date.timeIntervalSinceReferenceDate
+
+            GeometryReader { geo in
+                let innerH = geo.size.height
+                let usableH = innerH - 10
+                let totalSpacing = CGFloat(barCount - 1) * barSpacing
+                let barW = max(2, (geo.size.width - totalSpacing - 8) / CGFloat(barCount))
+
+                ZStack {
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.55, green: 0.60, blue: 0.84).opacity(0.22),
+                            Color(red: 0.78, green: 0.70, blue: 0.90).opacity(0.10),
+                            Color.clear,
+                        ],
+                        center: UnitPoint(x: 0.5, y: 0.94),
+                        startRadius: 2,
+                        endRadius: min(geo.size.width, usableH + 42) * 0.92
+                    )
+                    .allowsHitTesting(false)
+
+                    LinearGradient(
+                        colors: [
+                            BrandTheme.gold.opacity(0.03),
+                            Color.clear,
+                            Color(red: 0.58, green: 0.55, blue: 0.74).opacity(0.06),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .allowsHitTesting(false)
+
+                    HStack(alignment: .bottom, spacing: barSpacing) {
+                        ForEach(0 ..< barCount, id: \.self) { i in
+                            etherealBar(
+                                index: i,
+                                phase: t,
+                                sliceProgress: frac,
+                                width: barW,
+                                maxHeight: usableH
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .frame(height: 76)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Listen progress")
+            .accessibilityValue("\(Int((frac * 100).rounded())) percent through this clip")
+        }
+    }
+
+    private func etherealBar(
+        index i: Int,
+        phase t: Double,
+        sliceProgress frac: CGFloat,
+        width barW: CGFloat,
+        maxHeight maxH: CGFloat
+    ) -> some View {
+        let ωA = 1.95 + Double(i % 15) * 0.068
+        let ωB = 0.74 + Double((i ^ 11) % 17) * 0.049
+        let wa = sin(t * ωA + Double(i) * 0.93)
+        let wb = cos(t * ωB + Double(i) * 1.11)
+        let weave = CGFloat((wa + wb + 1.8) / 3.6)
+
+        let breath = 0.86 + CGFloat(sin(t * 0.47 + Double(i) * 0.08)) * 0.13
+        let openness = CGFloat(sqrt(Double(frac)))
+        let level = openness * CGFloat(0.38 + weave * Double(0.34 + frac * 0.28))
+            + (1 - openness) * (0.12 + weave * (0.32 + frac * 0.22))
+        let amplified = max(0.15, min(1, level * breath))
+
+        let h = max(5, amplified * maxH)
+        let topGlow = BrandTheme.goldSoft.opacity(Double(0.42 + weave * Double(frac) * 0.42))
+        let midGlow = Color(red: 0.52, green: 0.58, blue: 0.82).opacity(Double(0.22 + weave * Double(frac) * 0.35))
+        let baseGlow = BrandTheme.goldDeep.opacity(Double(0.62 + frac * Double(weave * 0.28)))
+
+        return Capsule(style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [topGlow, midGlow, baseGlow],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .frame(width: barW, height: h)
+            .opacity(0.55 + frac * (weave * 0.28 + 0.2))
+            .shadow(color: BrandTheme.gold.opacity(0.08 + weave * frac * 0.34), radius: 3 + weave * 9, y: 1)
+    }
+}
+
 // MARK: - Traffic smiles (minimal)
 
 private struct TrafficSmileyFaceButton: View {
@@ -186,7 +272,7 @@ private struct TrafficSmileyFaceButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(sentiment.accessibilitySummary + " mood")
-        .accessibilityHint("Select how this clip feels.")
+        .accessibilityHint("Ends this clip and goes to the next when selected.")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

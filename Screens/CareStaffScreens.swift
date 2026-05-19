@@ -390,7 +390,7 @@ struct CarePatientDetailView: View {
                                 Text("Listening discovery")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brownMuted)
-                                Text("Six 30-second calm clips play back to back on this device. Tap the traffic-light faces (red unhappy → green happy) to match each sound — choice can change until each clip finishes. When the pass ends, we reshuffle playlist genres/stubs from those picks, open their calm sandbox, and surface more instrument glyphs when discovery finds gaps.")
+                                Text("Up to six calm clips (about 30 seconds each, unless they tap sooner). Tap the traffic-light faces (red unhappy → green happy) to match each sound — each tap completes that clip and starts the next. If they listen without tapping, we move on when the slice ends using a neutral default. When the pass ends, we reshuffle playlist genres/stubs from those picks, open their calm sandbox, and surface more instrument glyphs when discovery finds gaps.")
                                     .font(.caption2)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .fixedSize(horizontal: false, vertical: true)
