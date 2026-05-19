@@ -10,6 +10,9 @@ struct DiscoveryCalibrationView: View {
     @State private var clipContentOpacity = 0.0
     /// Cancels superseded fade runs when snippets advance quickly (tap vs timer).
     @State private var clipFadeNonce: UInt = 0
+    @State private var affirmationGlowTick: UInt = 0
+    /// Bumps snippet after tap: 2s listen + affirmation glow (~0.4s) → commit.
+    @State private var postPickAdvanceTask: Task<Void, Never>?
 
     private let clipFadeOut: TimeInterval = 0.38
     private let clipFadeIn: TimeInterval = 0.46
@@ -53,12 +56,14 @@ struct DiscoveryCalibrationView: View {
         }
         .onChange(of: state.phase) { _, phase in
             if phase != .careDiscoveryCalibration {
+                cancelPostPickAdvance()
                 sliceDeadlineTask?.cancel()
                 sliceDeadlineTask = nil
                 audio.stop()
             }
         }
         .onDisappear {
+            cancelPostPickAdvance()
             sliceDeadlineTask?.cancel()
             sliceDeadlineTask = nil
             audio.volumeMultiplier = 1
@@ -102,7 +107,9 @@ struct DiscoveryCalibrationView: View {
             ForEach(DiscoveryTrafficSentiment.allCases) { mood in
                 TrafficSmileyFaceButton(
                     sentiment: mood,
-                    isSelected: state.discoveryPendingPick == mood
+                    isSelected: state.discoveryPendingPick == mood,
+                    pendingPick: state.discoveryPendingPick,
+                    affirmationGlowTick: affirmationGlowTick
                 ) {
                     advanceToNextDiscoveryClip(selected: mood)
                 }
@@ -112,15 +119,35 @@ struct DiscoveryCalibrationView: View {
         .padding(.vertical, 8)
     }
 
-    /// Locks in the tapped mood immediately and advances to the next clip (does not wait for 30s).
+    /// After tap: mood shows as selected immediately; streamed clip keeps playing ~2s, then affirmation glow fires, then snippet commits and cross-fades to the next clip.
     private func advanceToNextDiscoveryClip(selected mood: DiscoveryTrafficSentiment) {
         guard state.phase == .careDiscoveryCalibration else { return }
         guard state.discoverySnippetIndex < DiscoveryFlowPOC.snippetCount else { return }
+        cancelPostPickAdvance()
         sliceDeadlineTask?.cancel()
         sliceDeadlineTask = nil
-        audio.stop()
         state.setDiscoveryPick(mood)
-        state.commitDiscoverySnippetSlice()
+        let moodCapt = mood
+        let idxCapt = state.discoverySnippetIndex
+        postPickAdvanceTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            guard state.phase == .careDiscoveryCalibration else { return }
+            guard state.discoverySnippetIndex == idxCapt else { return }
+            guard state.discoveryPendingPick == moodCapt else { return }
+            affirmationGlowTick += 1
+            try? await Task.sleep(nanoseconds: 420_000_000)
+            guard !Task.isCancelled else { return }
+            guard state.phase == .careDiscoveryCalibration else { return }
+            guard state.discoverySnippetIndex == idxCapt else { return }
+            guard state.discoveryPendingPick == moodCapt else { return }
+            state.commitDiscoverySnippetSlice()
+        }
+    }
+
+    private func cancelPostPickAdvance() {
+        postPickAdvanceTask?.cancel()
+        postPickAdvanceTask = nil
     }
 
     /// Cross-fades the equalizer + mood row between clips (`skipFadeOut` for first paint).
@@ -211,9 +238,9 @@ private struct DiscoveryClipEtherealEqualizer: View {
                 ZStack {
                     RadialGradient(
                         colors: [
-                            Color(red: 0.55, green: 0.60, blue: 0.84).opacity(0.22),
-                            Color(red: 0.78, green: 0.70, blue: 0.90).opacity(0.10),
-                            Color.clear,
+                            Color(red: 0.55, green: 0.60, blue: 0.84).opacity(0.38),
+                            Color(red: 0.78, green: 0.70, blue: 0.90).opacity(0.22),
+                            Color(red: 0.85, green: 0.82, blue: 0.92).opacity(0.08),
                         ],
                         center: UnitPoint(x: 0.5, y: 0.94),
                         startRadius: 2,
@@ -223,9 +250,9 @@ private struct DiscoveryClipEtherealEqualizer: View {
 
                     LinearGradient(
                         colors: [
-                            BrandTheme.gold.opacity(0.03),
+                            BrandTheme.gold.opacity(0.08),
                             Color.clear,
-                            Color(red: 0.58, green: 0.55, blue: 0.74).opacity(0.06),
+                            Color(red: 0.58, green: 0.55, blue: 0.74).opacity(0.14),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -275,9 +302,9 @@ private struct DiscoveryClipEtherealEqualizer: View {
         let amplified = max(0.15, min(1, level * breath))
 
         let h = max(5, amplified * maxH)
-        let topGlow = BrandTheme.goldSoft.opacity(Double(0.42 + weave * Double(frac) * 0.42))
-        let midGlow = Color(red: 0.52, green: 0.58, blue: 0.82).opacity(Double(0.22 + weave * Double(frac) * 0.35))
-        let baseGlow = BrandTheme.goldDeep.opacity(Double(0.62 + frac * Double(weave * 0.28)))
+        let topGlow = BrandTheme.goldSoft.opacity(Double(0.72 + weave * Double(frac) * 0.22))
+        let midGlow = Color(red: 0.52, green: 0.58, blue: 0.82).opacity(Double(0.48 + weave * Double(frac) * 0.28))
+        let baseGlow = BrandTheme.goldDeep.opacity(Double(0.82 + frac * Double(weave * 0.16)))
 
         return Capsule(style: .continuous)
             .fill(
@@ -288,8 +315,8 @@ private struct DiscoveryClipEtherealEqualizer: View {
                 )
             )
             .frame(width: barW, height: h)
-            .opacity(0.55 + frac * (weave * 0.28 + 0.2))
-            .shadow(color: BrandTheme.gold.opacity(0.08 + weave * frac * 0.34), radius: 3 + weave * 9, y: 1)
+            .opacity(0.86 + frac * (weave * 0.13 + 0.1))
+            .shadow(color: BrandTheme.gold.opacity(0.12 + weave * frac * 0.38), radius: 3 + weave * 11, y: 1)
     }
 }
 
@@ -298,6 +325,8 @@ private struct DiscoveryClipEtherealEqualizer: View {
 private struct TrafficSmileyFaceButton: View {
     let sentiment: DiscoveryTrafficSentiment
     let isSelected: Bool
+    let pendingPick: DiscoveryTrafficSentiment?
+    let affirmationGlowTick: UInt
     var action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -308,24 +337,19 @@ private struct TrafficSmileyFaceButton: View {
         Button {
             DiscoveryEtherealTapChime.playLight()
             if reduceMotion {
-                glowBurst = 0.85
+                pressPopScale = 1.06
                 Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 220_000_000)
-                    withAnimation(.easeOut(duration: 0.35)) { glowBurst = 0 }
+                    try? await Task.sleep(nanoseconds: 180_000_000)
+                    withAnimation(.easeOut(duration: 0.28)) { pressPopScale = 1 }
                 }
             } else {
-                withAnimation(.spring(response: 0.29, dampingFraction: 0.52)) {
-                    pressPopScale = 1.16
-                    glowBurst = 1
+                withAnimation(.spring(response: 0.22, dampingFraction: 0.68)) {
+                    pressPopScale = 1.08
                 }
                 Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 115_000_000)
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.68)) {
+                    try? await Task.sleep(nanoseconds: 95_000_000)
+                    withAnimation(.spring(response: 0.36, dampingFraction: 0.78)) {
                         pressPopScale = 1
-                    }
-                    try? await Task.sleep(nanoseconds: 340_000_000)
-                    withAnimation(.easeOut(duration: 0.36)) {
-                        glowBurst = 0
                     }
                 }
             }
@@ -335,36 +359,62 @@ private struct TrafficSmileyFaceButton: View {
                 Circle()
                     .strokeBorder(
                         sentiment.ringColor.opacity(0.62 * glowBurst + 0.08),
-                        lineWidth: 3 + glowBurst * 18
+                        lineWidth: 3 + glowBurst * 22
                     )
                     .frame(width: 126, height: 126)
-                    .blur(radius: glowBurst * 10)
+                    .blur(radius: glowBurst * 12)
 
                 MinimalTrafficFace(sentiment: sentiment)
                     .frame(width: 96, height: 96)
                     .padding(6)
                     .background(
                         Circle()
-                            .fill(BrandTheme.cream.opacity(isSelected ? 0.92 : 0.45))
+                            .fill(BrandTheme.cream.opacity(isSelected ? 0.99 : 0.86))
                             .overlay(
                                 Circle().strokeBorder(
-                                    sentiment.ringColor.opacity(isSelected ? 0.98 : (0.42 + glowBurst * 0.5)),
-                                    lineWidth: isSelected ? 4 : (1.8 + glowBurst * 3)
+                                    sentiment.ringColor.opacity(isSelected ? 1 : (0.58 + glowBurst * 0.42)),
+                                    lineWidth: isSelected ? 4.2 : (2.1 + glowBurst * 3)
                                 )
                             )
                             .shadow(
-                                color: sentiment.ringColor.opacity(0.12 + glowBurst * 0.55),
-                                radius: (isSelected ? 12 : 4) + glowBurst * 28,
-                                y: 3 + glowBurst * 8
+                                color: sentiment.ringColor.opacity(0.18 + glowBurst * 0.58),
+                                radius: (isSelected ? 14 : 6) + glowBurst * 32,
+                                y: 4 + glowBurst * 9
                             )
                     )
             }
             .scaleEffect(pressPopScale)
         }
         .buttonStyle(.plain)
+        .onChange(of: affirmationGlowTick) { _, _ in
+            guard pendingPick == sentiment else { return }
+            playAffirmationGlow()
+        }
         .accessibilityLabel(sentiment.accessibilitySummary + " mood")
-        .accessibilityHint("Ends this clip and goes to the next when selected.")
+        .accessibilityHint("Confirms mood. The next clip follows a short pause with a bright ring on your choice.")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func playAffirmationGlow() {
+        if reduceMotion {
+            withAnimation(.easeInOut(duration: 0.55)) {
+                glowBurst = 0.95
+            }
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 520_000_000)
+                withAnimation(.easeOut(duration: 0.4)) { glowBurst = 0 }
+            }
+            return
+        }
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.48)) {
+            glowBurst = 1
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 520_000_000)
+            withAnimation(.easeOut(duration: 0.42)) {
+                glowBurst = 0
+            }
+        }
     }
 }
 
@@ -381,9 +431,9 @@ private extension DiscoveryTrafficSentiment {
         }
     }
 
-    /// Subtle pastel fill behind the glyphs.
+    /// Pastel centre behind glyphs — bolder so discs read crisply against the sparkle field.
     var faceBackdrop: Color {
-        ringColor.opacity(0.12)
+        ringColor.opacity(0.32)
     }
 }
 
