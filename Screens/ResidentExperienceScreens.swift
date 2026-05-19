@@ -398,13 +398,13 @@ struct ResidentProfileView: View {
             let leftOthers = Array(others.prefix(leftCount))
             let rightOthers = Array(others.dropFirst(leftCount))
             /// Minimum horizontal **edge-to-edge** air between hero disk and inactive disks (clamped inside playable hull).
-            let heroToSideMinimumGap: CGFloat = 52
+            let heroToSideMinimumGap: CGFloat = 156
             if let li = leftOthers.firstIndex(of: genre) {
                 let pts = GlyphFloatLayout.sideGlyphColumnCenters(
                     count: leftOthers.count,
                     left: true,
                     diameter: sideDisk,
-                    gap: 14,
+                    gap: 42,
                     hub: idleHub,
                     heroDiameter: heroDisk,
                     minimumHorizontalGapToHero: heroToSideMinimumGap,
@@ -419,7 +419,7 @@ struct ResidentProfileView: View {
                     count: rightOthers.count,
                     left: false,
                     diameter: sideDisk,
-                    gap: 14,
+                    gap: 42,
                     hub: idleHub,
                     heroDiameter: heroDisk,
                     minimumHorizontalGapToHero: heroToSideMinimumGap,
