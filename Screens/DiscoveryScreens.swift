@@ -75,7 +75,7 @@ struct DiscoveryCalibrationView: View {
     private var progressSection: some View {
         VStack(spacing: 0) {
             DiscoveryClipEtherealEqualizer(sliceAnchor: sliceStartedAt)
-                .padding(.vertical, 4)
+                .padding(.vertical, 12)
         }
         .padding(18)
         .background(
@@ -128,7 +128,7 @@ struct DiscoveryCalibrationView: View {
         let idxCapt = state.discoverySnippetIndex
 
         audio.stop()
-        audio.startFresh(photoAnchored: idxCapt % 2 == 1)
+        audio.startFresh(streamURL: DiscoveryFlowPOC.snippetAudioStreamURL(snippetIndex: idxCapt))
 
         sliceDeadlineTask = Task { @MainActor in
             let ns = UInt64(DiscoveryFlowPOC.snippetDurationSeconds * 1_000_000_000)
@@ -147,7 +147,8 @@ struct DiscoveryCalibrationView: View {
 private struct DiscoveryClipEtherealEqualizer: View {
     let sliceAnchor: Date
     private let barCount = 26
-    private let barSpacing: CGFloat = 4
+    /// Wider spacing reads better alongside the taller bar area on iPad.
+    private let barSpacing: CGFloat = 6
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 45.0, paused: false)) { timeline in
@@ -199,9 +200,9 @@ private struct DiscoveryClipEtherealEqualizer: View {
                     .padding(.horizontal, 4)
                     .frame(maxHeight: .infinity, alignment: .bottom)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
-            .frame(height: 76)
+            .frame(height: 228)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Listen progress")
             .accessibilityValue("\(Int((frac * 100).rounded())) percent through this clip")

@@ -269,14 +269,16 @@ private struct LakeBandShape: Shape {
 // MARK: - Small drifting nature symbols (water · mountains · trees · leaves)
 
 private struct NatureSymbolDrift: View {
-    private let symbols = [
-        "drop.fill",
-        "water.waves",
-        "mountain.2.fill",
-        "tree.fill",
-        "leaf.fill",
-        "cloud.fill",
-    ]
+    private static let symbols: [String] = {
+        [
+            SFCompat.resolve("water.waves", "drop.circle.fill", "drop.fill"),
+            SFCompat.resolve("water.waves.and.arrow.down", "water.waves", "drop.fill"),
+            SFCompat.resolve("mountain.2.fill", "mountain.2", "triangle.fill"),
+            SFCompat.resolve("tree.fill", "leaf.fill"),
+            SFCompat.resolve("leaf.fill", "leaf.arrow.circlepath"),
+            SFCompat.resolve("cloud.fill", "cloud", "smoke.fill"),
+        ]
+    }()
 
     var body: some View {
         GeometryReader { geo in
@@ -285,7 +287,7 @@ private struct NatureSymbolDrift: View {
             TimelineView(.animation(minimumInterval: 1.0 / 35)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 ZStack {
-                    ForEach(0 ..< symbols.count, id: \.self) { i in
+                    ForEach(0 ..< Self.symbols.count, id: \.self) { i in
                         let seed = Double(i)
                         let slow = 0.04 + 0.015 * (seed.truncatingRemainder(dividingBy: 3))
                         let px = (t * slow + seed * 0.4).truncatingRemainder(dividingBy: 1.0)
@@ -295,7 +297,7 @@ private struct NatureSymbolDrift: View {
                         let sz: CGFloat = 14 + CGFloat(i % 4) * 5
                         let op = 0.14 + 0.12 * (0.5 + 0.5 * sin(t * 0.7 + seed))
 
-                        Image(systemName: symbols[i])
+                        Image(systemName: Self.symbols[i])
                             .font(.system(size: sz))
                             .foregroundStyle(
                                 LinearGradient(

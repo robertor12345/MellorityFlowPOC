@@ -1,12 +1,14 @@
 import AVFoundation
 import Combine
 
-/// Streams **meditation-style** ambient music with gapless `AVPlayerLooper` looping until `stop()`.
+/// Streams **looping ambient music** (`AVPlayerLooper`) until `stop()`.
 ///
-/// **Session tracks (both meditation / calm loops):**
-/// - **Quick Start:** Morsi — [Calm music / `song_2.mp3`](https://opengameart.org/content/calm-music) (CC0).
-/// - **Photo-anchor:** YannZ — *Indie Meditations* [`lvl_5_the_oasis_or_resting_place.mp3`](https://opengameart.org/content/indie-meditations-free-music-pack)
-///   (CC BY 4.0 — attribution in pack readme). If loading fails, falls back to `song_2.mp3`.
+/// **Immersive / resident calm loops:**
+/// - **Quick Start:** Morsi — [`song_2.mp3`](https://opengameart.org/content/calm-music) (CC0).
+/// - **Photo-anchor:** YannZ — Indie Meditations [`lvl_5_the_oasis_or_resting_place.mp3`](https://opengameart.org/content/indie-meditations-free-music-pack)
+///   (CC BY 4.0 — see pack readme). On load failure → `song_2.mp3`.
+///
+/// **Listening discovery snippets:** sequential **retro / 1950s-style** cues from incompetech — see `DiscoveryFlowPOC` (CC BY Kevin MacLeod). On failure → calm `song_2.mp3` so the calibration pass keeps running.
 @MainActor
 final class AmbientAudioSession: ObservableObject {
     static let quickStartStreamURL = URL(string: "https://opengameart.org/sites/default/files/song_2.mp3")!
@@ -20,7 +22,8 @@ final class AmbientAudioSession: ObservableObject {
     var volumeMultiplier: Float = 1
 
     private var activeStreamURL = AmbientAudioSession.quickStartStreamURL
-    private var triedPhotoFallback = false
+    private var playbackFallbackURL: URL?
+    private var triedStreamFallback = false
 
     @Published var isMuted = false {
         didSet { applyMute() }
@@ -32,10 +35,26 @@ final class AmbientAudioSession: ObservableObject {
 
     func startFresh(photoAnchored: Bool = false) {
         stop()
-        triedPhotoFallback = false
-        activeStreamURL = photoAnchored ? Self.photoAnchorStreamURL : Self.quickStartStreamURL
+        triedStreamFallback = false
+        if photoAnchored {
+            activeStreamURL = Self.photoAnchorStreamURL
+            playbackFallbackURL = Self.quickStartStreamURL
+        } else {
+            activeStreamURL = Self.quickStartStreamURL
+            playbackFallbackURL = nil
+        }
         configureSession()
-        startStream(allowPhotoFallback: photoAnchored)
+        startStream()
+    }
+
+    /// Loops streamed audio at `streamURL`; if the asset fails (network, CDN), retries once using `quickStartStreamURL`.
+    func startFresh(streamURL: URL) {
+        stop()
+        triedStreamFallback = false
+        activeStreamURL = streamURL
+        playbackFallbackURL = Self.quickStartStreamURL
+        configureSession()
+        startStream()
     }
 
     /// Pause the current stream without tearing down the looper (playlist POC controls).
@@ -59,7 +78,7 @@ final class AmbientAudioSession: ObservableObject {
         try? audioSession.setActive(true)
     }
 
-    private func startStream(allowPhotoFallback: Bool) {
+    private func startStream() {
         statusObservation?.invalidate()
         statusObservation = nil
 
@@ -76,18 +95,19 @@ final class AmbientAudioSession: ObservableObject {
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] observed, _ in
             guard let self else { return }
             Task { @MainActor in
-                self.handleItemStatus(observed.status, allowPhotoFallback: allowPhotoFallback)
+                self.handleItemStatus(observed.status)
             }
         }
     }
 
-    private func handleItemStatus(_ status: AVPlayerItem.Status, allowPhotoFallback: Bool) {
+    private func handleItemStatus(_ status: AVPlayerItem.Status) {
         guard status == .failed else { return }
-        guard allowPhotoFallback, !triedPhotoFallback else { return }
-        triedPhotoFallback = true
+        guard let fallback = playbackFallbackURL, !triedStreamFallback else { return }
+        triedStreamFallback = true
         tearDownPlaybackOnly()
-        activeStreamURL = Self.quickStartStreamURL
-        startStream(allowPhotoFallback: false)
+        activeStreamURL = fallback
+        playbackFallbackURL = nil
+        startStream()
     }
 
     private func tearDownPlaybackOnly() {

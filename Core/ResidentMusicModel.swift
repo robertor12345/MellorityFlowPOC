@@ -1,4 +1,19 @@
 import SwiftUI
+import UIKit
+
+/// Picks the first SF Symbol name the current OS actually ships (many instrument glyphs vary by SDK).
+enum SFCompat {
+    nonisolated static func resolve(_ names: String...) -> String {
+        resolve(Array(names))
+    }
+
+    nonisolated static func resolve(_ names: [String]) -> String {
+        for name in names where UIImage(systemName: name) != nil {
+            return name
+        }
+        return "music.note"
+    }
+}
 
 /// Touch-first genres for resident iPad — icons only on screen; labels for VoiceOver.
 enum ResidentMusicGenre: String, CaseIterable, Identifiable, Codable, Equatable {
@@ -16,16 +31,25 @@ enum ResidentMusicGenre: String, CaseIterable, Identifiable, Codable, Equatable 
         rawValue.capitalized
     }
 
-    /// Instrument-first SF Symbols for the resident sandbox (staff roster echoes the same names).
+    /// Instrument-first SF Symbols with fallbacks — some names only exist on newer SF Symbol drops.
     var iconName: String {
         switch self {
-        case .jazz: return "saxophone.fill"
-        case .classical: return "pianokeys"
-        case .pop: return "mic.circle.fill"
-        case .rock: return "guitars.fill"
-        case .gospel: return "trumpet.fill"
-        case .country: return "banjo.fill"
-        case .soul: return "headphones"
+        case .jazz:
+            return SFCompat.resolve(
+                "saxophone.fill", "saxophone", "music.mic", "wind.instrument.fill", "tuningfork", "music.note"
+            )
+        case .classical:
+            return SFCompat.resolve("pianokeys", "music.note.list", "tuningfork", "music.note")
+        case .pop:
+            return SFCompat.resolve("mic.circle.fill", "mic.fill", "music.mic", "music.note")
+        case .rock:
+            return SFCompat.resolve("guitars.fill", "guitar.fill", "guitars", "music.quarternote.3")
+        case .gospel:
+            return SFCompat.resolve("trumpet.fill", "trumpet", "speaker.wave.2.fill", "music.quarternote.3")
+        case .country:
+            return SFCompat.resolve("banjo.fill", "banjo", "guitars.fill", "guitars", "guitars.case.fill")
+        case .soul:
+            return SFCompat.resolve("headphones", "headphones.circle", "music.note.list", "music.note")
         }
     }
 
@@ -58,9 +82,12 @@ enum ResidentTrafficMood: Int, CaseIterable, Identifiable {
     }
     var iconName: String {
         switch self {
-        case .low: return "moon.zzz"
-        case .mid: return "cloud.sun"
-        case .high: return "sun.horizon.fill"
+        case .low:
+            return SFCompat.resolve("moon.zzz.fill", "moon.zzz", "moon.stars.fill", "moon.fill")
+        case .mid:
+            return SFCompat.resolve("cloud.sun.fill", "cloud.sun", "sun.haze.fill", "cloud.fill")
+        case .high:
+            return SFCompat.resolve("sun.horizon.fill", "sun.max.fill", "sun.min.fill")
         }
     }
 }
@@ -72,9 +99,12 @@ enum ResidentFaceMood: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
     var iconName: String {
         switch self {
-        case .sad: return "face.dashed.fill"
-        case .neutral: return "face.smiling"
-        case .happy: return "face.smiling.fill"
+        case .sad:
+            return SFCompat.resolve("face.dashed.fill", "face.dashed", "face.frown.fill")
+        case .neutral:
+            return SFCompat.resolve("face.smiling", "face.smiling.inverse")
+        case .happy:
+            return SFCompat.resolve("face.smiling.fill", "face.smiling")
         }
     }
 }

@@ -111,7 +111,7 @@ struct CareFaceLinkedPickView: View {
                 VStack(spacing: 20) {
                     FadeInTitle(text: "Who’s with you?", delay: 0)
                     FadeInLine(
-                        text: "Profiles here were created when their face was captured on this device. Tap someone to start their session — floating instruments and playlists open next.",
+                        text: "Profiles here were created when their face was captured on this device. Tap someone to start their session — floating instrument icons tap to play; the playing symbol grows at the centre (no playlist list shown on this surface).",
                         font: .caption,
                         color: BrandTheme.brownMuted,
                         delay: 0.06
