@@ -191,12 +191,13 @@ struct DiscoveryCalibrationView: View {
             withAnimation(.easeOut(duration: contentFade)) {
                 clipContentOpacity = 0
             }
-            try? await Task.sleep(nanoseconds: UInt64((contentFade + 0.06) * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64((contentFade + 0.06) * 1_000_000_000.0))
             guard !Task.isCancelled else { return }
             guard state.phase == .careDiscoveryCalibration else { return }
 
             discoveryExitOverlayActive = true
-            let overlayDwellNanoseconds = prefersReducedMotion ? 1_150_000_000 : 2_120_000_000
+            let overlayDwellNanoseconds =
+                prefersReducedMotion ? UInt64(1_150_000_000) : UInt64(2_120_000_000)
 
             try? await Task.sleep(nanoseconds: overlayDwellNanoseconds)
             guard !Task.isCancelled else { return }
@@ -206,7 +207,9 @@ struct DiscoveryCalibrationView: View {
             withAnimation(.easeOut(duration: outro)) {
                 discoveryExitOverlayActive = false
             }
-            let outroNanos = UInt64(max(240_000_000, min(900_000_000, outro * 940_000_000)))
+            let scaledOutroNanos = outro * 940_000_000.0
+            let clippedOutroNanos = max(240_000_000.0, min(900_000_000.0, scaledOutroNanos))
+            let outroNanos = UInt64(clippedOutroNanos)
             try? await Task.sleep(nanoseconds: outroNanos)
             guard !Task.isCancelled else { return }
             guard state.phase == .careDiscoveryCalibration else { return }
@@ -330,7 +333,7 @@ private struct DiscoveryMusicalExitTypographyOverlay: View {
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1 / 34, paused: false)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 34.0, paused: false)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 let w = geo.size.width
                 let h = geo.size.height
@@ -387,9 +390,9 @@ private struct DiscoveryMusicalExitTypographyOverlay: View {
                                 let u = CGFloat((local.truncatingRemainder(dividingBy: cycleDuration)) / cycleDuration)
 
                                 /// Quick fade above the hull, fall through viewport, dissipate toward bottom edge.
-                                let rise = min(1, Double(u * 11))
-                                let tail = max(0, Double((u - 0.88) / 0.14))
-                                let alpha = CGFloat(min(1, rise)) * CGFloat(max(0.05, 1 - tail * tail))
+                                let rise = min(1.0, Double(u * 11))
+                                let tail = max(0.0, Double((u - 0.88) / 0.14))
+                                let alpha = CGFloat(min(1.0, rise)) * CGFloat(max(0.05, 1 - tail * tail))
 
                                 let x =
                                     CGFloat(0.04 + Double(f.lateral) * 0.92) * w
@@ -413,8 +416,8 @@ private struct DiscoveryMusicalExitTypographyOverlay: View {
                                         )
                                     )
                                     .opacity(Double(alpha))
-                                    .rotationEffect(.degrees(spin))
-                                    .blur(radius: CGFloat(max(0, tail * 4.8)))
+                                    .rotationEffect(.degrees(Double(spin)))
+                                    .blur(radius: CGFloat(max(0.0, tail * 4.8)))
                                     .position(x: x, y: y)
                                     .shadow(color: BrandTheme.gold.opacity(0.18), radius: 3 + CGFloat(f.id % 5), y: 1)
                             }
