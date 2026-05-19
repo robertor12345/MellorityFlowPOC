@@ -11,12 +11,12 @@ private enum GlyphFloatLayout {
         2 * glyphRadius + (resting ? restingEdgeSeparation : 20)
     }
 
-    /// Playscreen inset so glyphs stay below staff affordances and safe edges.
+    /// Playscreen inset — kept fairly tight so **idle** constellation can use nearly the whole view (staff FAB overlays top-trailing).
     private static func playableRect(in size: CGSize) -> CGRect {
-        let padX = max(BrandTheme.contentGutter, 28)
-        let side = glyphRadius + 22 + padX
-        let top: CGFloat = 124
-        let bottom: CGFloat = 44
+        let padX = max(BrandTheme.contentGutter, 18)
+        let side = glyphRadius + 10 + padX
+        let top: CGFloat = 52
+        let bottom: CGFloat = 88
         return CGRect(
             x: side,
             y: top,
@@ -36,27 +36,27 @@ private enum GlyphFloatLayout {
         default:
             let minD = minCenterDistance()
             let sinHalfChord = CGFloat(sin(Double.pi / Double(count)))
-            let maxEllipseX = playable.width / 2 - glyphRadius - 14
-            let maxEllipseY = playable.height / 2 - glyphRadius - 16
-            // Mean radius needed so neighbouring arc chord ≥ resting minimum.
+            let maxEllipseX = playable.width / 2 - glyphRadius - 8
+            let maxEllipseY = playable.height / 2 - glyphRadius - 10
+            // Chord-derived radius prefers non-overlap on a perfect ring; blending with hull scale spreads glyphs edge-to-edge.
             let radiusChord = CGFloat(minD * 1.06) / (2 * max(sinHalfChord, CGFloat(1e-3)))
-            var rx = min(maxEllipseX * 0.97, radiusChord)
-            var ry = min(maxEllipseY * 0.95, radiusChord * CGFloat(0.91))
-            rx = max(rx, CGFloat(72 + count * 2))
-            ry = max(min(ry, maxEllipseY), CGFloat(58 + count * 2))
+            var rx = min(maxEllipseX * 0.995, radiusChord * 1.48)
+            var ry = min(maxEllipseY * 0.99, radiusChord * CGFloat(1.32))
+            rx = max(rx, maxEllipseX * 0.84)
+            ry = max(min(ry, maxEllipseY), maxEllipseY * 0.8)
 
             var pts = ellipsePoints(count: count, hub: hub, rx: rx, ry: ry)
             pts = pts.map { clampToPlayable($0, playable: playable) }
-            pts = relaxCenters(pts, playable: playable, minDist: minD * 1.03, iterations: 14)
+            pts = relaxCenters(pts, playable: playable, minDist: minD * 1.03, iterations: 24)
 
             let spread = pairwiseMinSpacing(pts)
             if spread < minD * 1.015, count >= 2 {
-                let scale: CGFloat = 1.085
-                let rx2 = min(maxEllipseX * 0.99, rx * scale)
-                let ry2 = min(maxEllipseY * 0.97, ry * scale)
+                let scale: CGFloat = 1.128
+                let rx2 = min(maxEllipseX * 0.999, rx * scale)
+                let ry2 = min(maxEllipseY * 0.99, ry * scale)
                 var pts2 = ellipsePoints(count: count, hub: hub, rx: rx2, ry: ry2)
                 pts2 = pts2.map { clampToPlayable($0, playable: playable) }
-                pts = relaxCenters(pts2, playable: playable, minDist: minD * 1.03, iterations: 16)
+                pts = relaxCenters(pts2, playable: playable, minDist: minD * 1.03, iterations: 22)
             }
             return (pts, hub)
         }
@@ -83,9 +83,10 @@ private enum GlyphFloatLayout {
     }
 
     private static func clampToPlayable(_ p: CGPoint, playable: CGRect) -> CGPoint {
-        CGPoint(
-            x: min(max(playable.minX + glyphRadius + 8, p.x), playable.maxX - glyphRadius - 8),
-            y: min(max(playable.minY + glyphRadius + 8, p.y), playable.maxY - glyphRadius - 8)
+        let edge: CGFloat = 4
+        return CGPoint(
+            x: min(max(playable.minX + glyphRadius + edge, p.x), playable.maxX - glyphRadius - edge),
+            y: min(max(playable.minY + glyphRadius + edge, p.y), playable.maxY - glyphRadius - edge)
         )
     }
 
