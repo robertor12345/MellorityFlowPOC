@@ -39,6 +39,12 @@ final class SessionPOCState: ObservableObject {
     /// Where `leaveResidentProfileToStaff()` returns (face grid vs staff detail).
     @Published var residentStaffReturnPhase: FlowPhase = .carePatientList
 
+    // MARK: - Discovery calibration (traffic-light smiles + timed snippets)
+
+    @Published private(set) var discoverySnippetIndex: Int = 0
+    @Published private(set) var discoveryResults: [DiscoverySnippetResult] = []
+    @Published var discoveryPendingPick: DiscoveryTrafficSentiment?
+
     var selectedMoodsOrdered: [String] {
         moodOptions.filter { selectedMoods.contains($0) }
     }
@@ -372,6 +378,7 @@ final class SessionPOCState: ObservableObject {
         replaySessionPhotoAnchored = false
         resetCareSessionFlags()
         clearResidentSessionSurfaceState()
+        resetDiscoveryState()
         selectedCarePatientId = nil
         resetCarePrepForNewSession()
     }
@@ -400,6 +407,7 @@ final class SessionPOCState: ObservableObject {
         selectedCarePatientId = nil
         resetCareSessionFlags()
         clearResidentSessionSurfaceState()
+        resetDiscoveryState()
         resetCarePrepForNewSession()
         resetIoTDefaults()
     }
@@ -410,6 +418,52 @@ final class SessionPOCState: ObservableObject {
         iotMatterEnabled = false
         iotFollowSessionBreath = true
         iotMaxSceneBrightness = 0.88
+    }
+
+    func startDiscoveryCalibration(for patientId: UUID) {
+        guard isSignedIn else {
+            phase = .home
+            return
+        }
+        selectedCarePatientId = patientId
+        activeCarePatientId = patientId
+        discoverySnippetIndex = 0
+        discoveryResults = []
+        discoveryPendingPick = nil
+        phase = .careDiscoveryCalibration
+    }
+
+    func setDiscoveryPick(_ sentiment: DiscoveryTrafficSentiment) {
+        discoveryPendingPick = sentiment
+    }
+
+    func commitDiscoverySnippetSlice() {
+        let pick = discoveryPendingPick ?? .neutral
+        discoveryResults.append(DiscoverySnippetResult(snippetIndex: discoverySnippetIndex, sentiment: pick))
+        discoveryPendingPick = nil
+        discoverySnippetIndex += 1
+        if discoverySnippetIndex >= DiscoveryFlowPOC.snippetCount {
+            if let pid = selectedCarePatientId ?? activeCarePatientId,
+               let ix = carePatients.firstIndex(where: { $0.id == pid }) {
+                var patient = carePatients[ix]
+                DiscoveryPlaylistTuning.applyDiscoveryResults(discoveryResults, to: &patient)
+                carePatients[ix] = patient
+            }
+            openResidentProfile()
+        }
+    }
+
+    func abandonDiscoveryCalibration() {
+        discoverySnippetIndex = 0
+        discoveryResults = []
+        discoveryPendingPick = nil
+        phase = .carePatientDetail
+    }
+
+    private func resetDiscoveryState() {
+        discoverySnippetIndex = 0
+        discoveryResults = []
+        discoveryPendingPick = nil
     }
 }
 
@@ -427,6 +481,8 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case careSessionPrep = 10
     case residentProfile = 11
     case careFaceLinkedPick = 12
+    /// Timed calm snippets — patient picks traffic-light minimalist face per snippet.
+    case careDiscoveryCalibration = 13
 
     var id: Int { rawValue }
 }

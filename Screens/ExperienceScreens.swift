@@ -15,48 +15,62 @@ struct ProcessingFastView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
-                VStack(spacing: 28) {
-                    FadeInTitle(text: "Ease in slowly", delay: 0)
-                    FadeInLine(
-                        text: "Sound and motion stay gentle so nothing arrives too fast — stay with them.",
-                        font: .caption,
-                        delay: 0.1
-                    )
-                    if state.isCareStaffSession, let p = state.carePatient(id: state.activeCarePatientId) {
-                        VStack(spacing: 6) {
-                            Text("With \(p.displayName) — roughly \(state.carePlannedDurationMinutes) min if it helps (pause or stop anytime).")
-                            if state.carePrepVRImmersiveRoute {
-                                Text("Headset path noted — same calm when your gear is connected.")
-                            }
-                            if state.carePrepRoomDisplayMirroring {
-                                Text("Room screen noted — we can stretch visuals to the wall or bedside when it’s hooked up.")
-                            }
-                            if state.iotPhilipsHueEnabled || state.iotHomeKitEnabled || state.iotMatterEnabled {
-                                Text("Lights are linked — scenes can drift with this session when your bridge is live.")
-                            }
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(BrandTheme.goldDeep)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+            Group {
+                if state.isResidentSession {
+                    VStack {
+                        Spacer(minLength: 80)
+                        ProgressView(value: progress, total: 1)
+                            .tint(BrandTheme.goldDeep)
+                            .scaleEffect(x: 1, y: 1.2, anchor: .center)
+                            .padding(.horizontal, max(0, 40 - BrandTheme.contentGutter))
+                            .frame(maxWidth: .infinity)
+                        Spacer()
                     }
+                } else {
+                    CenteredScrollScreen {
+                        VStack(spacing: 28) {
+                            FadeInTitle(text: "Ease in slowly", delay: 0)
+                            FadeInLine(
+                                text: "Sound and motion stay gentle so nothing arrives too fast — stay with them.",
+                                font: .caption,
+                                delay: 0.1
+                            )
+                            if state.isCareStaffSession, let p = state.carePatient(id: state.activeCarePatientId) {
+                                VStack(spacing: 6) {
+                                    Text("With \(p.displayName) — roughly \(state.carePlannedDurationMinutes) min if it helps (pause or stop anytime).")
+                                    if state.carePrepVRImmersiveRoute {
+                                        Text("Headset path noted — same calm when your gear is connected.")
+                                    }
+                                    if state.carePrepRoomDisplayMirroring {
+                                        Text("Room screen noted — we can stretch visuals to the wall or bedside when it’s hooked up.")
+                                    }
+                                    if state.iotPhilipsHueEnabled || state.iotHomeKitEnabled || state.iotMatterEnabled {
+                                        Text("Lights are linked — scenes can drift with this session when your bridge is live.")
+                                    }
+                                }
+                                .font(.caption2)
+                                .foregroundStyle(BrandTheme.goldDeep)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                            }
 
-                    ProgressView(value: progress, total: 1)
-                        .tint(BrandTheme.goldDeep)
-                        .scaleEffect(x: 1, y: 1.2, anchor: .center)
-                        .padding(.horizontal, max(0, 40 - BrandTheme.contentGutter))
-                        .frame(maxWidth: .infinity)
+                            ProgressView(value: progress, total: 1)
+                                .tint(BrandTheme.goldDeep)
+                                .scaleEffect(x: 1, y: 1.2, anchor: .center)
+                                .padding(.horizontal, max(0, 40 - BrandTheme.contentGutter))
+                                .frame(maxWidth: .infinity)
 
-                    Text(messages[tick % messages.count])
-                        .font(BrandTheme.title(.title3))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(BrandTheme.brown)
-                        .padding(.horizontal)
-                        .animation(.easeInOut(duration: 0.45), value: tick)
-                        .id(tick)
+                            Text(messages[tick % messages.count])
+                                .font(BrandTheme.title(.title3))
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(BrandTheme.brown)
+                                .padding(.horizontal)
+                                .animation(.easeInOut(duration: 0.45), value: tick)
+                                .id(tick)
+                        }
+                        .padding(.vertical, 28)
+                    }
                 }
-                .padding(.vertical, 28)
             }
         }
         .task {
@@ -126,7 +140,7 @@ struct ImmersiveSessionView: View {
                 .padding(.horizontal, BrandTheme.contentGutter)
                 .padding(.vertical, 12)
 
-                if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
+                if state.isCareStaffSession && !state.isResidentSession, let patient = state.carePatient(id: state.activeCarePatientId) {
                     VStack(spacing: 4) {
                         Text("Together · \(patient.displayName)")
                             .font(.caption.weight(.semibold))
@@ -163,69 +177,90 @@ struct ImmersiveSessionView: View {
 
                 Spacer(minLength: 0)
 
-                VStack(spacing: 12) {
-                    if showCopy {
-                        Text("You’re here")
-                            .font(BrandTheme.title(.title2))
-                            .foregroundStyle(BrandTheme.brown)
-                            .transition(.opacity.combined(with: .offset(y: 8)))
-                        Text("Everything shifts gently as you go.")
-                            .font(.caption)
+                if !state.isResidentSession {
+                    VStack(spacing: 12) {
+                        if showCopy {
+                            Text("You’re here")
+                                .font(BrandTheme.title(.title2))
+                                .foregroundStyle(BrandTheme.brown)
+                                .transition(.opacity.combined(with: .offset(y: 8)))
+                            Text("Everything shifts gently as you go.")
+                                .font(.caption)
+                                .foregroundStyle(BrandTheme.brownMuted)
+                                .multilineTextAlignment(.center)
+                                .transition(.opacity)
+                        }
+                        Text("Music · nature video · heart rate")
+                            .font(.caption2)
                             .foregroundStyle(BrandTheme.brownMuted)
                             .multilineTextAlignment(.center)
-                            .transition(.opacity)
-                    }
-                    Text("Music · nature video · heart rate")
-                        .font(.caption2)
-                        .foregroundStyle(BrandTheme.brownMuted)
-                        .multilineTextAlignment(.center)
 
-                    HStack(spacing: 24) {
-                        VStack(spacing: 4) {
-                            Text("HR")
-                                .font(.caption2)
-                                .foregroundStyle(BrandTheme.brownMuted)
-                            Text("\(Int(state.mockHeartRateCurrent))")
-                                .font(.title2.monospacedDigit())
-                                .foregroundStyle(BrandTheme.brown)
+                        HStack(spacing: 24) {
+                            VStack(spacing: 4) {
+                                Text("HR")
+                                    .font(.caption2)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                Text("\(Int(state.mockHeartRateCurrent))")
+                                    .font(.title2.monospacedDigit())
+                                    .foregroundStyle(BrandTheme.brown)
+                            }
+                            VStack(spacing: 4) {
+                                Text("Calm")
+                                    .font(.caption2)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                Text("\(Int(state.calmScore * 100))%")
+                                    .font(.title2.monospacedDigit())
+                                    .foregroundStyle(BrandTheme.brown)
+                            }
                         }
-                        VStack(spacing: 4) {
-                            Text("Calm")
-                                .font(.caption2)
-                                .foregroundStyle(BrandTheme.brownMuted)
-                            Text("\(Int(state.calmScore * 100))%")
-                                .font(.title2.monospacedDigit())
-                                .foregroundStyle(BrandTheme.brown)
-                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(BrandTheme.cream.opacity(0.92))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+                        )
                     }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(BrandTheme.cream.opacity(0.92))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
-                    )
-                }
-                .frame(maxWidth: .infinity)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, BrandTheme.contentGutter)
-
-                SessionBottomConfigMenu(state: state)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal, BrandTheme.contentGutter)
-                    .padding(.top, 10)
 
-                PrimaryButton(title: "End session") {
-                    state.endSession()
-                    state.phase = .insight
+                    SessionBottomConfigMenu(state: state)
+                        .padding(.horizontal, BrandTheme.contentGutter)
+                        .padding(.top, 10)
+
+                    PrimaryButton(title: "End session") {
+                        state.endSession()
+                        state.phase = .insight
+                    }
+                    .padding(.horizontal, BrandTheme.contentGutter)
+                    .padding(.top, 20)
+                    .padding(.bottom, 8)
+                    .safeAreaPadding(.bottom, 16)
+                } else {
+                    Spacer()
+                    Button {
+                        state.endSession()
+                        state.phase = .residentProfile
+                    } label: {
+                        Image(systemName: "square.grid.2x2.fill")
+                            .font(.system(size: 40, weight: .light))
+                            .foregroundStyle(
+                                LinearGradient(colors: [BrandTheme.cream, BrandTheme.cream.opacity(0.92)], startPoint: .top, endPoint: .bottom)
+                            )
+                            .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, BrandTheme.contentGutter)
+                    .padding(.bottom, 28)
+                    .safeAreaPadding(.bottom, 16)
+                    .accessibilityLabel("Return to playlists")
                 }
-                .padding(.horizontal, BrandTheme.contentGutter)
-                .padding(.top, 20)
-                .padding(.bottom, 8)
-                .safeAreaPadding(.bottom, 16)
             }
             .onAppear {
+                guard !state.isResidentSession else { return }
                 withAnimation(.easeOut(duration: 0.8).delay(0.15)) {
                     showCopy = true
                 }
@@ -253,22 +288,39 @@ struct ImmersiveSessionView: View {
     }
 
     private func residentPlaylistBadge(genre: ResidentMusicGenre) -> some View {
-        let bar = state.residentLivingTickInSegment + 1
-        return HStack(spacing: 8) {
+        let tick = max(0, min(9, state.residentLivingTickInSegment))
+        let loop = max(0, min(9, state.residentLivingLoopIndex))
+        let activeBar = CGSize(width: 4, height: 14)
+
+        return HStack(alignment: .center, spacing: 10) {
             Image(systemName: genre.iconName)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(genre.accent)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Piece \(state.residentLivingLoopIndex + 1) of 10")
-                    .font(.caption2.weight(.semibold))
-                Text("Bar \(bar) / 10")
-                    .font(.caption2.monospacedDigit())
+
+            VStack(spacing: 6) {
+                HStack(spacing: 4) {
+                    ForEach(0 ..< 10, id: \.self) { i in
+                        Capsule(style: .continuous)
+                            .fill(i <= loop ? genre.accent : BrandTheme.cream.opacity(0.22))
+                            .frame(width: 5, height: i <= loop ? 10 : 5)
+                            .overlay(
+                                Capsule(style: .continuous).stroke(genre.accent.opacity(0.55), lineWidth: i <= loop ? 0 : 0.75)
+                            )
+                    }
+                }
+                HStack(spacing: 3) {
+                    ForEach(0 ..< 10, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(i <= tick ? BrandTheme.cream.opacity(0.95) : BrandTheme.cream.opacity(0.2))
+                            .frame(width: activeBar.width, height: i <= tick ? activeBar.height : 6)
+                    }
+                }
             }
-            .foregroundStyle(BrandTheme.cream)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityHidden(true)
     }
 }

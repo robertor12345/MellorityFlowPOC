@@ -387,6 +387,31 @@ struct CarePatientDetailView: View {
 
                         BrandCard {
                             VStack(alignment: .leading, spacing: 12) {
+                                Text("Listening discovery")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                Text("Six 30-second calm clips play back to back on this device. Tap the traffic-light faces (red unhappy → green happy) to match each sound — choice can change until each clip finishes. When the pass ends, we reshuffle playlist genres/stubs from those picks, open their calm sandbox, and surface more instrument glyphs when discovery finds gaps.")
+                                    .font(.caption2)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                SecondaryButton(title: "Start discovery pass") {
+                                    state.startDiscoveryCalibration(for: patient.id)
+                                }
+                                if let line = discoveryRunSummary(for: patient.id, state: state) {
+                                    Text(line)
+                                        .font(.caption2.weight(.medium))
+                                        .foregroundStyle(BrandTheme.brown)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .padding(.top, 6)
+                                        .accessibilityLabel(line)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.horizontal, 4)
+
+                        BrandCard {
+                            VStack(alignment: .leading, spacing: 12) {
                                 Text("Comfort & senses")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(BrandTheme.brownMuted)
@@ -554,6 +579,15 @@ struct CarePatientDetailView: View {
                 .padding(.vertical, 28)
             }
         }
+    }
+
+    private func discoveryRunSummary(for patientId: UUID, state: SessionPOCState) -> String? {
+        guard state.selectedCarePatientId == patientId else { return nil }
+        guard state.discoveryResults.count == DiscoveryFlowPOC.snippetCount else { return nil }
+        let unpleasant = state.discoveryResults.filter { $0.sentiment == .unpleasant }.count
+        let neutral = state.discoveryResults.filter { $0.sentiment == .neutral }.count
+        let pleasant = state.discoveryResults.filter { $0.sentiment == .pleasant }.count
+        return "Last pass: red (uncomfortable) \(unpleasant), amber (unsure) \(neutral), green (comforting) \(pleasant)."
     }
 
     private func orderedPlaylistGroups(_ patient: CarePatientProfile) -> [CareGenrePlaylistGroup] {

@@ -16,16 +16,16 @@ enum ResidentMusicGenre: String, CaseIterable, Identifiable, Codable, Equatable 
         rawValue.capitalized
     }
 
-    /// Calm, ethereal glyphs — outline-forward; no toy-like fills.
+    /// Instrument-first SF Symbols for the resident sandbox (staff roster echoes the same names).
     var iconName: String {
         switch self {
-        case .jazz: return "wind"
-        case .classical: return "tuningfork"
-        case .pop: return "moon.stars"
-        case .rock: return "mountain.2"
-        case .gospel: return "sun.horizon"
-        case .country: return "leaf"
-        case .soul: return "water.waves"
+        case .jazz: return "saxophone.fill"
+        case .classical: return "pianokeys"
+        case .pop: return "mic.circle.fill"
+        case .rock: return "guitars.fill"
+        case .gospel: return "trumpet.fill"
+        case .country: return "banjo.fill"
+        case .soul: return "headphones"
         }
     }
 

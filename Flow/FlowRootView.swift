@@ -39,6 +39,8 @@ struct FlowRootView: View {
                     ResidentProfileView(state: state)
                 case .careFaceLinkedPick:
                     CareFaceLinkedPickView(state: state)
+                case .careDiscoveryCalibration:
+                    DiscoveryCalibrationView(state: state)
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .trailing)))

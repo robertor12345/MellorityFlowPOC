@@ -403,56 +403,107 @@ struct InsightView: View {
     @ObservedObject var state: SessionPOCState
 
     var body: some View {
-        ScreenFadeIn {
-            CenteredScrollScreen {
-                VStack(spacing: 24) {
-                    FadeInTitle(text: "How that felt", delay: 0)
-                    FadeInLine(text: "A small pause — not a report card.", delay: 0.1)
-
-                    ZStack {
-                        Circle()
-                            .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 14)
-                            .frame(width: 160, height: 160)
-                        Circle()
-                            .trim(from: 0, to: state.calmScore)
-                            .stroke(
-                                AngularGradient(colors: [BrandTheme.goldSoft, BrandTheme.goldDeep], center: .center),
-                                style: StrokeStyle(lineWidth: 14, lineCap: .round)
-                            )
-                            .frame(width: 160, height: 160)
-                            .rotationEffect(.degrees(-90))
-
-                        VStack(spacing: 4) {
-                            Text("\(Int(state.calmScore * 100))")
-                                .font(BrandTheme.title(.largeTitle))
-                                .foregroundStyle(BrandTheme.brown)
-                            Text("calm")
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(BrandTheme.brownMuted)
-                        }
+        if state.isResidentSession {
+            ZStack {
+                BrandTheme.backgroundGradient
+                    .ignoresSafeArea()
+                VStack {
+                    Spacer()
+                    calmRingGraphic
+                        .padding(.vertical, 8)
+                    Spacer()
+                    Button {
+                        state.phase = .residentProfile
+                    } label: {
+                        Image(systemName: "square.grid.2x2.fill")
+                            .font(.system(size: 42, weight: .light))
+                            .foregroundStyle(BrandTheme.brown.opacity(0.78))
+                            .padding(18)
+                            .background(Circle().fill(BrandTheme.cream.opacity(0.92)))
+                            .overlay(Circle().stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1))
                     }
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-
-                    FadeInLine(
-                        text: "Sound and space shifted with you — softly, as you breathed.",
-                        font: .subheadline,
-                        delay: 0.22
-                    )
-
-                    PrimaryButton(title: "Jot a note & nudge the next session") {
-                        state.phase = .careSessionFeedback
-                    }
-                    .padding(.horizontal, 24)
-
-                    SecondaryButton(title: "Skip for now — back to profile") {
-                        state.skipCareFeedback()
-                    }
-                    .padding(.horizontal, 24)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Return to playlists")
+                    .padding(.bottom, 32)
+                    .safeAreaPadding(.bottom, 16)
                 }
-                .padding(.vertical, 28)
+                .padding(.horizontal, BrandTheme.contentGutter)
+            }
+            .preferredColorScheme(.light)
+        } else {
+            ScreenFadeIn {
+                CenteredScrollScreen {
+                    VStack(spacing: 24) {
+                        FadeInTitle(text: "How that felt", delay: 0)
+                        FadeInLine(text: "A small pause — not a report card.", delay: 0.1)
+
+                        ZStack {
+                            Circle()
+                                .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 14)
+                                .frame(width: 160, height: 160)
+                            Circle()
+                                .trim(from: 0, to: state.calmScore)
+                                .stroke(
+                                    AngularGradient(colors: [BrandTheme.goldSoft, BrandTheme.goldDeep], center: .center),
+                                    style: StrokeStyle(lineWidth: 14, lineCap: .round)
+                                )
+                                .frame(width: 160, height: 160)
+                                .rotationEffect(.degrees(-90))
+
+                            VStack(spacing: 4) {
+                                Text("\(Int(state.calmScore * 100))")
+                                    .font(BrandTheme.title(.largeTitle))
+                                    .foregroundStyle(BrandTheme.brown)
+                                Text("calm")
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+
+                        FadeInLine(
+                            text: "Sound and space shifted with you — softly, as you breathed.",
+                            font: .subheadline,
+                            delay: 0.22
+                        )
+
+                        PrimaryButton(title: "Jot a note & nudge the next session") {
+                            state.phase = .careSessionFeedback
+                        }
+                        .padding(.horizontal, 24)
+
+                        SecondaryButton(title: "Skip for now — back to profile") {
+                            state.skipCareFeedback()
+                        }
+                        .padding(.horizontal, 24)
+                    }
+                    .padding(.vertical, 28)
+                }
             }
         }
+    }
+
+    private var calmRingGraphic: some View {
+        ZStack {
+            Circle()
+                .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 14)
+                .frame(width: 160, height: 160)
+            Circle()
+                .trim(from: 0, to: state.calmScore)
+                .stroke(
+                    AngularGradient(colors: [BrandTheme.goldSoft, BrandTheme.goldDeep], center: .center),
+                    style: StrokeStyle(lineWidth: 14, lineCap: .round)
+                )
+                .frame(width: 160, height: 160)
+                .rotationEffect(.degrees(-90))
+
+            Circle()
+                .fill(BrandTheme.cream.opacity(0.72))
+                .frame(width: 76, height: 76)
+                .overlay(Circle().stroke(BrandTheme.gold.opacity(0.22), lineWidth: 1))
+        }
+        .accessibilityHidden(true)
     }
 }
 

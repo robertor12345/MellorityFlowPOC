@@ -246,10 +246,11 @@ struct ResidentProfileView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Return device to staff")
                 }
-                .padding(.horizontal, BrandTheme.contentGutter)
-                .padding(.top, 10)
+
                 Spacer()
             }
+            .padding(.horizontal, BrandTheme.contentGutter)
+            .padding(.top, 10)
 
             if let route = activeOverlay {
                 residentChromeOverlay(route: route)
@@ -344,7 +345,7 @@ struct ResidentProfileView: View {
                             )
                     )
                 Image(systemName: genre.iconName)
-                    .font(.system(size: 34, weight: .ultraLight))
+                    .font(.system(size: 38, weight: .light))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [BrandTheme.brown.opacity(0.5), BrandTheme.brown.opacity(0.88)],
