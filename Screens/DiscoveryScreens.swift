@@ -217,9 +217,6 @@ struct DiscoveryCalibrationView: View {
 // MARK: - Era listening panel (archival media + ring equalizer + centered mood faces)
 
 private struct DiscoveryEraListeningOrb: View {
-    /// Room for wiggling rings outside the nebula shell (matches on-screen visual extent + margin).
-    private static let ringCanvasOutset: CGFloat = OrbHeartbeat.maxVisualExtentScale * 1.12
-
     let snippetIndex: Int
     let sliceAnchor: Date
     let orbSize: CGSize
@@ -249,7 +246,7 @@ private struct DiscoveryEraListeningOrb: View {
 
     var body: some View {
         let coreDiameter = min(orbSize.width, orbSize.height)
-        let canvasDiameter = coreDiameter * Self.ringCanvasOutset
+        let canvasDiameter = OrbRingEqualizerView.canvasDiameter(for: coreDiameter)
         TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(pulseAnchor) * flowPanelPulseSpeed
             let sample = OrbPulseSample.sample(
@@ -258,7 +255,8 @@ private struct DiscoveryEraListeningOrb: View {
                 reduceMotion: reduceMotion
             )
             let contentScale = sample.shellScale
-            let orbEdgeRadius = (coreDiameter * 0.5) * OrbHeartbeat.visualHeadroom * contentScale
+            let orbEdgeRadius = OrbRingEqualizerView.orbEdgeRadius(for: coreDiameter, shellScale: contentScale)
+            let listenProgress = CGFloat(min(1, max(0, timeline.date.timeIntervalSince(sliceAnchor) / DiscoveryFlowPOC.snippetDurationSeconds)))
 
             ZStack {
                 ZStack {
@@ -305,12 +303,15 @@ private struct DiscoveryEraListeningOrb: View {
             .scaleEffect(contentScale)
             .frame(width: coreDiameter, height: coreDiameter)
             .background {
-                DiscoveryOrbRingEqualizer(
+                OrbRingEqualizerView(
                     canvasDiameter: canvasDiameter,
                     orbEdgeRadius: orbEdgeRadius,
-                    sliceAnchor: sliceAnchor
+                    listenProgress: listenProgress
                 )
                 .allowsHitTesting(false)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Listen progress")
+                .accessibilityValue("\(Int((listenProgress * 100).rounded())) percent through this clip")
             }
         }
         .frame(width: coreDiameter, height: coreDiameter)
@@ -341,116 +342,6 @@ private struct DiscoveryEraListeningOrb: View {
         }
         videoLooper.play(urls: urls)
     }
-}
-
-// MARK: - Ring equalizer (oscillating rings around the orb)
-
-private enum DiscoveryEqualizerMotion {
-    static let barCount = 32
-
-    static func barAmplified(index i: Int, phase t: Double, sliceProgress frac: CGFloat) -> CGFloat {
-        let ωA = 1.95 + Double(i % 15) * 0.068
-        let ωB = 0.74 + Double((i ^ 11) % 17) * 0.049
-        let wa = sin(t * ωA + Double(i) * 0.93)
-        let wb = cos(t * ωB + Double(i) * 1.11)
-        let weave = CGFloat((wa + wb + 1.8) / 3.6)
-
-        let breath = 0.86 + CGFloat(sin(t * 0.47 + Double(i) * 0.08)) * 0.13
-        let openness = CGFloat(sqrt(Double(frac)))
-        let level = openness * CGFloat(0.38 + weave * Double(0.34 + frac * 0.28))
-            + (1 - openness) * (0.12 + weave * (0.32 + frac * 0.22))
-        return max(0.15, min(1, level * breath))
-    }
-}
-
-private struct DiscoveryOrbRingEqualizer: View {
-    let canvasDiameter: CGFloat
-    /// Exterior radius of the main nebula orb — rings hug just outside this edge.
-    let orbEdgeRadius: CGFloat
-    let sliceAnchor: Date
-
-    private let ringCount = 5
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
-            let elapsed = timeline.date.timeIntervalSince(sliceAnchor)
-            let frac = CGFloat(min(1, max(0, elapsed / DiscoveryFlowPOC.snippetDurationSeconds)))
-            let t = timeline.date.timeIntervalSinceReferenceDate
-
-            Canvas { context, size in
-                let center = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
-                let shimmer = 0.72 + 0.28 * frac
-
-                for ring in 0 ..< ringCount {
-                    let ringT = Double(ring) / Double(max(1, ringCount - 1))
-                    let baseRadius = orbEdgeRadius * (1.045 + ringT * 0.095)
-                    let wiggleScale = orbEdgeRadius * (0.034 - ringT * 0.007)
-                    let steps = 96
-
-                    var path = Path()
-                    for step in 0 ... steps {
-                        let u = Double(step) / Double(steps)
-                        let angle = u * .pi * 2 - .pi / 2
-                        let barIndex = Int(u * Double(Self.barCount)) % Self.barCount
-                        let amp = DiscoveryEqualizerMotion.barAmplified(
-                            index: barIndex,
-                            phase: t + ringT * 0.35,
-                            sliceProgress: frac
-                        )
-                        let radialBump = (amp - 0.38) * wiggleScale * 2.4
-                        let harmonic =
-                            sin(angle * 4.0 + t * (2.0 + ringT * 0.8) + Double(ring) * 0.9)
-                            * wiggleScale
-                            * 0.32
-                        let twist =
-                            cos(angle * 7.0 - t * 1.4 + Double(barIndex) * 0.15)
-                            * wiggleScale
-                            * 0.14
-                        let radius = baseRadius + radialBump + harmonic + twist
-                        let point = CGPoint(
-                            x: center.x + CGFloat(cos(angle) * radius),
-                            y: center.y + CGFloat(sin(angle) * radius)
-                        )
-                        if step == 0 {
-                            path.move(to: point)
-                        } else {
-                            path.addLine(to: point)
-                        }
-                    }
-                    path.closeSubpath()
-
-                    let strokeOpacity = (0.42 - ringT * 0.14) * shimmer
-                    let lineWidth = max(1.1, canvasDiameter * (0.0048 - ringT * 0.0006))
-
-                    context.stroke(
-                        path,
-                        with: .color(BrandTheme.nebulaCyan.opacity(strokeOpacity)),
-                        lineWidth: lineWidth + 2.8
-                    )
-                    context.stroke(
-                        path,
-                        with: .color(BrandTheme.nebulaCyan.opacity(strokeOpacity * 0.35)),
-                        lineWidth: lineWidth + 5.5
-                    )
-                    context.stroke(
-                        path,
-                        with: .color(
-                            (ring.isMultiple(of: 2) ? BrandTheme.nebulaLavender : BrandTheme.nebulaPeach)
-                                .opacity(strokeOpacity * 0.88)
-                        ),
-                        lineWidth: lineWidth
-                    )
-                }
-            }
-            .allowsHitTesting(false)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Listen progress")
-            .accessibilityValue("\(Int((frac * 100).rounded())) percent through this clip")
-        }
-        .frame(width: canvasDiameter, height: canvasDiameter)
-    }
-
-    private static var barCount: Int { DiscoveryEqualizerMotion.barCount }
 }
 
 // MARK: - Traffic smiles (minimal)

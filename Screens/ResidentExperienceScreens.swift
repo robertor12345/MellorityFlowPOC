@@ -584,22 +584,13 @@ struct ResidentProfileView: View {
         let roleScale: CGFloat =
             emphasis == .hero ? 1.02 : emphasis == .sideStrip ? 0.98 : 1
         let endR = diskDiameter * 0.62
-        let eqRibbon = CircularPlaylistEqualizerRing.outwardRibbon(for: diskDiameter)
-        let heroOuterRingPad: CGFloat =
-            emphasis == .hero ? eqRibbon : 0
-        let glyphStackSquare = diskDiameter + heroOuterRingPad * 2
+        let eqRibbon = emphasis == .hero ? OrbRingEqualizerView.glyphRingOutwardPad(for: diskDiameter) : 0
+        let glyphStackSquare = diskDiameter + eqRibbon * 2
+        let ringCanvas = OrbRingEqualizerView.canvasDiameter(for: diskDiameter)
+        let ringOrbEdge = OrbRingEqualizerView.glyphOrbEdgeRadius(for: diskDiameter)
 
         return Button(action: action) {
             ZStack {
-                if emphasis == .hero {
-                    CircularPlaylistEqualizerRing(
-                        phase: phase,
-                        accent: genre.accent,
-                        diskDiameter: diskDiameter,
-                        outwardMax: eqRibbon
-                    )
-                }
-
                 Circle()
                     .fill(genre.accent.opacity(emphasis == .hero ? 0.38 : 0.24))
                     .blur(radius: emphasis == .hero ? 22 : 12)
@@ -658,6 +649,17 @@ struct ResidentProfileView: View {
                     )
                     .shadow(color: BrandTheme.logoCyan.opacity(0.55), radius: 6)
                     .symbolRenderingMode(.hierarchical)
+            }
+            .frame(width: diskDiameter, height: diskDiameter)
+            .background {
+                if emphasis == .hero {
+                    OrbRingEqualizerView(
+                        canvasDiameter: ringCanvas,
+                        orbEdgeRadius: ringOrbEdge,
+                        listenProgress: 1
+                    )
+                    .accessibilityHidden(true)
+                }
             }
             .frame(width: glyphStackSquare, height: glyphStackSquare)
             .contentShape(
@@ -742,81 +744,6 @@ private struct ResidentLuminousFloatingButton: View {
         }
         .shadow(color: accent.opacity(0.45), radius: 14)
         .shadow(color: BrandTheme.logoCyan.opacity(0.28), radius: 22)
-    }
-}
-
-// MARK: - Circular equalizer (active playlist hero only)
-
-/// Radial spectrum bars seated just outside the hero disk rim — drawing stays localized so periphery glyphs are not obscured or given a larger overlap hit target (see `contentShape`).
-private struct CircularPlaylistEqualizerRing: View {
-    /// Legacy fixed ribbon — prefer `outwardRibbon(for:)`.
-    static let outwardRibbon: CGFloat = 52
-
-    static func outwardRibbon(for diskDiameter: CGFloat) -> CGFloat {
-        max(52, diskDiameter * 0.38)
-    }
-
-    let phase: TimeInterval
-    let accent: Color
-    let diskDiameter: CGFloat
-    let outwardMax: CGFloat
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var barCount: Int { 22 }
-
-    private var lineBreadth: CGFloat {
-        max(7, diskDiameter * 0.052)
-    }
-
-    private var innerRadius: CGFloat { diskDiameter * 0.5 + lineBreadth * 0.38 }
-
-    var body: some View {
-        let span = diskDiameter + outwardMax * 2
-        Canvas { context, size in
-            let center = CGPoint(x: size.width / 2, y: size.height / 2)
-            for i in 0 ..< barCount {
-                let θ = CGFloat(i) / CGFloat(barCount) * 2 * .pi - .pi / 2
-                let len = barOutwardLength(index: i)
-                let inner = CGPoint(
-                    x: center.x + cos(θ) * innerRadius,
-                    y: center.y + sin(θ) * innerRadius
-                )
-                let outer = CGPoint(
-                    x: center.x + cos(θ) * (innerRadius + len),
-                    y: center.y + sin(θ) * (innerRadius + len)
-                )
-                var seg = Path()
-                seg.move(to: inner)
-                seg.addLine(to: outer)
-                let chatter = CGFloat(0.54 + (sin(phase * 11.3 + Double(i) * 0.63)) * 0.24)
-                let color: Color =
-                    (i % 3 == 0)
-                        ? accent.opacity(Double(0.62 + chatter * 0.26))
-                        : BrandTheme.gold.opacity(Double(0.48 + chatter * 0.38))
-                context.stroke(
-                    seg,
-                    with: .color(color),
-                    style: StrokeStyle(lineWidth: lineBreadth, lineCap: .round)
-                )
-            }
-        }
-        .frame(width: span, height: span)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    private func barOutwardLength(index: Int) -> CGFloat {
-        guard reduceMotion == false else {
-            return outwardMax * 0.72
-        }
-        let ω = 8.1
-        let wave =
-            sin(phase * ω + Double(index) * 0.74)
-                + 0.36 * cos(phase * (ω * 1.51) + Double(index + 4) * 0.53)
-                + 0.2 * sin(phase * (ω * 2.14) + Double(index))
-        let t = CGFloat((wave + 1.35) / 2.72)
-        return max(12, outwardMax * (0.28 + min(1, t)))
     }
 }
 

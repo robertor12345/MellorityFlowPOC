@@ -34,6 +34,7 @@
 		7A25D9437F793E797A98890D /* PatientFaceIDLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */; };
 		81361D57C735FCFEF89D48C5 /* MellorityOrbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CDA4CC6EACA74D67A879AF /* MellorityOrbView.swift */; };
 		834195D9EF7618D4111C44A8 /* OrbNavigationStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */; };
+		8782E3E1949A033A3EAB15D1 /* OrbRingEqualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5A6279C9D0318573D5B5F3 /* OrbRingEqualizer.swift */; };
 		8E0C3FFDF7961AB665E8487C /* CareStaffScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = F36F6CE06F46E7B1282377F8 /* CareStaffScreens.swift */; };
 		9D245774B42B588FDF793751 /* OrbHeartbeat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22389121AF71D3190F26C44D /* OrbHeartbeat.swift */; };
 		A274E09BE88A084D1A2FA3D0 /* FadeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581245CE63F69A24FE34574B /* FadeText.swift */; };
@@ -75,6 +76,7 @@
 		5F28363CDD8ACCE234843157 /* BrandTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandTheme.swift; sourceTree = "<group>"; };
 		664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryScreens.swift; sourceTree = "<group>"; };
 		68CD019E95A8AC72545862DB /* ResidentPlaylistVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentPlaylistVisuals.swift; sourceTree = "<group>"; };
+		6E5A6279C9D0318573D5B5F3 /* OrbRingEqualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbRingEqualizer.swift; sourceTree = "<group>"; };
 		6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceScreens.swift; sourceTree = "<group>"; };
 		797BF377E50486923A75204F /* CalmMotionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmMotionViews.swift; sourceTree = "<group>"; };
 		7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareStaffModels.swift; sourceTree = "<group>"; };
@@ -96,7 +98,7 @@
 		DD59A8A7E78EDAAD1B17527B /* OrbShellConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbShellConfiguration.swift; sourceTree = "<group>"; };
 		E0BA5A3D744D25B08F291B62 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
 		E217ADFE80B1EA5AEFACC7F0 /* OrbReferenceMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbReferenceMotion.swift; sourceTree = "<group>"; };
-		E2CD61FF1F6BD4D5FAFC27F2 /* MellorityFlowPOC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MellorityFlowPOC.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2CD61FF1F6BD4D5FAFC27F2 /* MellorityFlowPOC.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MellorityFlowPOC.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC5F095407AE14CB9B2C797 /* CenteredScrollScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteredScrollScreen.swift; sourceTree = "<group>"; };
 		EB45B845D070101D7353A9E8 /* DiscoveryEraMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryEraMedia.swift; sourceTree = "<group>"; };
 		EBB34F34F697359DE52136BB /* OrbContentMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbContentMotion.swift; sourceTree = "<group>"; };
@@ -174,6 +176,7 @@
 				CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */,
 				E217ADFE80B1EA5AEFACC7F0 /* OrbReferenceMotion.swift */,
 				7C9979DB1CACE630F2B4042F /* OrbRenderBudget.swift */,
+				6E5A6279C9D0318573D5B5F3 /* OrbRingEqualizer.swift */,
 				DD59A8A7E78EDAAD1B17527B /* OrbShellConfiguration.swift */,
 				882A2F05FD9061B38840680A /* PatientBiometricAuth.swift */,
 				51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */,
@@ -235,6 +238,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					3933836E9D2CA4B288A1AA2B = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -308,6 +312,7 @@
 				834195D9EF7618D4111C44A8 /* OrbNavigationStyle.swift in Sources */,
 				B89B8F023B62D4B4F34DA119 /* OrbReferenceMotion.swift in Sources */,
 				EF832AEC00AC774287A3D261 /* OrbRenderBudget.swift in Sources */,
+				8782E3E1949A033A3EAB15D1 /* OrbRingEqualizer.swift in Sources */,
 				77FB7BBC8129A9FDC0A2C7DB /* OrbShellConfiguration.swift in Sources */,
 				2035F5D0E2B6D0D57BC1938F /* PatientBiometricAuth.swift in Sources */,
 				7A25D9437F793E797A98890D /* PatientFaceIDLinkStore.swift in Sources */,
@@ -332,7 +337,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 23CGZDXP4Q;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -349,7 +354,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 23CGZDXP4Q;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
