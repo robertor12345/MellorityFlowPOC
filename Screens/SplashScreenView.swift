@@ -5,7 +5,6 @@ struct SplashScreenView: View {
     var onComplete: () -> Void
 
     @State private var logoIn = false
-    @State private var titleIn = false
     @State private var exitFade = false
 
     var body: some View {
@@ -13,15 +12,9 @@ struct SplashScreenView: View {
             BrandBackground()
 
             VStack(spacing: 20) {
-                MellorityLogoImage(maxHeight: 450)
+                MellorityLogoImage(maxHeight: 380)
                     .scaleEffect(logoIn ? 1 : 0.78)
                     .opacity(logoIn ? 1 : 0)
-
-                Text("Mellority")
-                    .font(BrandTheme.title(.largeTitle))
-                    .foregroundStyle(BrandTheme.brown)
-                    .opacity(titleIn ? 1 : 0)
-                    .offset(y: titleIn ? 0 : 14)
             }
             .padding(.horizontal, BrandTheme.contentGutter)
         }
@@ -32,9 +25,6 @@ struct SplashScreenView: View {
                 logoIn = true
             }
             try? await Task.sleep(nanoseconds: 320_000_000)
-            withAnimation(.easeOut(duration: 0.55)) {
-                titleIn = true
-            }
             try? await Task.sleep(nanoseconds: 1_100_000_000)
             withAnimation(.easeInOut(duration: 0.5)) {
                 exitFade = true

@@ -53,16 +53,16 @@ enum ResidentMusicGenre: String, CaseIterable, Identifiable, Codable, Equatable 
         }
     }
 
-    /// Session & roster tints — Mellority cream / gold / dusk tones (not traffic-light primaries).
+    /// Session & roster tints — sky blue, sage green, and peach pastels (not traffic-light primaries).
     var accent: Color {
         switch self {
-        case .jazz: return BrandTheme.goldSoft.opacity(0.85)
-        case .classical: return Color(red: 0.52, green: 0.58, blue: 0.70).opacity(0.75)
-        case .pop: return Color(red: 0.68, green: 0.62, blue: 0.78).opacity(0.7)
-        case .rock: return Color(red: 0.50, green: 0.44, blue: 0.40).opacity(0.75)
-        case .gospel: return Color(red: 0.78, green: 0.72, blue: 0.52).opacity(0.8)
-        case .country: return Color(red: 0.48, green: 0.56, blue: 0.48).opacity(0.72)
-        case .soul: return Color(red: 0.58, green: 0.52, blue: 0.62).opacity(0.72)
+        case .jazz: return BrandTheme.goldSoft.opacity(0.88)
+        case .classical: return Color(red: 0.62, green: 0.80, blue: 0.94).opacity(0.78)
+        case .pop: return Color(red: 0.78, green: 0.86, blue: 0.98).opacity(0.82)
+        case .rock: return Color(red: 0.48, green: 0.62, blue: 0.58).opacity(0.78)
+        case .gospel: return Color(red: 1.00, green: 0.82, blue: 0.72).opacity(0.84)
+        case .country: return BrandTheme.gold.opacity(0.78)
+        case .soul: return Color(red: 0.58, green: 0.74, blue: 0.82).opacity(0.78)
         }
     }
 }
@@ -75,9 +75,9 @@ enum ResidentTrafficMood: Int, CaseIterable, Identifiable {
     /// Muted “traffic” semantics for **profile / intake** only — not used on the resident music surface.
     var color: Color {
         switch self {
-        case .low: return Color(red: 0.58, green: 0.42, blue: 0.45).opacity(0.78)
-        case .mid: return Color(red: 0.70, green: 0.55, blue: 0.38).opacity(0.82)
-        case .high: return Color(red: 0.44, green: 0.54, blue: 0.48).opacity(0.78)
+        case .low: return Color(red: 0.62, green: 0.78, blue: 0.92).opacity(0.82)
+        case .mid: return BrandTheme.goldSoft.opacity(0.88)
+        case .high: return BrandTheme.gold.opacity(0.82)
         }
     }
     var iconName: String {

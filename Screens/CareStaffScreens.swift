@@ -7,15 +7,15 @@ struct CarePatientListView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to home",
+                onBack: {
+                    state.selectedCarePatientId = nil
+                    state.phase = .home
+                }
+            ) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "One-to-one calm", delay: 0)
-                    FadeInLine(
-                        text: "Quiet, unhurried time with someone you care for — sound, lights, optional VR or displays. Not a medical device.",
-                        font: .caption,
-                        color: BrandTheme.brownMuted,
-                        delay: 0.08
-                    )
 
                     PrimaryButton(title: "Face-linked profiles") {
                         state.openFaceLinkedProfilePicker()
@@ -32,52 +32,23 @@ struct CarePatientListView: View {
                     .padding(.horizontal, 12)
 
                     ForEach(state.carePatients) { patient in
-                        Button {
+                        let subtitle: String = {
+                            var parts = [patient.careContextLabel]
+                            if let last = state.recordsForPatient(patient.id).first {
+                                parts.append(lastSessionSummary(last))
+                            }
+                            return parts.joined(separator: " · ")
+                        }()
+                        OrbPortraitNavButton(
+                            portraitAssetName: patient.stockPortraitAssetName,
+                            title: patient.displayName,
+                            subtitle: subtitle
+                        ) {
                             state.selectedCarePatientId = patient.id
                             state.phase = .carePatientDetail
-                        } label: {
-                            BrandCard {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack(alignment: .center, spacing: 12) {
-                                        Image(patient.stockPortraitAssetName)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 52, height: 52)
-                                            .clipShape(Circle())
-                                            .overlay(Circle().stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1))
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(patient.displayName)
-                                                .font(BrandTheme.title(.headline))
-                                                .foregroundStyle(BrandTheme.brown)
-                                            Text(patient.careContextLabel)
-                                                .font(.caption)
-                                                .foregroundStyle(BrandTheme.brownMuted)
-                                        }
-                                        Spacer(minLength: 0)
-                                        Image(systemName: "chevron.right")
-                                            .foregroundStyle(BrandTheme.gold.opacity(0.8))
-                                    }
-                                    if let last = state.recordsForPatient(patient.id).first {
-                                        Text(lastSessionSummary(last))
-                                            .font(.caption2)
-                                            .foregroundStyle(BrandTheme.brownMuted)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
                         }
-                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 4)
-
-                    SecondaryButton(title: "Back to home") {
-                        state.selectedCarePatientId = nil
-                        state.phase = .home
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
                 }
                 .padding(.vertical, 28)
             }
@@ -102,14 +73,17 @@ struct CarePatientListView: View {
 
 struct CareFaceLinkedPickView: View {
     @ObservedObject var state: SessionPOCState
-
-    private let columns = [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var linkingPatientId: UUID?
+    @State private var faceIDMessage: String?
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to full roster",
+                onBack: { state.phase = .carePatientList }
+            ) {
                 VStack(spacing: 20) {
-                    FadeInTitle(text: "Who’s with you?", delay: 0)
                     FadeInLine(
                         text: "Profiles here were created when their face was captured on this device. Tap someone to start their session — floating instrument icons tap to play; the playing symbol grows at the centre (no playlist list shown on this surface).",
                         font: .caption,
@@ -117,65 +91,68 @@ struct CareFaceLinkedPickView: View {
                         delay: 0.06
                     )
 
-                    LazyVGrid(columns: columns, spacing: 16) {
+                    LazyVGrid(columns: BrandLayout.faceLinkedGridColumns(for: horizontalSizeClass), spacing: 16) {
                         ForEach(state.carePatients) { patient in
-                            Button {
+                            OrbFaceLinkedTile(
+                                portraitAssetName: patient.stockPortraitAssetName,
+                                title: patient.displayName,
+                                subtitle: patient.careContextLabel
+                            ) {
                                 state.selectCarePatientFromFacePick(patient.id)
-                            } label: {
-                                faceLinkedCard(patient)
                             }
-                            .buttonStyle(.plain)
+                            .contextMenu {
+                                Button("Link \(PatientBiometricAuth.biometryLabel) to \(patient.displayName)") {
+                                    linkFaceID(for: patient.id)
+                                }
+                                .disabled(linkingPatientId == patient.id)
+                                if state.faceIDLinkedPatientId == patient.id {
+                                    Button("Remove \(PatientBiometricAuth.biometryLabel) link", role: .destructive) {
+                                        state.unlinkPatientFaceID()
+                                        faceIDMessage = nil
+                                    }
+                                }
+                            }
+                            .overlay(alignment: .topTrailing) {
+                                if state.faceIDLinkedPatientId == patient.id {
+                                    Image(systemName: "faceid")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(BrandTheme.gold)
+                                        .padding(8)
+                                        .background(Circle().fill(BrandTheme.cream.opacity(0.92)))
+                                        .padding(6)
+                                        .accessibilityLabel("\(PatientBiometricAuth.biometryLabel) linked")
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 4)
 
-                    SecondaryButton(title: "Back to full roster") {
-                        state.phase = .carePatientList
+                    if let faceIDMessage, !faceIDMessage.isEmpty {
+                        Text(faceIDMessage)
+                            .font(.caption)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
                 }
                 .padding(.vertical, 28)
             }
         }
         .onAppear {
             if !state.isSignedIn { state.phase = .home }
+            state.refreshFaceIDLink()
         }
     }
 
-    private func faceLinkedCard(_ patient: CarePatientProfile) -> some View {
-        VStack(spacing: 10) {
-            Image(patient.stockPortraitAssetName)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 140, height: 140)
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(BrandTheme.gold.opacity(0.45), lineWidth: 2)
-                )
-                .shadow(color: BrandTheme.brown.opacity(0.12), radius: 8, y: 4)
-
-            VStack(spacing: 2) {
-                Text(patient.displayName)
-                    .font(BrandTheme.title(.headline))
-                    .foregroundStyle(BrandTheme.brown)
-                Text(patient.careContextLabel)
-                    .font(.caption)
-                    .foregroundStyle(BrandTheme.brownMuted)
-                    .multilineTextAlignment(.center)
-            }
+    private func linkFaceID(for patientId: UUID) {
+        guard linkingPatientId == nil else { return }
+        linkingPatientId = patientId
+        faceIDMessage = nil
+        Task {
+            let error = await state.linkPatientForFaceIDSignInAfterBiometric(patientId)
+            linkingPatientId = nil
+            faceIDMessage = error
         }
-        .padding(14)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(BrandTheme.cream.opacity(0.92))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
-        )
     }
 }
 
@@ -192,19 +169,18 @@ struct CareSessionPrepView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to profile",
+                onBack: { state.phase = .carePatientDetail }
+            ) {
                 VStack(alignment: .leading, spacing: 20) {
-                    VStack(spacing: 12) {
-                        FadeInTitle(text: "Room & kit", delay: 0)
-                            .frame(maxWidth: .infinity)
-                        FadeInLine(
-                            text: "If you use smart lights, a headset, or a TV in the room, set that up here so the session matches the space. None of this is required — it’s just so Mellority knows what you have.",
-                            font: .caption,
-                            color: BrandTheme.brownMuted,
-                            delay: 0.06
-                        )
-                        .frame(maxWidth: .infinity)
-                    }
+                    FadeInLine(
+                        text: "If you use smart lights, a headset, or a TV in the room, set that up here so the session matches the space. None of this is required — it’s just so Mellority knows what you have.",
+                        font: .caption,
+                        color: BrandTheme.brownMuted,
+                        delay: 0.06
+                    )
+                    .frame(maxWidth: .infinity)
 
                     if let patient {
                         BrandCard {
@@ -311,11 +287,6 @@ struct CareSessionPrepView: View {
                         state.continueCareSessionFromPrep()
                     }
                     .padding(.horizontal, 24)
-
-                    SecondaryButton(title: "Back to profile") {
-                        state.phase = .carePatientDetail
-                    }
-                    .padding(.horizontal, 24)
                 }
                 .padding(.vertical, 28)
             }
@@ -337,6 +308,21 @@ struct CareSessionPrepView: View {
 
 struct CarePatientDetailView: View {
     @ObservedObject var state: SessionPOCState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private enum DetailTypography {
+        static let name = Font.title.weight(.semibold)
+        static let context = Font.title3
+        static let section = Font.headline.weight(.semibold)
+        static let body = Font.body
+        static let secondary = Font.callout
+        static let label = Font.subheadline.weight(.semibold)
+        static let pill = Font.subheadline.weight(.medium)
+    }
+
+    private var portraitSize: CGFloat {
+        BrandLayout.scaled(112, regular: 144, horizontalSizeClass: horizontalSizeClass)
+    }
 
     private var patient: CarePatientProfile? {
         state.carePatient(id: state.selectedCarePatientId)
@@ -344,37 +330,52 @@ struct CarePatientDetailView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
-                VStack(spacing: 20) {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to roster",
+                onBack: {
+                    state.selectedCarePatientId = nil
+                    state.phase = .carePatientList
+                }
+            ) {
+                VStack(spacing: 26) {
                     if let patient {
-                        FadeInTitle(text: patient.displayName, delay: 0)
-                        FadeInLine(text: patient.careContextLabel, font: .subheadline, delay: 0.06)
-
                         Image(patient.stockPortraitAssetName)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 100, height: 100)
+                            .frame(width: portraitSize, height: portraitSize)
                             .clipShape(Circle())
                             .overlay(Circle().stroke(BrandTheme.gold.opacity(0.42), lineWidth: 2))
                             .shadow(color: BrandTheme.brown.opacity(0.12), radius: 10, y: 4)
 
+                        VStack(spacing: 6) {
+                            Text(patient.displayName)
+                                .font(DetailTypography.name)
+                                .foregroundStyle(BrandTheme.brown)
+                                .multilineTextAlignment(.center)
+                            Text(patient.careContextLabel)
+                                .font(DetailTypography.context)
+                                .foregroundStyle(BrandTheme.brownMuted)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+
                         genrePlaylistsCard(patient)
 
                         BrandCard {
-                            VStack(alignment: .leading, spacing: 14) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 Text("Resident session (handoff)")
-                                    .font(.caption.weight(.semibold))
+                                    .font(DetailTypography.section)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 Stepper(value: Binding(
                                     get: { patient.residentAgeYears },
                                     set: { state.setResidentAge(for: patient.id, age: $0) }
                                 ), in: 55 ... 105) {
                                     Text("Approx. age: \(patient.residentAgeYears)")
-                                        .font(.subheadline)
+                                        .font(DetailTypography.body)
                                         .foregroundStyle(BrandTheme.brown)
                                 }
                                 Text("Music and playlists are chosen on the resident surface — not edited here.")
-                                    .font(.caption2)
+                                    .font(DetailTypography.secondary)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .fixedSize(horizontal: false, vertical: true)
                                 PrimaryButton(title: "Open resident calm surface") {
@@ -386,12 +387,12 @@ struct CarePatientDetailView: View {
                         .padding(.horizontal, 4)
 
                         BrandCard {
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 Text("Listening discovery")
-                                    .font(.caption.weight(.semibold))
+                                    .font(DetailTypography.section)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 Text("Up to six calm clips (about 30 seconds each, unless they tap sooner). Tap the traffic-light faces (red unhappy → green happy) to match each sound — each tap completes that clip and starts the next. If they listen without tapping, we move on when the slice ends using a neutral default. When the pass ends, we reshuffle playlist genres/stubs from those picks, open their calm sandbox, and surface more instrument glyphs when discovery finds gaps.")
-                                    .font(.caption2)
+                                    .font(DetailTypography.secondary)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .fixedSize(horizontal: false, vertical: true)
                                 SecondaryButton(title: "Start discovery pass") {
@@ -399,7 +400,7 @@ struct CarePatientDetailView: View {
                                 }
                                 if let line = discoveryRunSummary(for: patient.id, state: state) {
                                     Text(line)
-                                        .font(.caption2.weight(.medium))
+                                        .font(DetailTypography.body.weight(.medium))
                                         .foregroundStyle(BrandTheme.brown)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .padding(.top, 6)
@@ -411,29 +412,29 @@ struct CarePatientDetailView: View {
                         .padding(.horizontal, 4)
 
                         BrandCard {
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 Text("Comfort & senses")
-                                    .font(.caption.weight(.semibold))
+                                    .font(DetailTypography.section)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 Text("Light")
-                                    .font(.caption2.weight(.semibold))
+                                    .font(DetailTypography.label)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 Text(patient.preferredLight)
-                                    .font(.caption)
+                                    .font(DetailTypography.body)
                                     .foregroundStyle(BrandTheme.brown)
                                 Text("Scent")
-                                    .font(.caption2.weight(.semibold))
+                                    .font(DetailTypography.label)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .padding(.top, 4)
                                 Text(patient.scentGuidance)
-                                    .font(.caption)
+                                    .font(DetailTypography.body)
                                     .foregroundStyle(BrandTheme.brown)
                                 Text("Touch")
-                                    .font(.caption2.weight(.semibold))
+                                    .font(DetailTypography.label)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .padding(.top, 4)
                                 Text(patient.touchComfortNotes)
-                                    .font(.caption)
+                                    .font(DetailTypography.body)
                                     .foregroundStyle(BrandTheme.brown)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -441,17 +442,17 @@ struct CarePatientDetailView: View {
                         .padding(.horizontal, 4)
 
                         BrandCard {
-                            VStack(alignment: .leading, spacing: 10) {
+                            VStack(alignment: .leading, spacing: 14) {
                                 Text("Themes that help them land")
-                                    .font(.caption.weight(.semibold))
+                                    .font(DetailTypography.section)
                                     .foregroundStyle(BrandTheme.brownMuted)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 8)], spacing: 8) {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 10)], spacing: 10) {
                                     ForEach(patient.comfortThemes, id: \.self) { theme in
                                         Text(theme)
-                                            .font(.caption.weight(.medium))
+                                            .font(DetailTypography.pill)
                                             .foregroundStyle(BrandTheme.brown)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
                                             .background(Capsule().fill(BrandTheme.creamDeep.opacity(0.85)))
                                             .overlay(
                                                 Capsule().stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
@@ -460,7 +461,7 @@ struct CarePatientDetailView: View {
                                 }
                                 if patient.prefersGentleSoundOnsets {
                                     Text("Sound: very gentle starts — no sudden jumps.")
-                                        .font(.caption2)
+                                        .font(DetailTypography.secondary)
                                         .foregroundStyle(BrandTheme.brownMuted)
                                         .padding(.top, 4)
                                 }
@@ -470,20 +471,20 @@ struct CarePatientDetailView: View {
                         .padding(.horizontal, 4)
 
                         BrandCard {
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 14) {
                                 Text("Likes")
-                                    .font(.caption.weight(.semibold))
+                                    .font(DetailTypography.section)
                                     .foregroundStyle(BrandTheme.brownMuted)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 8)], spacing: 8) {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 10)], spacing: 10) {
                                     ForEach(patient.likes, id: \.self) { tag in
                                         tagPill(tag, positive: true)
                                     }
                                 }
                                 Text("Dislikes")
-                                    .font(.caption.weight(.semibold))
+                                    .font(DetailTypography.section)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .padding(.top, 4)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 8)], spacing: 8) {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 10)], spacing: 10) {
                                     ForEach(patient.dislikes, id: \.self) { tag in
                                         tagPill(tag, positive: false)
                                     }
@@ -494,61 +495,61 @@ struct CarePatientDetailView: View {
                         .padding(.horizontal, 4)
 
                         BrandCard {
-                            VStack(alignment: .leading, spacing: 10) {
+                            VStack(alignment: .leading, spacing: 14) {
                                 Text("For next time")
-                                    .font(.caption.weight(.semibold))
+                                    .font(DetailTypography.section)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                 meterRow("Tempo — gentler ↔ slightly brighter", value: patient.musicTempoBias)
                                 meterRow("Nature ↔ abstract", value: patient.natureVsAbstract)
                                 meterRow("Instrumental ↔ voice", value: patient.voiceVsInstrumental)
                                 Text("After you’re together, note how they responded — these sliders help the next visit land softly.")
-                                    .font(.caption2)
+                                    .font(DetailTypography.secondary)
                                     .foregroundStyle(BrandTheme.brownMuted)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .padding(.horizontal, 4)
 
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("Previous sessions")
-                                .font(.subheadline.weight(.semibold))
+                                .font(DetailTypography.section)
                                 .foregroundStyle(BrandTheme.brown)
                                 .padding(.horizontal, 4)
 
                             let rows = state.recordsForPatient(patient.id)
                             if rows.isEmpty {
                                 Text("Nothing here yet.")
-                                    .font(.caption)
+                                    .font(DetailTypography.body)
                                     .foregroundStyle(BrandTheme.brownMuted)
                                     .padding(.horizontal, 8)
                             } else {
                                 ForEach(rows) { rec in
                                     BrandCard {
-                                        VStack(alignment: .leading, spacing: 6) {
+                                        VStack(alignment: .leading, spacing: 8) {
                                             HStack {
                                                 Text(rec.date, style: .date)
-                                                    .font(.caption.weight(.semibold))
+                                                    .font(DetailTypography.label)
                                                     .foregroundStyle(BrandTheme.brownMuted)
                                                 Spacer()
                                                 Text("\(rec.calmPercent)% calm")
-                                                    .font(.caption.weight(.medium))
+                                                    .font(DetailTypography.body.weight(.medium))
                                                     .foregroundStyle(BrandTheme.goldDeep)
                                             }
                                             Text("Mood tags: \(rec.moodSummary)")
-                                                .font(.subheadline)
+                                                .font(DetailTypography.body)
                                                 .foregroundStyle(BrandTheme.brown)
                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                                 .fixedSize(horizontal: false, vertical: true)
                                             if let line = outcomeLine(rec) {
                                                 Text(line)
-                                                    .font(.caption)
+                                                    .font(DetailTypography.secondary)
                                                     .foregroundStyle(BrandTheme.brownMuted)
                                                     .frame(maxWidth: .infinity, alignment: .leading)
                                                     .fixedSize(horizontal: false, vertical: true)
                                             }
                                             if let note = rec.staffNote, !note.isEmpty {
                                                 Text(note)
-                                                    .font(.caption)
+                                                    .font(DetailTypography.secondary)
                                                     .foregroundStyle(BrandTheme.brownMuted)
                                                     .frame(maxWidth: .infinity, alignment: .leading)
                                                     .fixedSize(horizontal: false, vertical: true)
@@ -569,12 +570,6 @@ struct CarePatientDetailView: View {
                     } else {
                         FadeInLine(text: "No one’s selected.", delay: 0)
                     }
-
-                    SecondaryButton(title: "Back to roster") {
-                        state.selectedCarePatientId = nil
-                        state.phase = .carePatientList
-                    }
-                    .padding(.horizontal, 24)
                 }
                 .padding(.vertical, 28)
             }
@@ -597,12 +592,12 @@ struct CarePatientDetailView: View {
     private func genrePlaylistsCard(_ patient: CarePatientProfile) -> some View {
         let groups = orderedPlaylistGroups(patient)
         return BrandCard {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 16) {
                 Text("Playlists on file (by genre)")
-                    .font(.caption.weight(.semibold))
+                    .font(DetailTypography.section)
                     .foregroundStyle(BrandTheme.brownMuted)
                 Text("These appear as floating instruments for the resident — staff does not change them here.")
-                    .font(.caption2)
+                    .font(DetailTypography.secondary)
                     .foregroundStyle(BrandTheme.brownMuted)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -619,42 +614,42 @@ struct CarePatientDetailView: View {
     }
 
     private func genrePlaylistSection(group: CareGenrePlaylistGroup) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
                 Image(systemName: group.genre.iconName)
-                    .font(.title3)
+                    .font(.title2)
                     .foregroundStyle(group.genre.accent)
                 Text(group.genre.accessibilityLabel)
-                    .font(.subheadline.weight(.semibold))
+                    .font(DetailTypography.section)
                     .foregroundStyle(BrandTheme.brown)
                 Spacer(minLength: 0)
             }
             ForEach(group.playlists) { pl in
                 HStack(alignment: .firstTextBaseline) {
                     Image(systemName: "music.note.list")
-                        .font(.caption)
+                        .font(DetailTypography.body)
                         .foregroundStyle(BrandTheme.brownMuted)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(pl.title)
-                            .font(.subheadline)
+                            .font(DetailTypography.body.weight(.medium))
                             .foregroundStyle(BrandTheme.brown)
                         Text("\(pl.trackTitles.count) tracks in player · about \(pl.durationMinutes) min")
-                            .font(.caption2)
+                            .font(DetailTypography.secondary)
                             .foregroundStyle(BrandTheme.brownMuted)
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
             }
         }
     }
 
     private func tagPill(_ text: String, positive: Bool) -> some View {
         Text(text)
-            .font(.caption.weight(.medium))
+            .font(DetailTypography.pill)
             .foregroundStyle(BrandTheme.brown)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(
                 Capsule()
                     .fill(positive ? BrandTheme.goldSoft.opacity(0.45) : BrandTheme.creamDeep.opacity(0.9))
@@ -666,14 +661,14 @@ struct CarePatientDetailView: View {
     }
 
     private func meterRow(_ title: String, value: Double) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(title)
-                    .font(.caption)
+                    .font(DetailTypography.body)
                     .foregroundStyle(BrandTheme.brown)
                 Spacer()
                 Text("\(Int((value * 100).rounded()))%")
-                    .font(.caption.monospacedDigit())
+                    .font(DetailTypography.body.monospacedDigit())
                     .foregroundStyle(BrandTheme.brownMuted)
             }
             GeometryReader { g in
@@ -685,7 +680,7 @@ struct CarePatientDetailView: View {
                         .frame(width: max(4, g.size.width * CGFloat(value)))
                 }
             }
-            .frame(height: 6)
+            .frame(height: 8)
         }
     }
 
@@ -717,9 +712,11 @@ struct CareSessionFeedbackView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to session summary",
+                onBack: { state.phase = .insight }
+            ) {
                 VStack(spacing: 22) {
-                    FadeInTitle(text: "Afterward", delay: 0)
                     if let patient = targetPatient {
                         FadeInLine(
                             text: "How did \(patient.displayName) seem? This isn’t a grade for you — it nudges the sound for next time.",
@@ -800,8 +797,6 @@ struct CareSessionFeedbackView: View {
                         .padding(.horizontal, 24)
                     } else {
                         FadeInLine(text: "Pick someone from the list to save a note.", delay: 0)
-                        SecondaryButton(title: "Back") { state.phase = .insight }
-                            .padding(.horizontal, 24)
                     }
                 }
                 .padding(.vertical, 28)

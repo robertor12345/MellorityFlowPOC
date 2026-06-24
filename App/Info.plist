@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Mellority Flow</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,19 +15,28 @@
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
-	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-	</dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Face ID lets a linked resident open their calm surface without typing a password.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Mellority captures your environment to tailor visuals and sound to the moment.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Optional heart rate and mindfulness data help adapt your session when you connect Health.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Optional wellness updates when you connect Health.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Spatial audio and session capture may use the microphone when you enable those features.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a photo to analyse colour and mood for your session.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
 </dict>
 </plist>

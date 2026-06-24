@@ -10,11 +10,17 @@ struct CapturePhotoView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
-                if state.capturedImage != nil {
-                    photoConfirmationContent
-                } else {
-                    photoPickContent
+            GeometryReader { geo in
+                CenteredScrollScreen(onBack: {
+                    state.capturedImage = nil
+                    photoItem = nil
+                    state.phase = .entryMode
+                }) {
+                    if state.capturedImage != nil {
+                        photoConfirmationContent(viewportHeight: geo.size.height)
+                    } else {
+                        photoPickContent
+                    }
                 }
             }
         }
@@ -28,10 +34,9 @@ struct CapturePhotoView: View {
 
     private var photoPickContent: some View {
         VStack(spacing: 20) {
-            FadeInTitle(text: "A picture to lean on", delay: 0)
             FadeInLine(
                 text: "Choose one from your library or take something new — then we’ll build the session around it.",
-                delay: 0.1
+                delay: 0.06
             )
 
             BrandCard {
@@ -48,12 +53,7 @@ struct CapturePhotoView: View {
             }
 
             PhotosPicker(selection: $photoItem, matching: .images) {
-                Label("Choose from library", systemImage: "photo.stack")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(BrandTheme.cream)
-                    .foregroundStyle(BrandTheme.brown)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                OrbPickerLabel(title: "Choose from library", systemImage: "photo.stack")
             }
             .onChange(of: photoItem) { _, new in
                 Task {
@@ -69,36 +69,23 @@ struct CapturePhotoView: View {
                 Button {
                     showCamera = true
                 } label: {
-                    Label("Take a picture", systemImage: "camera.fill")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(BrandTheme.goldSoft.opacity(0.5))
-                        .foregroundStyle(BrandTheme.brown)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    OrbPickerLabel(title: "Take a picture", systemImage: "camera.fill")
                 }
             }
 
-            SecondaryButton(title: "Back") { state.phase = .entryMode }
-                .padding(.top, 4)
         }
         .padding(24)
     }
 
     // MARK: Confirm before session
 
-    private var photoConfirmationContent: some View {
+    private func photoConfirmationContent(viewportHeight: CGFloat) -> some View {
         VStack(spacing: 22) {
-            FadeInTitle(text: "Use this photo?", delay: 0)
-            FadeInLine(
-                text: "We’ll shape sound and visuals around this image.",
-                delay: 0.08
-            )
-
             if let img = state.capturedImage {
                 Image(uiImage: img)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxHeight: 320)
+                    .frame(maxHeight: BrandLayout.photoPreviewMaxHeight(for: viewportHeight))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -127,12 +114,6 @@ struct CapturePhotoView: View {
             }
             .padding(.horizontal, 4)
 
-            SecondaryButton(title: "Back") {
-                state.capturedImage = nil
-                photoItem = nil
-                state.phase = .entryMode
-            }
-            .padding(.top, 4)
         }
         .padding(24)
     }

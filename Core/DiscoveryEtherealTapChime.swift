@@ -5,13 +5,20 @@ enum DiscoveryEtherealTapChime {
     /// ~0.4s decay at low level; honours main-actor AudioEngine use from SwiftUI taps.
     @MainActor
     static func playLight() {
-        DiscoveryEtherealTapChimeEngine.shared.trigger()
+        DiscoveryEtherealTapChimeEngine.shared.trigger(variant: .light)
+    }
+
+    @MainActor
+    static func playSuccess() {
+        DiscoveryEtherealTapChimeEngine.shared.trigger(variant: .success)
     }
 }
 
 @MainActor
 private final class DiscoveryEtherealTapChimeEngine {
     static let shared = DiscoveryEtherealTapChimeEngine()
+
+    enum Variant { case light, success }
 
     private let engine = AVAudioEngine()
     private let playerNode = AVAudioPlayerNode()
@@ -23,7 +30,7 @@ private final class DiscoveryEtherealTapChimeEngine {
         engine.mainMixerNode.outputVolume = 0.42
     }
 
-    func trigger() {
+    func trigger(variant: Variant = .light) {
         do {
             if !engine.isRunning {
                 try engine.start()
@@ -33,7 +40,7 @@ private final class DiscoveryEtherealTapChimeEngine {
         }
 
         let sr = format.sampleRate
-        let duration: TimeInterval = 0.44
+        let duration: TimeInterval = variant == .success ? 0.72 : 0.44
         let frameCount = AVAudioFrameCount(sr * duration)
         guard frameCount > 0,
               let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
@@ -43,22 +50,26 @@ private final class DiscoveryEtherealTapChimeEngine {
 
         guard let ch = buffer.floatChannelData?.pointee else { return }
 
-        // Airy fifth + gentle overtone — fast rise, slow ethereal tail.
-        let f1 = 784.0
-        let f2 = f1 * 1.498 // ~perfect fifth shimmer
-        let f3 = f1 * 2.015
+        let (f1, f2, f3, volume, decayRate): (Double, Double, Double, Double, Double) = {
+            switch variant {
+            case .light:
+                return (784.0, 784.0 * 1.498, 784.0 * 2.015, 0.07, 4.95)
+            case .success:
+                return (392.0, 392.0 * 1.335, 392.0 * 2.0, 0.09, 3.35)
+            }
+        }()
 
         for i in 0 ..< Int(frameCount) {
             let t = Double(i) / sr
-            let attack = min(1, t / 0.026)
-            let decay = exp(-t * 4.95)
+            let attack = min(1, t / (variant == .success ? 0.04 : 0.026))
+            let decay = exp(-t * decayRate)
             let env = attack * decay
-            let swirl = sin(2 * Double.pi * 9.7 * t) * 0.11
+            let swirl = sin(2 * Double.pi * 9.7 * t) * (variant == .success ? 0.06 : 0.11)
             let body =
                 sin(2 * Double.pi * f1 * t) * 0.74
                     + sin(2 * Double.pi * f2 * t) * 0.42
                     + sin(2 * Double.pi * f3 * t) * 0.14
-            ch[i] = Float(body * env * (1 + swirl) * 0.07)
+            ch[i] = Float(body * env * (1 + swirl) * volume)
         }
 
         playerNode.stop()

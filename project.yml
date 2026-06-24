@@ -17,6 +17,9 @@ targets:
       - Core
       - Flow
       - Screens
+    resources:
+      - path: App/Resources
+        type: folder
     settings:
       base:
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -30,6 +33,7 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        NSFaceIDUsageDescription: Face ID lets a linked resident open their calm surface without typing a password.
         NSCameraUsageDescription: Mellority captures your environment to tailor visuals and sound to the moment.
         NSPhotoLibraryUsageDescription: Choose a photo to analyse colour and mood for your session.
         NSMicrophoneUsageDescription: Spatial audio and session capture may use the microphone when you enable those features.

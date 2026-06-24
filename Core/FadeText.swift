@@ -4,13 +4,18 @@ import SwiftUI
 struct FadeInLine: View {
     let text: String
     var font: Font = .body
-    var color: Color = BrandTheme.brownMuted
+    var magnification: CGFloat = 1
+    var color: Color = BrandTheme.logoLavenderBlue
     var delay: Double = 0
     @State private var visible = false
 
+    private var resolvedFont: Font {
+        magnification > 1 ? SignInPageLayout.subheadFont : font
+    }
+
     var body: some View {
         Text(text)
-            .font(font)
+            .font(resolvedFont)
             .foregroundStyle(color)
             .multilineTextAlignment(.center)
             .opacity(visible ? 1 : 0)
@@ -28,13 +33,22 @@ struct FadeInLine: View {
 struct FadeInTitle: View {
     let text: String
     var size: Font.TextStyle = .title
+    var magnification: CGFloat = 1
     var delay: Double = 0
+    var useBrandGradient: Bool = false
     @State private var visible = false
+
+    private var resolvedFont: Font {
+        magnification > 1
+            ? SignInPageLayout.titleFont
+            : BrandTheme.title(size)
+    }
 
     var body: some View {
         Text(text)
-            .font(BrandTheme.title(size))
-            .foregroundStyle(BrandTheme.brown)
+            .font(resolvedFont)
+            .tracking(magnification > 1 ? 3 : 2)
+            .foregroundStyle(useBrandGradient ? AnyShapeStyle(Color.white) : AnyShapeStyle(BrandTheme.brown))
             .multilineTextAlignment(.center)
             .opacity(visible ? 1 : 0)
             .offset(y: visible ? 0 : 12)
@@ -44,6 +58,38 @@ struct FadeInTitle: View {
                 }
             }
             .onDisappear { visible = false }
+    }
+}
+
+/// NoteStalgia title fade — wordmark with ™.
+struct FadeInNoteStalgiaWordmark: View {
+    var magnification: CGFloat = 1
+    var delay: Double = 0
+    @State private var visible = false
+
+    private var resolvedFont: Font {
+        magnification > 1 ? SignInPageLayout.titleFont : BrandTheme.title(.title)
+    }
+
+    private var resolvedPointSize: CGFloat {
+        magnification > 1 ? SignInPageLayout.points(28) : 28
+    }
+
+    var body: some View {
+        NoteStalgiaWordmark(
+            font: resolvedFont,
+            tracking: magnification > 1 ? 3 : 2,
+            pointSize: resolvedPointSize
+        )
+        .multilineTextAlignment(.center)
+        .opacity(visible ? 1 : 0)
+        .offset(y: visible ? 0 : 12)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.7).delay(delay)) {
+                visible = true
+            }
+        }
+        .onDisappear { visible = false }
     }
 }
 

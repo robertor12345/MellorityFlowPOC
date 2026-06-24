@@ -1,53 +1,290 @@
 import SwiftUI
 
-/// Mellority calm brand: cream, chocolate brown, gold (#F5F5DC / #4B3621 / #D4AF37).
+/// NoteStalgia cosmos brand — deep navy field, nebula orb (teal · lavender · pink).
 enum BrandTheme {
-    static let cream = Color(red: 0.965, green: 0.965, blue: 0.88)
-    static let creamMid = Color(red: 0.93, green: 0.91, blue: 0.84)
-    static let creamDeep = Color(red: 0.88, green: 0.85, blue: 0.78)
-    static let brown = Color(red: 0.294, green: 0.212, blue: 0.129)
-    static let brownMuted = Color(red: 0.38, green: 0.30, blue: 0.22)
-    static let gold = Color(red: 0.831, green: 0.686, blue: 0.216)
-    static let goldSoft = Color(red: 0.88, green: 0.78, blue: 0.55)
-    static let goldDeep = Color(red: 0.62, green: 0.48, blue: 0.22)
+    // MARK: - Surfaces (dark UI cards on cosmic background)
+    static let cream = Color(red: 0.16, green: 0.15, blue: 0.24)
+    static let creamMid = Color(red: 0.12, green: 0.11, blue: 0.20)
+    static let creamDeep = Color(red: 0.10, green: 0.09, blue: 0.17)
+
+    // MARK: - Canvas (soft lavender–teal field drawn from the nebula palette)
+    static let skyBackgroundTop = Color(red: 0.46, green: 0.42, blue: 0.62)
+    static let skyBackgroundMid = Color(red: 0.40, green: 0.46, blue: 0.64)
+    static let skyBackgroundDeep = Color(red: 0.36, green: 0.44, blue: 0.60)
+
+    // MARK: - Nebula orb palette
+    static let nebulaMagenta = Color(red: 0.82, green: 0.38, blue: 0.78)
+    static let nebulaPurple = Color(red: 0.58, green: 0.32, blue: 0.88)
+    static let nebulaLavender = Color(red: 0.72, green: 0.58, blue: 0.96)
+    static let nebulaCyan = Color(red: 0.38, green: 0.88, blue: 0.94)
+    static let nebulaTeal = Color(red: 0.28, green: 0.78, blue: 0.88)
+    static let nebulaPink = Color(red: 0.96, green: 0.62, blue: 0.82)
+    /// Warm peach smoke on the reference orb’s right side.
+    static let nebulaPeach = Color(red: 0.98, green: 0.66, blue: 0.52)
+    static let nebulaSalmon = Color(red: 0.94, green: 0.58, blue: 0.62)
+    /// Deep atmospheric shadow — gas-giant belts and limb darkening.
+    static let nebulaDeep = Color(red: 0.14, green: 0.18, blue: 0.38)
+    static let nebulaBeltShadow = Color(red: 0.22, green: 0.26, blue: 0.52)
+    static let nebulaBeltHighlight = Color(red: 0.72, green: 0.90, blue: 0.98)
+    static let orbShellHighlight = nebulaPink.opacity(0.95)
+    static let orbShellMid = nebulaLavender.opacity(0.85)
+    static let orbShellEdge = nebulaPurple.opacity(0.72)
+    static let orbGlowOuter = nebulaCyan
+    static let orbShellShadow = Color(red: 0.02, green: 0.02, blue: 0.08)
+
+    // MARK: - Logo wordmark tones (readable on cosmic canvas)
+    static let logoPink = Color(red: 0.91, green: 0.72, blue: 0.84)
+    static let logoCyan = Color(red: 0.56, green: 0.84, blue: 0.93)
+    static let logoLavenderBlue = Color(red: 0.78, green: 0.82, blue: 0.98)
+
+    // MARK: - Typography & accents (semantic names kept for existing screens)
+    static let brown = Color(red: 0.96, green: 0.88, blue: 0.94)
+    static let brownMuted = logoLavenderBlue.opacity(0.92)
+    static let gold = logoCyan
+    static let goldSoft = logoPink.opacity(0.88)
+    static let goldDeep = Color(red: 0.62, green: 0.88, blue: 0.96)
+
+    // MARK: - Intro / splash copy on dark field
+    static let introTitle = Color(red: 0.96, green: 0.88, blue: 1.0)
+    static let introTitleHighlight = Color(red: 0.72, green: 0.94, blue: 1.0)
+    static let introSubtitle = Color(red: 0.82, green: 0.78, blue: 0.94)
+    static let introBody = Color(red: 0.68, green: 0.64, blue: 0.82)
+    static let introTextHalo = Color(red: 0.45, green: 0.35, blue: 0.72).opacity(0.55)
+    static let introTextShadow = Color.black.opacity(0.45)
+
+    static let introPeach = introTitleHighlight
+    static let introPeachSoft = introBody
+    static let introPeachMuted = introBody.opacity(0.92)
+    static let introPeachGlow = introTitleHighlight
+
+    static let primaryButtonPeach = nebulaPink
 
     static let backgroundGradient = LinearGradient(
-        colors: [cream, creamMid, creamDeep.opacity(0.85)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        colors: [skyBackgroundTop, skyBackgroundMid, skyBackgroundDeep],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    static let brandWordmarkGradient = LinearGradient(
+        colors: [logoPink, logoLavenderBlue, logoCyan],
+        startPoint: .leading,
+        endPoint: .trailing
     )
 
     static let etherealGradient = LinearGradient(
         colors: [
-            Color(red: 0.45, green: 0.55, blue: 0.75).opacity(0.35),
-            Color(red: 0.75, green: 0.65, blue: 0.85).opacity(0.25),
-            cream.opacity(0.9),
+            nebulaPurple.opacity(0.42),
+            nebulaCyan.opacity(0.28),
+            cream.opacity(0.88),
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    /// Immersive session: sky, water, forest hints (used with layered mountains + leaves).
     static let sessionNatureSkyGradient = LinearGradient(
         colors: [
-            Color(red: 0.68, green: 0.80, blue: 0.93),
-            Color(red: 0.80, green: 0.88, blue: 0.90).opacity(0.92),
-            Color(red: 0.72, green: 0.83, blue: 0.78).opacity(0.65),
-            Color(red: 0.88, green: 0.90, blue: 0.82).opacity(0.85),
+            Color(red: 0.10, green: 0.14, blue: 0.28),
+            Color(red: 0.14, green: 0.22, blue: 0.32),
+            Color(red: 0.08, green: 0.18, blue: 0.24),
+            Color(red: 0.12, green: 0.10, blue: 0.20),
         ],
         startPoint: .top,
         endPoint: .bottom
     )
 
-    /// Rounded system — simple, modern UI (replaces previous serif titles).
     static func title(_ style: Font.TextStyle = .title) -> Font {
-        .system(style, design: .rounded)
+        .system(style, design: .default, weight: .medium)
     }
 
     static func buttonLabel(_ style: Font.TextStyle = .headline) -> Font {
-        .system(style, design: .rounded, weight: .semibold)
+        .system(style, design: .default, weight: .semibold)
     }
 
-    /// Minimum horizontal inset from the safe area for body copy and primary actions.
     static let contentGutter: CGFloat = 22
+}
+
+// MARK: - Sign-in surfaces (home Face ID — large type for resident / staff iPads)
+
+enum SignInPageLayout {
+    static let scale: CGFloat = 3.0
+
+    static func points(_ base: CGFloat) -> CGFloat { base * scale }
+
+    static var titleFont: Font {
+        .system(size: points(28), weight: .medium, design: .default)
+    }
+
+    static var headlineFont: Font {
+        .system(size: points(17), weight: .semibold, design: .default)
+    }
+
+    static var subheadFont: Font {
+        .system(size: points(15), weight: .medium, design: .default)
+    }
+
+    static var bodyFont: Font {
+        .system(size: points(17), weight: .regular, design: .default)
+    }
+
+    static var captionFont: Font {
+        .system(size: points(12), weight: .regular, design: .default)
+    }
+
+    static var labelFont: Font {
+        .system(size: points(12), weight: .semibold, design: .default)
+    }
+
+    static var iconFont: Font {
+        .system(size: points(22), weight: .medium, design: .default)
+    }
+
+    static var buttonVerticalPadding: CGFloat { points(10) }
+    static var buttonHorizontalPadding: CGFloat { points(18) }
+    static var staffToggleVerticalPadding: CGFloat { points(5) }
+    static var staffToggleHorizontalPadding: CGFloat { points(10) }
+    static var staffToggleFont: Font {
+        .system(size: points(11), weight: .medium, design: .default)
+    }
+    static var staffToggleIconFont: Font {
+        .system(size: points(10), weight: .semibold, design: .default)
+    }
+    static var fieldVerticalPadding: CGFloat { points(12) }
+    static var fieldHorizontalPadding: CGFloat { points(14) }
+    static var stackSpacing: CGFloat { points(12) }
+    static var sectionSpacing: CGFloat { points(20) }
+    static var fieldCornerRadius: CGFloat { points(12) }
+}
+
+// MARK: - Responsive layout (iPad-friendly, same visual language)
+
+enum BrandLayout {
+    static let menuColumnMaxWidth: CGFloat = 560
+
+    static func contentGutter(for horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        horizontalSizeClass == .regular ? 32 : BrandTheme.contentGutter
+    }
+
+    static func isRegularWidth(_ horizontalSizeClass: UserInterfaceSizeClass?) -> Bool {
+        horizontalSizeClass == .regular
+    }
+
+    static func orbScale(for horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        isRegularWidth(horizontalSizeClass) ? 1.18 : 1.0
+    }
+
+    static func hullScale(for size: CGSize) -> CGFloat {
+        min(1.38, max(1.0, min(size.width, size.height) / 560))
+    }
+
+    static func scaled(_ compact: CGFloat, regular: CGFloat, horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        isRegularWidth(horizontalSizeClass) ? regular : compact
+    }
+
+    static func discoveryEqualizerHeight(for width: CGFloat) -> CGFloat {
+        min(280, max(228, width * 0.42))
+    }
+
+    static func discoveryFaceDiameterCap(for horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        scaled(136, regular: 152, horizontalSizeClass: horizontalSizeClass)
+    }
+
+    static let discoveryPanelScale: CGFloat = 0.98
+    static let residentPanelScale: CGFloat = discoveryPanelScale
+    static let fullScreenEnvelopeScale: CGFloat = discoveryPanelScale
+
+    static func envelopePadding(in size: CGSize) -> (horizontal: CGFloat, vertical: CGFloat) {
+        (max(12, size.width * 0.04), max(16, size.height * 0.03))
+    }
+
+    static func panelEnvelopePadding(in size: CGSize) -> (horizontal: CGFloat, vertical: CGFloat) {
+        (max(6, size.width * 0.012), max(8, size.height * 0.010))
+    }
+
+    static func envelopeContentSize(in size: CGSize, scale: CGFloat = 1.0) -> CGSize {
+        let pad = envelopePadding(in: size)
+        let w = max(120, (size.width - pad.horizontal * 2) * scale)
+        let h = max(160, (size.height - pad.vertical * 2) * scale)
+        let d = min(w, h)
+        return CGSize(width: d, height: d)
+    }
+
+    static func panelContentSize(in containerSize: CGSize, scale: CGFloat = discoveryPanelScale) -> CGSize {
+        let d = discoveryOrbDiameter(in: containerSize, scale: scale)
+        return CGSize(width: d, height: d)
+    }
+
+    /// Circular playback / discovery orb — inscribed in the screen.
+    static func discoveryOrbDiameter(in containerSize: CGSize, scale: CGFloat = discoveryPanelScale) -> CGFloat {
+        guard containerSize.width > 1, containerSize.height > 1 else { return 320 }
+        let pad = panelEnvelopePadding(in: containerSize)
+        let availW = max(120, containerSize.width - pad.horizontal * 2)
+        let availH = max(120, containerSize.height - pad.vertical * 2)
+        return min(availW, availH) * scale
+    }
+
+    static func discoveryPanelSize(in containerSize: CGSize) -> CGSize {
+        flowOrbPanelSize(in: containerSize)
+    }
+
+    /// Panel orb diameter — reserves headroom so heartbeat expansion never exceeds the screen.
+    static func flowOrbPanelSize(in containerSize: CGSize) -> CGSize {
+        guard containerSize.width > 1, containerSize.height > 1 else {
+            return CGSize(width: 300, height: 300)
+        }
+        let pad = panelEnvelopePadding(in: containerSize)
+        let availW = max(120, containerSize.width - pad.horizontal * 2)
+        let availH = max(120, containerSize.height - pad.vertical * 2)
+        let inset = min(availW, availH) * discoveryPanelScale
+        let d = inset / OrbHeartbeat.maxVisualExtentScale
+        return CGSize(width: d, height: d)
+    }
+
+    static func residentPanelSize(in containerSize: CGSize) -> CGSize {
+        discoveryPanelSize(in: containerSize)
+    }
+
+    static func fullScreenPanelSize(in containerSize: CGSize) -> CGSize {
+        discoveryPanelSize(in: containerSize)
+    }
+
+    static func fullScreenEnvelopeSize(in containerSize: CGSize) -> CGSize {
+        discoveryPanelSize(in: containerSize)
+    }
+
+    static func rectPanelClipShape(
+        width: CGFloat,
+        height: CGFloat,
+        pulse: Double,
+        deformStrength: CGFloat = 1
+    ) -> GlowingRectEnvelopeShape {
+        OrbEnvelopeMorph.rectPanelShape(
+            width: width,
+            height: height,
+            pulse: pulse,
+            deformStrength: deformStrength
+        )
+    }
+
+    static func homeTopSpacer(min viewportHeight: CGFloat, horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        if isRegularWidth(horizontalSizeClass) {
+            return min(72, viewportHeight * 0.08)
+        }
+        return min(120, viewportHeight * 0.14)
+    }
+
+    static func photoPreviewMaxHeight(for viewportHeight: CGFloat) -> CGFloat {
+        min(440, max(320, viewportHeight * 0.42))
+    }
+
+    static func faceLinkedGridColumns(for horizontalSizeClass: UserInterfaceSizeClass?) -> [GridItem] {
+        if isRegularWidth(horizontalSizeClass) {
+            return [
+                GridItem(.adaptive(minimum: 168, maximum: 220), spacing: 18),
+            ]
+        }
+        return [
+            GridItem(.flexible(), spacing: 16),
+            GridItem(.flexible(), spacing: 16),
+        ]
+    }
 }

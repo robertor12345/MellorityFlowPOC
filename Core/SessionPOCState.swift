@@ -3,7 +3,6 @@ import SwiftUI
 /// In-memory state for the **care-home one-to-one** session POC (corporate sign-in).
 final class SessionPOCState: ObservableObject {
     @Published var phase: FlowPhase = .home
-    @Published var showSignInSheet = false
 
     @Published var email = ""
     @Published var password = ""
@@ -39,6 +38,85 @@ final class SessionPOCState: ObservableObject {
     /// Where `leaveResidentProfileToStaff()` returns (face grid vs staff detail).
     @Published var residentStaffReturnPhase: FlowPhase = .carePatientList
 
+    /// Staff handoff veil before resident calm surface opens.
+    @Published var residentHandoffActive = false
+
+    /// Offer Face ID once after launch when a profile is linked (resident iPad).
+    @Published var shouldOfferResidentSignInOnLaunch = false
+
+    /// Care profile linked to device Face ID / Touch ID (Keychain).
+    @Published private(set) var faceIDLinkedPatientId: UUID?
+
+    var faceIDLinkedPatient: CarePatientProfile? {
+        carePatient(id: faceIDLinkedPatientId)
+    }
+
+    init() {
+        faceIDLinkedPatientId = PatientFaceIDLinkStore.linkedPatientId()
+    }
+
+    func refreshFaceIDLink() {
+        faceIDLinkedPatientId = PatientFaceIDLinkStore.linkedPatientId()
+    }
+
+    func linkPatientForFaceIDSignIn(_ patientId: UUID) {
+        PatientFaceIDLinkStore.setLinkedPatientId(patientId)
+        faceIDLinkedPatientId = patientId
+    }
+
+    func unlinkPatientFaceID() {
+        PatientFaceIDLinkStore.setLinkedPatientId(nil)
+        faceIDLinkedPatientId = nil
+    }
+
+    /// Device biometrics → resident calm surface (no corporate sign-in required).
+    @MainActor
+    func signInWithFaceIDToResidentProfile() async -> String? {
+        var linkedId = faceIDLinkedPatientId ?? PatientFaceIDLinkStore.linkedPatientId()
+        if linkedId == nil, PatientBiometricAuth.usesPOCMockFlow, let first = carePatients.first {
+            linkedId = first.id
+            linkPatientForFaceIDSignIn(first.id)
+        }
+        guard let linkedId else {
+            return nil
+        }
+        guard let patient = carePatient(id: linkedId) else {
+            unlinkPatientFaceID()
+            return "That linked profile is no longer on this device."
+        }
+        do {
+            try await PatientBiometricAuth.authenticate(
+                reason: "Sign in as \(patient.displayName) to open their calm surface."
+            )
+            residentStaffReturnPhase = .home
+            beginResidentFaceIDWelcome(patientId: linkedId)
+            CalmExperienceFeedback.signInSuccess()
+            return nil
+        } catch let error as PatientBiometricAuth.AuthFailure {
+            return error.errorDescription
+        } catch {
+            return PatientBiometricAuth.AuthFailure.failed.errorDescription
+        }
+    }
+
+    @MainActor
+    func linkPatientForFaceIDSignInAfterBiometric(_ patientId: UUID) async -> String? {
+        guard let patient = carePatient(id: patientId) else {
+            return "That profile is not available."
+        }
+        do {
+            try await PatientBiometricAuth.authenticate(
+                reason: "Link \(PatientBiometricAuth.biometryLabel) to \(patient.displayName) on this device."
+            )
+            linkPatientForFaceIDSignIn(patientId)
+            return nil
+        } catch let error as PatientBiometricAuth.AuthFailure {
+            return error.errorDescription
+        } catch {
+            return PatientBiometricAuth.AuthFailure.failed.errorDescription
+        }
+    }
+
     // MARK: - Discovery calibration (traffic-light smiles + timed snippets)
 
     @Published private(set) var discoverySnippetIndex: Int = 0
@@ -54,8 +132,28 @@ final class SessionPOCState: ObservableObject {
     }
 
     func openResidentProfile() {
-        guard let pid = selectedCarePatientId else { return }
+        guard selectedCarePatientId != nil else { return }
         residentStaffReturnPhase = .carePatientDetail
+        residentHandoffActive = true
+    }
+
+    func completeResidentHandoffTransition() {
+        guard residentHandoffActive, let pid = selectedCarePatientId else { return }
+        residentHandoffActive = false
+        enterResidentInstrumentSurface(patientId: pid)
+    }
+
+    /// After Face ID — portrait welcome before the calm surface.
+    func beginResidentFaceIDWelcome(patientId: UUID) {
+        selectedCarePatientId = patientId
+        activeCarePatientId = nil
+        isResidentSession = false
+        isCareStaffSession = false
+        phase = .residentFaceIDWelcome
+    }
+
+    func completeResidentFaceIDWelcome() {
+        guard phase == .residentFaceIDWelcome, let pid = selectedCarePatientId else { return }
         enterResidentInstrumentSurface(patientId: pid)
     }
 
@@ -165,12 +263,16 @@ final class SessionPOCState: ObservableObject {
 
     func enterOneToOneCalmFlow() {
         guard isSignedIn else {
-            pendingCareRosterAfterSignIn = true
-            showSignInSheet = true
+            openCorporateSignIn(pendingRosterAfterSignIn: true)
             return
         }
         pendingCareRosterAfterSignIn = false
         phase = .carePatientList
+    }
+
+    func openCorporateSignIn(pendingRosterAfterSignIn: Bool = false) {
+        pendingCareRosterAfterSignIn = pendingRosterAfterSignIn
+        phase = .corporateSignIn
     }
 
     /// Branch for staff after a resident profile was created / linked from face capture (POC).
@@ -192,15 +294,15 @@ final class SessionPOCState: ObservableObject {
         enterResidentInstrumentSurface(patientId: patientId)
     }
 
-    func completeOptionalSignInFromSheet() {
+    func completeCorporateSignIn() {
         isSignedIn = true
-        showSignInSheet = false
         pendingCareRosterAfterSignIn = false
         phase = .carePatientList
     }
 
-    func abandonPendingCareRosterSignInIfNeeded() {
+    func abandonCorporateSignIn() {
         if !isSignedIn { pendingCareRosterAfterSignIn = false }
+        phase = .home
     }
 
     func goBackFromEntryMode() {
@@ -368,6 +470,12 @@ final class SessionPOCState: ObservableObject {
         replayExperienceAvailable = true
     }
 
+    /// Gentle pause before insight or returning to resident playlists.
+    func finishSessionWithSettling() {
+        endSession()
+        phase = .sessionSettling
+    }
+
     func resetToHome() {
         phase = .home
         capturedImage = nil
@@ -385,7 +493,6 @@ final class SessionPOCState: ObservableObject {
 
     func resetAllForFreshAppLaunch() {
         phase = .home
-        showSignInSheet = false
         email = ""
         password = ""
         isSignedIn = false
@@ -410,6 +517,13 @@ final class SessionPOCState: ObservableObject {
         resetDiscoveryState()
         resetCarePrepForNewSession()
         resetIoTDefaults()
+        refreshFaceIDLink()
+        if PatientBiometricAuth.usesPOCMockFlow,
+           faceIDLinkedPatientId == nil,
+           let first = carePatients.first {
+            linkPatientForFaceIDSignIn(first.id)
+        }
+        shouldOfferResidentSignInOnLaunch = faceIDLinkedPatientId != nil
     }
 
     private func resetIoTDefaults() {
@@ -483,6 +597,12 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case careFaceLinkedPick = 12
     /// Timed calm snippets — patient picks traffic-light minimalist face per snippet.
     case careDiscoveryCalibration = 13
+    /// Quiet breath before insight or resident return.
+    case sessionSettling = 14
+    /// Portrait + welcome after Face ID sign-in.
+    case residentFaceIDWelcome = 15
+    /// Staff corporate credentials — native flow page inside the orb shell.
+    case corporateSignIn = 16
 
     var id: Int { rawValue }
 }

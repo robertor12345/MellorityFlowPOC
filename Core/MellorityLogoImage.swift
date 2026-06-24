@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Mellority mark from asset catalog — `original` mode keeps PNG transparency (no template tint, no box).
+/// NoteStalgia mark from asset catalog — full logo (orb + wordmark).
 struct MellorityLogoImage: View {
     var maxHeight: CGFloat = 420
 
@@ -10,6 +10,6 @@ struct MellorityLogoImage: View {
             .resizable()
             .scaledToFit()
             .frame(maxHeight: maxHeight)
-            .accessibilityLabel("Mellority")
+            .accessibilityLabel("NoteStalgia")
     }
 }

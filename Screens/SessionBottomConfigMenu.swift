@@ -14,25 +14,10 @@ struct SessionBottomConfigMenu: View {
                     expanded.toggle()
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.caption.weight(.semibold))
-                    Text(expanded ? "Hide" : "Session settings")
-                        .font(.caption.weight(.semibold))
-                    Image(systemName: expanded ? "chevron.compact.down" : "chevron.compact.up")
-                        .font(.caption2.weight(.bold))
-                }
-                .foregroundStyle(BrandTheme.brown.opacity(0.95))
-                .padding(.vertical, 7)
-                .padding(.horizontal, 14)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(.ultraThinMaterial)
-                        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
-                )
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1)
+                OrbSessionSettingsChip(
+                    title: expanded ? "Hide" : "Session settings",
+                    systemImage: "slider.horizontal.3",
+                    isExpanded: expanded
                 )
             }
             .buttonStyle(.plain)

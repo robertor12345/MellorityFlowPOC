@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// PlayStation-style warm gold ambient particles: brighter, irregular multi-frequency drift, subtle twinkle.
+/// Soft ambient particles — light blue, sage green, and peach pastel drift with subtle twinkle.
 struct GoldAmbientSparklesView: View {
     var intensity: CGFloat = 1
 
@@ -51,7 +51,7 @@ struct GoldAmbientSparklesView: View {
         TimelineView(.animation(minimumInterval: 1 / 50, paused: false)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
-                // No full-screen radial “haze” here — only particles — avoids a dome / semicircle tint on cream UI.
+                // No full-screen radial “haze” here — only particles — avoids a dome / semicircle tint on pastel UI.
 
                 for p in particles {
                     let fx = t * p.driftSpeed + Double(p.phase)
@@ -75,9 +75,14 @@ struct GoldAmbientSparklesView: View {
                         width: p.radius * 0.8,
                         height: p.radius * 0.8
                     )
+                    let coreTint: Color = p.id % 3 == 0
+                        ? Color.white
+                        : p.id % 3 == 1
+                            ? BrandTheme.nebulaCyan
+                            : BrandTheme.nebulaPink
                     context.fill(
                         Path(ellipseIn: core),
-                        with: .color(Color(red: 1, green: 0.96, blue: 0.78).opacity(min(1, Double(op * 1.08))))
+                        with: .color(coreTint.opacity(min(1, Double(op * 1.08))))
                     )
 
                     let glow = CGRect(
@@ -86,13 +91,23 @@ struct GoldAmbientSparklesView: View {
                         width: p.radius * 5,
                         height: p.radius * 5
                     )
+                    let glowInner: Color = p.id % 3 == 0
+                        ? BrandTheme.nebulaCyan
+                        : p.id % 3 == 1
+                            ? BrandTheme.nebulaLavender
+                            : BrandTheme.nebulaPink
+                    let glowOuter: Color = p.id % 3 == 0
+                        ? BrandTheme.nebulaTeal
+                        : p.id % 3 == 1
+                            ? BrandTheme.nebulaPurple
+                            : BrandTheme.nebulaMagenta
                     context.fill(
                         Path(ellipseIn: glow),
                         with: .radialGradient(
                             Gradient(colors: [
-                                Color(red: 1, green: 0.84, blue: 0.42).opacity(Double(min(0.95, op * 0.72))),
-                                Color(red: 0.9, green: 0.58, blue: 0.12).opacity(Double(op * 0.22)),
-                                Color(red: 0.45, green: 0.32, blue: 0.05).opacity(Double(op * 0.08)),
+                                glowInner.opacity(Double(min(0.95, op * 0.72))),
+                                glowOuter.opacity(Double(op * 0.22)),
+                                BrandTheme.brown.opacity(Double(op * 0.06)),
                                 .clear,
                             ]),
                             center: CGPoint(x: cx, y: cy),

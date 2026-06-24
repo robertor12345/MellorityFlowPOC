@@ -4,6 +4,10 @@ import SwiftUI
 
 struct HomeView: View {
     @ObservedObject var state: SessionPOCState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var faceIDBusy = false
+    @State private var faceIDMessage: String?
+    @State private var showStaffOptions = false
 
     var body: some View {
         ScreenFadeIn {
@@ -14,86 +18,87 @@ struct HomeView: View {
                 }
             }
         }
-        .sheet(isPresented: $state.showSignInSheet, onDismiss: {
-            state.abandonPendingCareRosterSignInIfNeeded()
-        }) {
-            OptionalSignInSheet(state: state)
+        .onAppear {
+            state.refreshFaceIDLink()
         }
     }
 
     @ViewBuilder
     private func homeScrollContent(viewportHeight: CGFloat) -> some View {
-        let h = viewportHeight
-        let logoMax = min(560, h * 0.52)
-        let topPad = max(12, h * 0.5 - logoMax * 0.52)
+        VStack(spacing: SignInPageLayout.sectionSpacing) {
+            Spacer(minLength: BrandLayout.homeTopSpacer(min: viewportHeight, horizontalSizeClass: horizontalSizeClass) * 0.35)
 
-        VStack(spacing: 28) {
-            Color.clear.frame(height: topPad)
+            FadeInNoteStalgiaWordmark(magnification: SignInPageLayout.scale, delay: 0)
 
-            MellorityLogoImage(maxHeight: logoMax)
-                .frame(maxWidth: .infinity)
+            VStack(spacing: SignInPageLayout.stackSpacing) {
+                if !showStaffOptions {
+                    ResidentFaceIDHomeSignInButton(
+                        linkedPatient: state.faceIDLinkedPatient,
+                        isBusy: faceIDBusy,
+                        statusMessage: faceIDMessage,
+                        onSignIn: { performFaceIDSignIn() }
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
-            FadeInLine(
-                text: "Calm that meets you where you are.",
-                font: BrandTheme.title(.title3),
-                color: BrandTheme.brownMuted,
-                delay: 0.12
-            )
-            FadeInLine(
-                text: state.isSignedIn
-                    ? "Choose someone to sit with — room & kit are set from their profile."
-                    : "Corporate sign-in opens the roster, room & kit prep, and session notes.",
-                font: .subheadline,
-                delay: 0.24
-            )
-
-            VStack(spacing: 12) {
-                if !state.isSignedIn {
-                    PrimaryButton(title: "Corporate sign-in") {
-                        state.showSignInSheet = true
+                HomeStaffToggleButton(isExpanded: showStaffOptions) {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        showStaffOptions.toggle()
                     }
                 }
-                if state.isSignedIn {
-                    PrimaryButton(title: "One-to-one calm") {
-                        state.enterOneToOneCalmFlow()
+
+                if showStaffOptions {
+                    VStack(spacing: SignInPageLayout.points(10)) {
+                        if !state.isSignedIn {
+                            SignInSecondaryButton(title: "Corporate sign-in") {
+                                state.openCorporateSignIn()
+                            }
+                        }
+                        if state.isSignedIn {
+                            SignInSecondaryButton(title: "One-to-one calm") {
+                                state.enterOneToOneCalmFlow()
+                            }
+                        }
                     }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
+            .animation(.easeInOut(duration: 0.35), value: showStaffOptions)
+            .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
 
-            Spacer(minLength: 24)
+            Spacer(minLength: SignInPageLayout.sectionSpacing)
+        }
+    }
+
+    private func performFaceIDSignIn() {
+        guard !faceIDBusy else { return }
+        faceIDBusy = true
+        faceIDMessage = nil
+        Task {
+            let error = await state.signInWithFaceIDToResidentProfile()
+            faceIDBusy = false
+            faceIDMessage = error
         }
     }
 }
 
-// MARK: - Optional sign-in
+// MARK: - Corporate sign-in (native flow page — orb shell + dissolve transition)
 
-struct OptionalSignInSheet: View {
+struct CorporateSignInView: View {
     @ObservedObject var state: SessionPOCState
-    @Environment(\.dismiss) private var dismiss
     @FocusState private var focusedField: Field?
     private enum Field: Hashable { case email, password }
 
     var body: some View {
-        ZStack {
-            BrandBackground()
-                .ignoresSafeArea()
-
-            CenteredScrollScreen {
+        ScreenFadeIn {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to home",
+                onBack: { state.abandonCorporateSignIn() }
+            ) {
                 VStack(spacing: 24) {
-                    HStack {
-                        Spacer()
-                        Button("Close") { dismiss() }
-                            .font(BrandTheme.buttonLabel(.subheadline))
-                            .foregroundStyle(BrandTheme.brownMuted)
-                    }
-
                     FadeInTitle(text: "Corporate sign-in", delay: 0)
                     FadeInLine(
-                        text: "For staff in a care setting — roster, room & kit prep, and session notes. Not for personal-only use.",
-                        font: .subheadline,
-                        color: BrandTheme.brownMuted,
+                        text: "Staff roster, room prep, and session notes.",
                         delay: 0.08
                     )
 
@@ -106,6 +111,7 @@ struct OptionalSignInSheet: View {
                                         .textContentType(.emailAddress)
                                         .keyboardType(.emailAddress)
                                         .textInputAutocapitalization(.never)
+                                        .autocorrectionDisabled()
                                         .focused($focusedField, equals: .email)
                                         .submitLabel(.next)
                                         .onSubmit { focusedField = .password }
@@ -125,19 +131,12 @@ struct OptionalSignInSheet: View {
                     }
                     .padding(.horizontal, 4)
 
-                    VStack(spacing: 12) {
-                        PrimaryButton(title: "Continue", action: signInContinue)
-                        SecondaryButton(title: "Cancel") {
-                            state.abandonPendingCareRosterSignInIfNeeded()
-                            dismiss()
-                        }
-                    }
+                    PrimaryButton(title: "Continue", action: signInContinue)
+                        .padding(.horizontal, 24)
                 }
-                .padding(24)
+                .padding(.vertical, 28)
             }
         }
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(22)
     }
 
     private func labeledField(title: String, @ViewBuilder content: () -> some View) -> some View {
@@ -160,8 +159,8 @@ struct OptionalSignInSheet: View {
     }
 
     private func signInContinue() {
-        state.completeOptionalSignInFromSheet()
-        dismiss()
+        state.completeCorporateSignIn()
+        CalmExperienceFeedback.signInSuccess()
     }
 }
 
@@ -172,10 +171,13 @@ struct EntryModeView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
+            CenteredScrollScreen(onBack: { state.goBackFromEntryMode() }) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "How would you like to begin?", delay: 0)
-                    FadeInLine(text: "Use a photo as a gentle anchor, or skip straight to how you’re feeling.", delay: 0.12)
+                    FadeInLine(
+                        text: "Use a photo as a gentle anchor, or skip straight to how you’re feeling.",
+                        delay: 0.06
+                    )
 
                     if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
                         BrandCard {
@@ -201,54 +203,27 @@ struct EntryModeView: View {
                     }
 
                     VStack(spacing: 14) {
-                        entryCard(
+                        OrbNavTile(
                             title: "Camera",
                             subtitle: "Pick or take a photo, then we’ll shape the session around it.",
-                            systemImage: "camera.fill",
-                            delay: 0.2
+                            systemImage: "camera.fill"
                         ) {
                             state.phase = .captureMoment
                         }
-                        entryCard(
+                        OrbNavTile(
                             title: "Quick start",
                             subtitle: "No photo — just tell us how you’re doing.",
-                            systemImage: "bolt.fill",
-                            delay: 0.32
+                            systemImage: "bolt.fill"
                         ) {
                             state.phase = .moodSelect
                         }
                     }
                     .padding(.horizontal, 20)
 
-                    SecondaryButton(title: "Back") { state.goBackFromEntryMode() }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
                 }
                 .padding(.vertical, 28)
             }
         }
-    }
-
-    private func entryCard(
-        title: String,
-        subtitle: String,
-        systemImage: String,
-        delay: Double,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            BrandCard {
-                VStack(spacing: 12) {
-                    Image(systemName: systemImage)
-                        .font(.title)
-                        .foregroundStyle(BrandTheme.goldDeep)
-                    FadeInLine(text: title, font: BrandTheme.title(.title3), color: BrandTheme.brown, delay: delay)
-                    FadeInLine(text: subtitle, font: .caption, delay: delay + 0.06)
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -256,40 +231,41 @@ struct EntryModeView: View {
 
 struct MoodSelectView: View {
     @ObservedObject var state: SessionPOCState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
+            CenteredScrollScreen(onBack: {
+                state.phase = state.capturedImage != nil ? .captureMoment : .entryMode
+            }) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "How are you feeling?", delay: 0)
-                    FadeInLine(text: "Sound and movement will gently follow whatever you pick.", delay: 0.06)
+
                     if state.isCareStaffSession, let patient = state.carePatient(id: state.activeCarePatientId) {
-                        Text("With \(patient.displayName), there’s no rush. Tap what feels closest — you can choose more than one.")
+                        Text("With \(patient.displayName) — mood tags are just for today.")
                             .font(.caption)
                             .foregroundStyle(BrandTheme.goldDeep)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
-                    FadeInLine(
-                        text: "No wrong answers — just tap anything that fits.",
-                        font: .caption,
-                        color: BrandTheme.brownMuted.opacity(0.95),
-                        delay: 0.14
-                    )
 
                     TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
                         let t = timeline.date.timeIntervalSinceReferenceDate
-                        VStack(spacing: 26) {
-                            ForEach(Array(state.moodOptions.enumerated()), id: \.offset) { index, mood in
-                                FloatingMoodLabel(
-                                    title: mood,
-                                    index: index,
-                                    phase: t,
-                                    isSelected: state.selectedMoods.contains(mood)
+                        Group {
+                            if BrandLayout.isRegularWidth(horizontalSizeClass) {
+                                LazyVGrid(
+                                    columns: [
+                                        GridItem(.flexible(), spacing: 20),
+                                        GridItem(.flexible(), spacing: 20),
+                                    ],
+                                    spacing: 24
                                 ) {
-                                    state.toggleMoodSelection(mood)
+                                    moodOrbButtons(phase: t)
                                 }
-                                .animation(.spring(response: 0.4, dampingFraction: 0.78), value: state.selectedMoods)
+                            } else {
+                                VStack(spacing: 26) {
+                                    moodOrbButtons(phase: t)
+                                }
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -305,95 +281,25 @@ struct MoodSelectView: View {
                     .opacity(state.selectedMoods.isEmpty ? 0.45 : 1)
                     .padding(.horizontal, 24)
 
-                    SecondaryButton(title: "Back") {
-                        state.phase = state.capturedImage != nil ? .captureMoment : .entryMode
-                    }
-                    .padding(.horizontal, 24)
                 }
                 .padding(.vertical, 28)
             }
         }
     }
-}
 
-// MARK: - Floating mood label (typography + glow when selected)
-
-private struct FloatingMoodLabel: View {
-    let title: String
-    let index: Int
-    let phase: TimeInterval
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    private var floatY: CGFloat {
-        CGFloat(
-            sin(phase * 0.82 + Double(index) * 0.61) * 3.8
-                + sin(phase * 0.37 + Double(index) * 1.1) * 1.6
-        )
-    }
-
-    private var sway: Double {
-        sin(phase * 0.48 + Double(index) * 0.94) * 0.55
-    }
-
-    private var fontSize: CGFloat { isSelected ? 30 : 25 }
-
-    var body: some View {
-        Button(action: onSelect) {
-            ZStack {
-                if isSelected {
-                    Text(title)
-                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
-                        .foregroundStyle(BrandTheme.gold.opacity(0.55))
-                        .blur(radius: 18)
-                    Text(title)
-                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
-                        .foregroundStyle(BrandTheme.gold.opacity(0.85))
-                        .blur(radius: 7)
-                    Text(title)
-                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
-                        .foregroundStyle(BrandTheme.goldDeep.opacity(0.5))
-                        .blur(radius: 3)
-                }
-
-                Text(title)
-                    .font(.system(size: fontSize, weight: isSelected ? .semibold : .regular, design: .rounded))
-                    .tracking(isSelected ? 1 : 0.2)
-                    .foregroundStyle(isSelected ? BrandTheme.brown : BrandTheme.brown.opacity(0.72))
-                    .shadow(
-                        color: isSelected ? BrandTheme.gold.opacity(0.98) : .clear,
-                        radius: isSelected ? 2 : 0,
-                        x: 0,
-                        y: 0
-                    )
-                    .shadow(
-                        color: isSelected ? BrandTheme.gold.opacity(0.85) : .clear,
-                        radius: isSelected ? 8 : 0,
-                        x: 0,
-                        y: 0
-                    )
-                    .shadow(
-                        color: isSelected ? BrandTheme.gold.opacity(0.55) : .clear,
-                        radius: isSelected ? 18 : 0,
-                        x: 0,
-                        y: 0
-                    )
-                    .shadow(
-                        color: isSelected ? BrandTheme.goldDeep.opacity(0.45) : .clear,
-                        radius: isSelected ? 26 : 0,
-                        x: 0,
-                        y: 1
-                    )
+    @ViewBuilder
+    private func moodOrbButtons(phase t: TimeInterval) -> some View {
+        ForEach(Array(state.moodOptions.enumerated()), id: \.offset) { index, mood in
+            OrbMoodNavOrb(
+                title: mood,
+                index: index,
+                phase: t,
+                isSelected: state.selectedMoods.contains(mood)
+            ) {
+                state.toggleMoodSelection(mood)
             }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-            .padding(.vertical, 6)
+            .animation(.spring(response: 0.4, dampingFraction: 0.78), value: state.selectedMoods)
         }
-        .buttonStyle(.plain)
-        .offset(y: floatY)
-        .rotationEffect(.degrees(sway))
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -404,68 +310,32 @@ struct InsightView: View {
 
     var body: some View {
         if state.isResidentSession {
-            ZStack {
-                BrandTheme.backgroundGradient
-                    .ignoresSafeArea()
+            ScreenFadeIn {
                 VStack {
                     Spacer()
-                    calmRingGraphic
-                        .padding(.vertical, 8)
-                    Spacer()
-                    Button {
+                    OrbIconNavButton(
+                        systemImage: "square.grid.2x2.fill",
+                        accessibilityLabel: "Return to playlists",
+                        diameter: 64
+                    ) {
                         state.phase = .residentProfile
-                    } label: {
-                        Image(systemName: "square.grid.2x2.fill")
-                            .font(.system(size: 42, weight: .light))
-                            .foregroundStyle(BrandTheme.brown.opacity(0.78))
-                            .padding(18)
-                            .background(Circle().fill(BrandTheme.cream.opacity(0.92)))
-                            .overlay(Circle().stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Return to playlists")
                     .padding(.bottom, 32)
                     .safeAreaPadding(.bottom, 16)
                 }
                 .padding(.horizontal, BrandTheme.contentGutter)
             }
-            .preferredColorScheme(.light)
         } else {
             ScreenFadeIn {
-                CenteredScrollScreen {
+                CenteredScrollScreen(
+                    backAccessibilityLabel: "Back to profile",
+                    onBack: { state.skipCareFeedback() }
+                ) {
                     VStack(spacing: 24) {
                         FadeInTitle(text: "How that felt", delay: 0)
-                        FadeInLine(text: "A small pause — not a report card.", delay: 0.1)
-
-                        ZStack {
-                            Circle()
-                                .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 14)
-                                .frame(width: 160, height: 160)
-                            Circle()
-                                .trim(from: 0, to: state.calmScore)
-                                .stroke(
-                                    AngularGradient(colors: [BrandTheme.goldSoft, BrandTheme.goldDeep], center: .center),
-                                    style: StrokeStyle(lineWidth: 14, lineCap: .round)
-                                )
-                                .frame(width: 160, height: 160)
-                                .rotationEffect(.degrees(-90))
-
-                            VStack(spacing: 4) {
-                                Text("\(Int(state.calmScore * 100))")
-                                    .font(BrandTheme.title(.largeTitle))
-                                    .foregroundStyle(BrandTheme.brown)
-                                Text("calm")
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(BrandTheme.brownMuted)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity)
-
                         FadeInLine(
-                            text: "Sound and space shifted with you — softly, as you breathed.",
-                            font: .subheadline,
-                            delay: 0.22
+                            text: "A small pause — not a report card.",
+                            delay: 0.1
                         )
 
                         PrimaryButton(title: "Jot a note & nudge the next session") {
@@ -482,28 +352,6 @@ struct InsightView: View {
                 }
             }
         }
-    }
-
-    private var calmRingGraphic: some View {
-        ZStack {
-            Circle()
-                .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 14)
-                .frame(width: 160, height: 160)
-            Circle()
-                .trim(from: 0, to: state.calmScore)
-                .stroke(
-                    AngularGradient(colors: [BrandTheme.goldSoft, BrandTheme.goldDeep], center: .center),
-                    style: StrokeStyle(lineWidth: 14, lineCap: .round)
-                )
-                .frame(width: 160, height: 160)
-                .rotationEffect(.degrees(-90))
-
-            Circle()
-                .fill(BrandTheme.cream.opacity(0.72))
-                .frame(width: 76, height: 76)
-                .overlay(Circle().stroke(BrandTheme.gold.opacity(0.22), lineWidth: 1))
-        }
-        .accessibilityHidden(true)
     }
 }
 

@@ -1,0 +1,503 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		07F779D6550C21828C49CE7F /* LaunchIntroOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */; };
+		0CD0423EBB0A418530DD92C7 /* DiscoveryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C74CB3706ED1807454D4A26 /* DiscoveryModels.swift */; };
+		0D5F61F88E976BB8433C98AB /* SimplifiedFlowScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FDF6F31EE0C864E0C1DE18F /* SimplifiedFlowScreens.swift */; };
+		0FCBA4CF867F01D255D0EFC5 /* CalmMotionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797BF377E50486923A75204F /* CalmMotionViews.swift */; };
+		13E79F00FA4FEDBE4FE7417D /* AmbientAudioSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 416E96C758B14AB3F62708FC /* AmbientAudioSession.swift */; };
+		142C2E5AA324168AF47DE76D /* BrandTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F28363CDD8ACCE234843157 /* BrandTheme.swift */; };
+		180FBE733338967EC4323922 /* OrbInteriorMediaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D87189281B7EEBEB983BAFC9 /* OrbInteriorMediaPanel.swift */; };
+		184FC378D7500EC88D18B7CC /* MellorityFlowPOCApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD624A08DB09B9BD6D8C53F /* MellorityFlowPOCApp.swift */; };
+		1D64D8350D9A7636E2625743 /* ResidentExperienceScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4443F8F896BE776BC2D899 /* ResidentExperienceScreens.swift */; };
+		2035F5D0E2B6D0D57BC1938F /* PatientBiometricAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882A2F05FD9061B38840680A /* PatientBiometricAuth.swift */; };
+		29E507755E382D1FB35F38C4 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0BA5A3D744D25B08F291B62 /* AppRootView.swift */; };
+		2C88268A4C8543DB8458EA53 /* PatientFaceIDSignInControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A862ED36791951A441F6C6C7 /* PatientFaceIDSignInControls.swift */; };
+		401BD5A9941B9E3EEF21CD0B /* ResidentPlaylistVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68CD019E95A8AC72545862DB /* ResidentPlaylistVisuals.swift */; };
+		47313660A81BEAC6B1E498A1 /* GoldAmbientSparklesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 941A042E8357746A7314E072 /* GoldAmbientSparklesView.swift */; };
+		527AC1CCED7B1B353ED16D0B /* OrbNavControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8B6136C59B0DA60C121408 /* OrbNavControls.swift */; };
+		56B63DB59AE95FA31156ECF8 /* DiscoveryPlaylistTuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B46E84F01DDCD3A4897C934 /* DiscoveryPlaylistTuning.swift */; };
+		576CBE6F4965A11B3751F846 /* LeafBreezeLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5E452A92A9B925A4C923C5 /* LeafBreezeLayer.swift */; };
+		60B2D6EDB1BDAAF3FDFEF406 /* FlowRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6DDB227F98CFA348AE27D2 /* FlowRootView.swift */; };
+		60FFCA6CAA1511E381DF3C7E /* SessionBottomConfigMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033A72DC318F2F4149EAC698 /* SessionBottomConfigMenu.swift */; };
+		692C38C001E452B2873F92E3 /* NatureVideoCompilationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30695C8E9715544131DFAEF /* NatureVideoCompilationView.swift */; };
+		6BC188E40862914153BF5263 /* DiscoveryEraMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB45B845D070101D7353A9E8 /* DiscoveryEraMedia.swift */; };
+		6F750947B19B75821440FB24 /* MellorityLogoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17595CD92889E1FECC468E5F /* MellorityLogoImage.swift */; };
+		77FB7BBC8129A9FDC0A2C7DB /* OrbShellConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD59A8A7E78EDAAD1B17527B /* OrbShellConfiguration.swift */; };
+		7A25D9437F793E797A98890D /* PatientFaceIDLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */; };
+		81361D57C735FCFEF89D48C5 /* MellorityOrbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CDA4CC6EACA74D67A879AF /* MellorityOrbView.swift */; };
+		834195D9EF7618D4111C44A8 /* OrbNavigationStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */; };
+		8E0C3FFDF7961AB665E8487C /* CareStaffScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = F36F6CE06F46E7B1282377F8 /* CareStaffScreens.swift */; };
+		9D245774B42B588FDF793751 /* OrbHeartbeat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22389121AF71D3190F26C44D /* OrbHeartbeat.swift */; };
+		A274E09BE88A084D1A2FA3D0 /* FadeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581245CE63F69A24FE34574B /* FadeText.swift */; };
+		AC9B320E18F3949B71ABBF3C /* CenteredScrollScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC5F095407AE14CB9B2C797 /* CenteredScrollScreen.swift */; };
+		AF88D97C4475C7F1AA2417E2 /* DiscoveryEtherealTapChime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D05CFB7755A842161FE4A5D /* DiscoveryEtherealTapChime.swift */; };
+		B5E7B3BF9C51E6D4CA3BCA93 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B25869C2181BF1DAFDB0984E /* Assets.xcassets */; };
+		B89B8F023B62D4B4F34DA119 /* OrbReferenceMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = E217ADFE80B1EA5AEFACC7F0 /* OrbReferenceMotion.swift */; };
+		C20B5E2D85ED0F79E3831DDC /* FlowContainerSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = F073504DD56CA1C6ED7EE69E /* FlowContainerSize.swift */; };
+		C292223B7BBBE29B08395C88 /* NatureSessionImagery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34BFB55813804EC147A6472F /* NatureSessionImagery.swift */; };
+		D6671F82F92FF6D63E543CC7 /* CareStaffModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */; };
+		DBEE762D9765F5BD092B7EE1 /* CalmExperienceFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED62C0FC11C1EBD8AC45810C /* CalmExperienceFeedback.swift */; };
+		E733A9AC472F8DD38835045B /* ResidentMusicModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */; };
+		E8D32E72E03FFD11B3825A94 /* OrbContentMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB34F34F697359DE52136BB /* OrbContentMotion.swift */; };
+		EA6F7464DCB01DE2FE788E42 /* SessionPOCState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */; };
+		EB66C7B4C791B0E6B2710C84 /* DiscoveryScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */; };
+		EC0D3DD8293D1C1A3D5FC984 /* CaptureScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8FEE2044B449233F8B57F98 /* CaptureScreens.swift */; };
+		ECBF72F0A1B6B0F73B5EA246 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1376705459814D155CB5764C /* SplashScreenView.swift */; };
+		F2AA8574F87529ED6715A27C /* ExperienceScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */; };
+		F928B0BBAA7D59E6611A42B3 /* NoteStalgiaOrbVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 274808F05DACF15E46E05A75 /* NoteStalgiaOrbVisuals.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		033A72DC318F2F4149EAC698 /* SessionBottomConfigMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBottomConfigMenu.swift; sourceTree = "<group>"; };
+		0A5E452A92A9B925A4C923C5 /* LeafBreezeLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeafBreezeLayer.swift; sourceTree = "<group>"; };
+		0C74CB3706ED1807454D4A26 /* DiscoveryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryModels.swift; sourceTree = "<group>"; };
+		0FDF6F31EE0C864E0C1DE18F /* SimplifiedFlowScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplifiedFlowScreens.swift; sourceTree = "<group>"; };
+		1376705459814D155CB5764C /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
+		17595CD92889E1FECC468E5F /* MellorityLogoImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MellorityLogoImage.swift; sourceTree = "<group>"; };
+		1F8B6136C59B0DA60C121408 /* OrbNavControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbNavControls.swift; sourceTree = "<group>"; };
+		22389121AF71D3190F26C44D /* OrbHeartbeat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbHeartbeat.swift; sourceTree = "<group>"; };
+		274808F05DACF15E46E05A75 /* NoteStalgiaOrbVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStalgiaOrbVisuals.swift; sourceTree = "<group>"; };
+		34BFB55813804EC147A6472F /* NatureSessionImagery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NatureSessionImagery.swift; sourceTree = "<group>"; };
+		3B46E84F01DDCD3A4897C934 /* DiscoveryPlaylistTuning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryPlaylistTuning.swift; sourceTree = "<group>"; };
+		416E96C758B14AB3F62708FC /* AmbientAudioSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientAudioSession.swift; sourceTree = "<group>"; };
+		4C4443F8F896BE776BC2D899 /* ResidentExperienceScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentExperienceScreens.swift; sourceTree = "<group>"; };
+		51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientFaceIDLinkStore.swift; sourceTree = "<group>"; };
+		581245CE63F69A24FE34574B /* FadeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FadeText.swift; sourceTree = "<group>"; };
+		5F28363CDD8ACCE234843157 /* BrandTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandTheme.swift; sourceTree = "<group>"; };
+		664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryScreens.swift; sourceTree = "<group>"; };
+		68CD019E95A8AC72545862DB /* ResidentPlaylistVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentPlaylistVisuals.swift; sourceTree = "<group>"; };
+		6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceScreens.swift; sourceTree = "<group>"; };
+		797BF377E50486923A75204F /* CalmMotionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmMotionViews.swift; sourceTree = "<group>"; };
+		7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareStaffModels.swift; sourceTree = "<group>"; };
+		83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentMusicModel.swift; sourceTree = "<group>"; };
+		8624CE65C536C13A8A29E9FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		882A2F05FD9061B38840680A /* PatientBiometricAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientBiometricAuth.swift; sourceTree = "<group>"; };
+		8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchIntroOverlay.swift; sourceTree = "<group>"; };
+		8D05CFB7755A842161FE4A5D /* DiscoveryEtherealTapChime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryEtherealTapChime.swift; sourceTree = "<group>"; };
+		941A042E8357746A7314E072 /* GoldAmbientSparklesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldAmbientSparklesView.swift; sourceTree = "<group>"; };
+		9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPOCState.swift; sourceTree = "<group>"; };
+		A30695C8E9715544131DFAEF /* NatureVideoCompilationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NatureVideoCompilationView.swift; sourceTree = "<group>"; };
+		A862ED36791951A441F6C6C7 /* PatientFaceIDSignInControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientFaceIDSignInControls.swift; sourceTree = "<group>"; };
+		ACD624A08DB09B9BD6D8C53F /* MellorityFlowPOCApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MellorityFlowPOCApp.swift; sourceTree = "<group>"; };
+		B25869C2181BF1DAFDB0984E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbNavigationStyle.swift; sourceTree = "<group>"; };
+		D87189281B7EEBEB983BAFC9 /* OrbInteriorMediaPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbInteriorMediaPanel.swift; sourceTree = "<group>"; };
+		DB6DDB227F98CFA348AE27D2 /* FlowRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowRootView.swift; sourceTree = "<group>"; };
+		DD59A8A7E78EDAAD1B17527B /* OrbShellConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbShellConfiguration.swift; sourceTree = "<group>"; };
+		E0BA5A3D744D25B08F291B62 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		E217ADFE80B1EA5AEFACC7F0 /* OrbReferenceMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbReferenceMotion.swift; sourceTree = "<group>"; };
+		E2CD61FF1F6BD4D5FAFC27F2 /* MellorityFlowPOC.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MellorityFlowPOC.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAC5F095407AE14CB9B2C797 /* CenteredScrollScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteredScrollScreen.swift; sourceTree = "<group>"; };
+		EB45B845D070101D7353A9E8 /* DiscoveryEraMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryEraMedia.swift; sourceTree = "<group>"; };
+		EBB34F34F697359DE52136BB /* OrbContentMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbContentMotion.swift; sourceTree = "<group>"; };
+		ED62C0FC11C1EBD8AC45810C /* CalmExperienceFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmExperienceFeedback.swift; sourceTree = "<group>"; };
+		F073504DD56CA1C6ED7EE69E /* FlowContainerSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowContainerSize.swift; sourceTree = "<group>"; };
+		F36F6CE06F46E7B1282377F8 /* CareStaffScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareStaffScreens.swift; sourceTree = "<group>"; };
+		F4CDA4CC6EACA74D67A879AF /* MellorityOrbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MellorityOrbView.swift; sourceTree = "<group>"; };
+		F8FEE2044B449233F8B57F98 /* CaptureScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureScreens.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		227B97D2FC663A04D407400C = {
+			isa = PBXGroup;
+			children = (
+				4D80C71248598D14034266FE /* App */,
+				CC6F232BBF211D602EA82320 /* Core */,
+				B977BD6392065DA8761A6EEC /* Flow */,
+				E56BF875354445D1D42A7F8A /* Screens */,
+				781FAB518AC282B2B4A16899 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4D80C71248598D14034266FE /* App */ = {
+			isa = PBXGroup;
+			children = (
+				E0BA5A3D744D25B08F291B62 /* AppRootView.swift */,
+				B25869C2181BF1DAFDB0984E /* Assets.xcassets */,
+				8624CE65C536C13A8A29E9FB /* Info.plist */,
+				ACD624A08DB09B9BD6D8C53F /* MellorityFlowPOCApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		781FAB518AC282B2B4A16899 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E2CD61FF1F6BD4D5FAFC27F2 /* MellorityFlowPOC.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B977BD6392065DA8761A6EEC /* Flow */ = {
+			isa = PBXGroup;
+			children = (
+				DB6DDB227F98CFA348AE27D2 /* FlowRootView.swift */,
+			);
+			path = Flow;
+			sourceTree = "<group>";
+		};
+		CC6F232BBF211D602EA82320 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				416E96C758B14AB3F62708FC /* AmbientAudioSession.swift */,
+				5F28363CDD8ACCE234843157 /* BrandTheme.swift */,
+				ED62C0FC11C1EBD8AC45810C /* CalmExperienceFeedback.swift */,
+				797BF377E50486923A75204F /* CalmMotionViews.swift */,
+				7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */,
+				EAC5F095407AE14CB9B2C797 /* CenteredScrollScreen.swift */,
+				EB45B845D070101D7353A9E8 /* DiscoveryEraMedia.swift */,
+				8D05CFB7755A842161FE4A5D /* DiscoveryEtherealTapChime.swift */,
+				0C74CB3706ED1807454D4A26 /* DiscoveryModels.swift */,
+				3B46E84F01DDCD3A4897C934 /* DiscoveryPlaylistTuning.swift */,
+				581245CE63F69A24FE34574B /* FadeText.swift */,
+				F073504DD56CA1C6ED7EE69E /* FlowContainerSize.swift */,
+				941A042E8357746A7314E072 /* GoldAmbientSparklesView.swift */,
+				8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */,
+				17595CD92889E1FECC468E5F /* MellorityLogoImage.swift */,
+				F4CDA4CC6EACA74D67A879AF /* MellorityOrbView.swift */,
+				274808F05DACF15E46E05A75 /* NoteStalgiaOrbVisuals.swift */,
+				EBB34F34F697359DE52136BB /* OrbContentMotion.swift */,
+				22389121AF71D3190F26C44D /* OrbHeartbeat.swift */,
+				D87189281B7EEBEB983BAFC9 /* OrbInteriorMediaPanel.swift */,
+				1F8B6136C59B0DA60C121408 /* OrbNavControls.swift */,
+				CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */,
+				E217ADFE80B1EA5AEFACC7F0 /* OrbReferenceMotion.swift */,
+				DD59A8A7E78EDAAD1B17527B /* OrbShellConfiguration.swift */,
+				882A2F05FD9061B38840680A /* PatientBiometricAuth.swift */,
+				51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */,
+				A862ED36791951A441F6C6C7 /* PatientFaceIDSignInControls.swift */,
+				83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */,
+				68CD019E95A8AC72545862DB /* ResidentPlaylistVisuals.swift */,
+				9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		E56BF875354445D1D42A7F8A /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				F8FEE2044B449233F8B57F98 /* CaptureScreens.swift */,
+				F36F6CE06F46E7B1282377F8 /* CareStaffScreens.swift */,
+				664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */,
+				6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */,
+				0A5E452A92A9B925A4C923C5 /* LeafBreezeLayer.swift */,
+				34BFB55813804EC147A6472F /* NatureSessionImagery.swift */,
+				A30695C8E9715544131DFAEF /* NatureVideoCompilationView.swift */,
+				4C4443F8F896BE776BC2D899 /* ResidentExperienceScreens.swift */,
+				033A72DC318F2F4149EAC698 /* SessionBottomConfigMenu.swift */,
+				0FDF6F31EE0C864E0C1DE18F /* SimplifiedFlowScreens.swift */,
+				1376705459814D155CB5764C /* SplashScreenView.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3933836E9D2CA4B288A1AA2B /* MellorityFlowPOC */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AE43708F423BB9C9511CC0D5 /* Build configuration list for PBXNativeTarget "MellorityFlowPOC" */;
+			buildPhases = (
+				47D1770FCD29D9017C9EEBC8 /* Sources */,
+				14D2F86F2649CBC2D63C02E1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MellorityFlowPOC;
+			packageProductDependencies = (
+			);
+			productName = MellorityFlowPOC;
+			productReference = E2CD61FF1F6BD4D5FAFC27F2 /* MellorityFlowPOC.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2CDA2867F1061C9818AC1E29 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3933836E9D2CA4B288A1AA2B = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 6EA48AA106E12ABCAABF09ED /* Build configuration list for PBXProject "MellorityFlowPOC" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 227B97D2FC663A04D407400C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 781FAB518AC282B2B4A16899 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3933836E9D2CA4B288A1AA2B /* MellorityFlowPOC */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		14D2F86F2649CBC2D63C02E1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B5E7B3BF9C51E6D4CA3BCA93 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		47D1770FCD29D9017C9EEBC8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13E79F00FA4FEDBE4FE7417D /* AmbientAudioSession.swift in Sources */,
+				29E507755E382D1FB35F38C4 /* AppRootView.swift in Sources */,
+				142C2E5AA324168AF47DE76D /* BrandTheme.swift in Sources */,
+				DBEE762D9765F5BD092B7EE1 /* CalmExperienceFeedback.swift in Sources */,
+				0FCBA4CF867F01D255D0EFC5 /* CalmMotionViews.swift in Sources */,
+				EC0D3DD8293D1C1A3D5FC984 /* CaptureScreens.swift in Sources */,
+				D6671F82F92FF6D63E543CC7 /* CareStaffModels.swift in Sources */,
+				8E0C3FFDF7961AB665E8487C /* CareStaffScreens.swift in Sources */,
+				AC9B320E18F3949B71ABBF3C /* CenteredScrollScreen.swift in Sources */,
+				6BC188E40862914153BF5263 /* DiscoveryEraMedia.swift in Sources */,
+				AF88D97C4475C7F1AA2417E2 /* DiscoveryEtherealTapChime.swift in Sources */,
+				0CD0423EBB0A418530DD92C7 /* DiscoveryModels.swift in Sources */,
+				56B63DB59AE95FA31156ECF8 /* DiscoveryPlaylistTuning.swift in Sources */,
+				EB66C7B4C791B0E6B2710C84 /* DiscoveryScreens.swift in Sources */,
+				F2AA8574F87529ED6715A27C /* ExperienceScreens.swift in Sources */,
+				A274E09BE88A084D1A2FA3D0 /* FadeText.swift in Sources */,
+				C20B5E2D85ED0F79E3831DDC /* FlowContainerSize.swift in Sources */,
+				60B2D6EDB1BDAAF3FDFEF406 /* FlowRootView.swift in Sources */,
+				47313660A81BEAC6B1E498A1 /* GoldAmbientSparklesView.swift in Sources */,
+				07F779D6550C21828C49CE7F /* LaunchIntroOverlay.swift in Sources */,
+				576CBE6F4965A11B3751F846 /* LeafBreezeLayer.swift in Sources */,
+				184FC378D7500EC88D18B7CC /* MellorityFlowPOCApp.swift in Sources */,
+				6F750947B19B75821440FB24 /* MellorityLogoImage.swift in Sources */,
+				81361D57C735FCFEF89D48C5 /* MellorityOrbView.swift in Sources */,
+				C292223B7BBBE29B08395C88 /* NatureSessionImagery.swift in Sources */,
+				692C38C001E452B2873F92E3 /* NatureVideoCompilationView.swift in Sources */,
+				F928B0BBAA7D59E6611A42B3 /* NoteStalgiaOrbVisuals.swift in Sources */,
+				E8D32E72E03FFD11B3825A94 /* OrbContentMotion.swift in Sources */,
+				9D245774B42B588FDF793751 /* OrbHeartbeat.swift in Sources */,
+				180FBE733338967EC4323922 /* OrbInteriorMediaPanel.swift in Sources */,
+				527AC1CCED7B1B353ED16D0B /* OrbNavControls.swift in Sources */,
+				834195D9EF7618D4111C44A8 /* OrbNavigationStyle.swift in Sources */,
+				B89B8F023B62D4B4F34DA119 /* OrbReferenceMotion.swift in Sources */,
+				77FB7BBC8129A9FDC0A2C7DB /* OrbShellConfiguration.swift in Sources */,
+				2035F5D0E2B6D0D57BC1938F /* PatientBiometricAuth.swift in Sources */,
+				7A25D9437F793E797A98890D /* PatientFaceIDLinkStore.swift in Sources */,
+				2C88268A4C8543DB8458EA53 /* PatientFaceIDSignInControls.swift in Sources */,
+				1D64D8350D9A7636E2625743 /* ResidentExperienceScreens.swift in Sources */,
+				E733A9AC472F8DD38835045B /* ResidentMusicModel.swift in Sources */,
+				401BD5A9941B9E3EEF21CD0B /* ResidentPlaylistVisuals.swift in Sources */,
+				60FFCA6CAA1511E381DF3C7E /* SessionBottomConfigMenu.swift in Sources */,
+				EA6F7464DCB01DE2FE788E42 /* SessionPOCState.swift in Sources */,
+				0D5F61F88E976BB8433C98AB /* SimplifiedFlowScreens.swift in Sources */,
+				ECBF72F0A1B6B0F73B5EA246 /* SplashScreenView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		39464EFB95A973F602383441 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3D08A0E63881633546E54D65 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		62F6EEED2ED65A44C52B3918 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.melloria.flowpoc;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		EC98923D694569CAEEF19E38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.melloria.flowpoc;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6EA48AA106E12ABCAABF09ED /* Build configuration list for PBXProject "MellorityFlowPOC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				62F6EEED2ED65A44C52B3918 /* Debug */,
+				EC98923D694569CAEEF19E38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AE43708F423BB9C9511CC0D5 /* Build configuration list for PBXNativeTarget "MellorityFlowPOC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				39464EFB95A973F602383441 /* Debug */,
+				3D08A0E63881633546E54D65 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2CDA2867F1061C9818AC1E29 /* Project object */;
+}

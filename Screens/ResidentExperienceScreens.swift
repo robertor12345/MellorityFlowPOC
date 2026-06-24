@@ -3,41 +3,58 @@ import SwiftUI
 // MARK: - Resident session: genre glyphs play immediately → idle & playing layouts span the playable hull
 
 private enum GlyphFloatLayout {
-    static let glyphRadius: CGFloat = 46
-    /// Resting clearance between disk edges (motion budget is capped below this).
-    private static let restingEdgeSeparation: CGFloat = 54
+    private struct Metrics {
+        let glyphRadius: CGFloat
+        let restingEdgeSeparation: CGFloat
+        let topInset: CGFloat
+        let bottomInset: CGFloat
+        let motionCap: CGFloat
 
-    private static func minCenterDistance(resting: Bool = true) -> CGFloat {
-        2 * glyphRadius + (resting ? restingEdgeSeparation : 20)
+        static func forSize(_ size: CGSize) -> Metrics {
+            let scale = BrandLayout.hullScale(for: size)
+            return Metrics(
+                glyphRadius: 46 * scale,
+                restingEdgeSeparation: 54 * scale,
+                topInset: 52 * scale,
+                bottomInset: 88 * scale,
+                motionCap: 19 * scale
+            )
+        }
+    }
+
+    /// Backing radius for constellation math — use `Metrics.forSize` when layout depends on canvas size.
+    static let glyphRadius: CGFloat = 46
+
+    private static func minCenterDistance(metrics: Metrics, resting: Bool = true) -> CGFloat {
+        2 * metrics.glyphRadius + (resting ? metrics.restingEdgeSeparation : 20)
     }
 
     /// Playscreen inset — kept fairly tight so **idle** constellation can use nearly the whole view (staff FAB overlays top-trailing).
-    private static func playableRect(in size: CGSize) -> CGRect {
+    private static func playableRect(in size: CGSize, metrics: Metrics) -> CGRect {
         let padX = max(BrandTheme.contentGutter, 18)
-        let side = glyphRadius + 10 + padX
-        let top: CGFloat = 52
-        let bottom: CGFloat = 88
+        let side = metrics.glyphRadius + 10 + padX
         return CGRect(
             x: side,
-            y: top,
+            y: metrics.topInset,
             width: max(120, size.width - side * 2),
-            height: max(220, size.height - top - bottom)
+            height: max(220, size.height - metrics.topInset - metrics.bottomInset)
         )
     }
 
     /// Evenly spaced on an ellipse inside `playable`, with pairwise separation guarded by relaxation.
     static func constellation(count: Int, in size: CGSize) -> (centers: [CGPoint], hub: CGPoint) {
+        let metrics = Metrics.forSize(size)
         guard count > 0 else { return ([], .zero) }
-        let playable = playableRect(in: size)
+        let playable = playableRect(in: size, metrics: metrics)
         let hub = CGPoint(x: playable.midX, y: playable.midY)
         switch count {
         case 1:
             return ([hub], hub)
         default:
-            let minD = minCenterDistance()
+            let minD = minCenterDistance(metrics: metrics)
             let sinHalfChord = CGFloat(sin(Double.pi / Double(count)))
-            let maxEllipseX = playable.width / 2 - glyphRadius - 8
-            let maxEllipseY = playable.height / 2 - glyphRadius - 10
+            let maxEllipseX = playable.width / 2 - metrics.glyphRadius - 8
+            let maxEllipseY = playable.height / 2 - metrics.glyphRadius - 10
             // Chord-derived radius prefers non-overlap on a perfect ring; blending with hull scale spreads glyphs edge-to-edge.
             let radiusChord = CGFloat(minD * 1.06) / (2 * max(sinHalfChord, CGFloat(1e-3)))
             var rx = min(maxEllipseX * 0.995, radiusChord * 1.48)
@@ -46,8 +63,8 @@ private enum GlyphFloatLayout {
             ry = max(min(ry, maxEllipseY), maxEllipseY * 0.8)
 
             var pts = ellipsePoints(count: count, hub: hub, rx: rx, ry: ry)
-            pts = pts.map { clampToPlayable($0, playable: playable) }
-            pts = relaxCenters(pts, playable: playable, minDist: minD * 1.03, iterations: 24)
+            pts = pts.map { clampToPlayable($0, playable: playable, glyphR: metrics.glyphRadius) }
+            pts = relaxCenters(pts, playable: playable, minDist: minD * 1.03, iterations: 24, clampRadius: metrics.glyphRadius)
 
             let spread = pairwiseMinSpacing(pts)
             if spread < minD * 1.015, count >= 2 {
@@ -55,8 +72,8 @@ private enum GlyphFloatLayout {
                 let rx2 = min(maxEllipseX * 0.999, rx * scale)
                 let ry2 = min(maxEllipseY * 0.99, ry * scale)
                 var pts2 = ellipsePoints(count: count, hub: hub, rx: rx2, ry: ry2)
-                pts2 = pts2.map { clampToPlayable($0, playable: playable) }
-                pts = relaxCenters(pts2, playable: playable, minDist: minD * 1.03, iterations: 22)
+                pts2 = pts2.map { clampToPlayable($0, playable: playable, glyphR: metrics.glyphRadius) }
+                pts = relaxCenters(pts2, playable: playable, minDist: minD * 1.03, iterations: 22, clampRadius: metrics.glyphRadius)
             }
             return (pts, hub)
         }
@@ -126,14 +143,16 @@ private enum GlyphFloatLayout {
     }
 
     /// Multi-layer motion that keeps typical displacement modest so relaxation margins hold.
-    static func animatedDelta(index: Int, base: CGPoint, hub: CGPoint, phase: TimeInterval) -> CGSize {
+    static func animatedDelta(index: Int, base: CGPoint, hub: CGPoint, phase: TimeInterval, in size: CGSize) -> CGSize {
+        let metrics = Metrics.forSize(size)
+        let hullScale = BrandLayout.hullScale(for: size)
         let ω1 = 0.19 + Double(index % 7) * 0.063
         let ω2 = 0.247 + Double((index ^ 5) % 9) * 0.058
         let ω3 = 0.089 + Double((index + 2) % 11) * 0.031
 
         let drift = CGSize(
-            width: CGFloat(sin(phase * 0.049 + Double(index % 13) + 2.08) * 11),
-            height: CGFloat(cos(phase * 0.043 + Double(index % 17) + 1.71) * 9.5)
+            width: CGFloat(sin(phase * 0.049 + Double(index % 13) + 2.08) * 11 * hullScale),
+            height: CGFloat(cos(phase * 0.043 + Double(index % 17) + 1.71) * 9.5 * hullScale)
         )
 
         let vx = base.x - hub.x
@@ -154,25 +173,22 @@ private enum GlyphFloatLayout {
         let alongY = len > 0.5 ? vy / len : 0
 
         let ripple = CGSize(
-            width: CGFloat(sin(phase * ω1 + Double(index))) * CGFloat(7 + CGFloat(index % 4)),
-            height: CGFloat(cos(phase * ω2 + Double(index) * 0.93)) * CGFloat(7 + CGFloat((index >> 1) % 5))
+            width: CGFloat(sin(phase * ω1 + Double(index))) * CGFloat(7 + CGFloat(index % 4)) * hullScale,
+            height: CGFloat(cos(phase * ω2 + Double(index) * 0.93)) * CGFloat(7 + CGFloat((index >> 1) % 5)) * hullScale
         )
 
         let orbital = CGSize(
-            width: tx * tangentialAmp + alongX * normCarrier,
-            height: ty * tangentialAmp + alongY * normCarrier
+            width: (tx * tangentialAmp + alongX * normCarrier) * hullScale,
+            height: (ty * tangentialAmp + alongY * normCarrier) * hullScale
         )
 
         var Δ = CGSize(
             width: drift.width + ripple.width + orbital.width,
             height: drift.height + ripple.height + orbital.height
         )
-        Δ = clampMotionVector(Δ, maxLength: motionCap)
+        Δ = clampMotionVector(Δ, maxLength: metrics.motionCap)
         return Δ
     }
-
-    /// Limits how far glyphs wander from lattice rest so pairwise separation survives motion + scale pulses.
-    private static let motionCap: CGFloat = 19
 
     private static func clampMotionVector(_ Δ: CGSize, maxLength: CGFloat) -> CGSize {
         let length = hypot(Δ.width, Δ.height)
@@ -218,10 +234,12 @@ private enum GlyphFloatLayout {
         in size: CGSize
     ) -> [CGPoint] {
         guard inactiveCount > 0 else { return [] }
-        let playable = playableRect(in: size)
-        let inactiveR: CGFloat = 32
-        let minPairSep = CGFloat(2 * inactiveR + restingEdgeSeparation * 0.94)
-        let minOrbitRadius = CGFloat(heroDiameter * 0.5 + inactiveR + 54)
+        let metrics = Metrics.forSize(size)
+        let hullScale = BrandLayout.hullScale(for: size)
+        let playable = playableRect(in: size, metrics: metrics)
+        let inactiveR: CGFloat = 32 * hullScale
+        let minPairSep = CGFloat(2 * inactiveR + metrics.restingEdgeSeparation * 0.94)
+        let minOrbitRadius = CGFloat(heroDiameter * 0.5 + inactiveR + 54 * hullScale)
 
         if inactiveCount == 1 {
             var solo = CGPoint(
@@ -271,9 +289,14 @@ private enum GlyphFloatLayout {
 
 struct ResidentProfileView: View {
     @ObservedObject var state: SessionPOCState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.flowContainerSize) private var flowContainerSize
+    @Environment(\.flowOrbShellSize) private var flowOrbShellSize
     @StateObject private var residentAudio = AmbientAudioSession()
     /// Highlights the glyph whose playlist is sounding; reshapes the floating layout around it.
     @State private var selectedPlayingGenre: ResidentMusicGenre?
+    @State private var activePlaylist: CarePlaylistEntry?
+    @State private var activeTrackIndex: Int = 0
 
     private var patient: CarePatientProfile? {
         state.carePatient(id: state.selectedCarePatientId)
@@ -285,24 +308,54 @@ struct ResidentProfileView: View {
         return ResidentMusicGenre.allCases.filter { set.contains($0) }
     }
 
-    private enum ResidentMusicGlyphSizing {
-        /// Hero disk while a playlist plays — must stay in sync with `glyphFrames` hero metrics.
-        static let heroDiskDiameter: CGFloat = 154
+    private var orbSize: CGSize {
+        if flowOrbShellSize.width > 1, flowOrbShellSize.height > 1 {
+            return flowOrbShellSize
+        }
+        return BrandLayout.discoveryPanelSize(in: flowContainerSize)
     }
 
     var body: some View {
         ZStack {
-            BrandTheme.backgroundGradient
-                .ignoresSafeArea()
+            if let genre = selectedPlayingGenre,
+               let playlist = activePlaylist,
+               let trackTitle = currentTrackTitle(in: playlist) {
+                ResidentPlaylistPanelBackdropView(
+                    genre: genre,
+                    trackTitle: trackTitle,
+                    trackIndex: activeTrackIndex,
+                    orbSize: orbSize
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity.animation(.easeInOut(duration: 0.45)))
+            }
 
-            GoldAmbientSparklesView(intensity: 0.26)
-                .allowsHitTesting(false)
-                .ignoresSafeArea()
-                .accessibilityHidden(true)
+            if selectedPlayingGenre != nil {
+                GoldAmbientSparklesView(intensity: 0.10)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
+            } else {
+                GoldAmbientSparklesView(intensity: 0.22)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
+            }
+
+            if activePlaylist != nil {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .gesture(playlistSwipeGesture)
+                    .accessibilityLabel("Swipe for previous or next track")
+                    .accessibilityHint("Swipe right for the previous song, left for the next.")
+            }
 
             TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 GeometryReader { geo in
+                    let hullScale = BrandLayout.hullScale(for: geo.size)
+                    let heroDiskDiameter = 154 * hullScale
                     let hub = GlyphFloatLayout.musicGlyphHub(in: geo.size)
                     let idle = GlyphFloatLayout.constellation(count: genresOnFile.count, in: geo.size)
                     let playingPeriphery: [CGPoint] = {
@@ -311,7 +364,7 @@ struct ResidentProfileView: View {
                         guard others.isEmpty == false else { return [] }
                         return GlyphFloatLayout.focusedInactivePeriphery(
                             inactiveCount: others.count,
-                            heroDiameter: ResidentMusicGlyphSizing.heroDiskDiameter,
+                            heroDiameter: heroDiskDiameter,
                             hub: hub,
                             in: geo.size
                         )
@@ -323,6 +376,7 @@ struct ResidentProfileView: View {
                             genre: genre,
                             index: index,
                             in: geo.size,
+                            hullScale: hullScale,
                             idleCenters: idle.centers,
                             idleHub: idle.hub,
                             peripheryPlayingCenters: playingPeriphery
@@ -335,6 +389,7 @@ struct ResidentProfileView: View {
                             baseCenter: anchor,
                             constellationHub: hub,
                             phase: t,
+                            canvasSize: geo.size,
                             diskDiameter: disk,
                             iconSize: icon,
                             emphasis: emphasis,
@@ -349,23 +404,14 @@ struct ResidentProfileView: View {
                 HStack {
                     Spacer()
                     Button {
-                        residentAudio.stop()
-                        selectedPlayingGenre = nil
+                        stopPlayback()
                         state.leaveResidentProfileToStaff()
                     } label: {
-                        Image(systemName: "person.badge.key")
-                            .font(.title3.weight(.light))
-                            .foregroundStyle(BrandTheme.brownMuted)
-                            .padding(12)
-                            .background(
-                                Circle()
-                                    .fill(BrandTheme.cream.opacity(0.94))
-                                    .shadow(color: BrandTheme.brown.opacity(0.06), radius: 10, y: 4)
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(BrandTheme.gold.opacity(0.38), lineWidth: 1)
-                            )
+                        ResidentLuminousFloatingButton(
+                            systemImage: "person.badge.key",
+                            accent: BrandTheme.logoCyan,
+                            diameter: 48
+                        )
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Return device to staff")
@@ -373,7 +419,7 @@ struct ResidentProfileView: View {
 
                 Spacer()
             }
-            .padding(.horizontal, BrandTheme.contentGutter)
+            .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
             .padding(.top, 10)
 
             if let sg = selectedPlayingGenre {
@@ -382,39 +428,59 @@ struct ResidentProfileView: View {
                     Button {
                         residentAudio.stop()
                         state.prepareResidentImmersiveFromPlaylist(genre: sg)
-                        selectedPlayingGenre = nil
+                        stopPlayback()
                     } label: {
-                        Label("Calm room visuals", systemImage: "leaf.fill")
-                            .font(BrandTheme.title(.subheadline))
-                            .fontWeight(.medium)
-                            .foregroundStyle(BrandTheme.brown)
-                            .padding(.horizontal, 22)
-                            .padding(.vertical, 14)
-                            .background(
-                                Capsule()
-                                    .fill(BrandTheme.cream.opacity(0.94))
-                                    .shadow(color: BrandTheme.brown.opacity(0.1), radius: 12, y: 5)
-                            )
-                            .overlay(
-                                Capsule()
-                                    .stroke(BrandTheme.gold.opacity(0.38), lineWidth: 1)
-                            )
+                        ResidentLuminousFloatingButton(
+                            systemImage: "leaf.fill",
+                            accent: BrandTheme.logoPink,
+                            diameter: 56
+                        )
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Leaves this screen for nature visuals.")
+                    .buttonStyle(SoftPressButtonStyle())
+                    .accessibilityLabel("Calm room visuals")
                     .padding(.bottom, 42)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
         }
         .animation(.spring(response: 0.52, dampingFraction: 0.82), value: selectedPlayingGenre)
+        .animation(.easeInOut(duration: 0.42), value: activeTrackIndex)
         .onChange(of: state.selectedCarePatientId) { _, _ in
-            selectedPlayingGenre = nil
-            residentAudio.stop()
+            stopPlayback()
         }
         .onDisappear {
             residentAudio.stop()
         }
+    }
+
+    private var playlistSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 36, coordinateSpace: .local)
+            .onEnded { value in
+                guard let playlist = activePlaylist else { return }
+                let count = max(1, playlist.trackTitles.count)
+                if value.translation.width <= -50 {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        activeTrackIndex = (activeTrackIndex + 1) % count
+                    }
+                } else if value.translation.width >= 50 {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        activeTrackIndex = (activeTrackIndex - 1 + count) % count
+                    }
+                }
+            }
+    }
+
+    private func currentTrackTitle(in playlist: CarePlaylistEntry) -> String? {
+        guard playlist.trackTitles.isEmpty == false else { return nil }
+        let idx = min(max(0, activeTrackIndex), playlist.trackTitles.count - 1)
+        return playlist.trackTitles[idx]
+    }
+
+    private func stopPlayback() {
+        residentAudio.stop()
+        selectedPlayingGenre = nil
+        activePlaylist = nil
+        activeTrackIndex = 0
     }
 
     /// Rest drift, hero bloom, or **periphery** positions when another genre’s playlist is audible.
@@ -433,16 +499,17 @@ struct ResidentProfileView: View {
         genre: ResidentMusicGenre,
         index: Int,
         in size: CGSize,
+        hullScale: CGFloat,
         idleCenters: [CGPoint],
         idleHub: CGPoint,
         peripheryPlayingCenters: [CGPoint]
     ) -> (CGPoint, CGFloat, CGFloat) {
-        let idleDisk: CGFloat = 92
-        let idleIcon: CGFloat = 38
-        let heroDisk = ResidentMusicGlyphSizing.heroDiskDiameter
-        let heroIcon: CGFloat = 62
-        let sideDisk: CGFloat = 64
-        let sideIcon: CGFloat = 26
+        let idleDisk: CGFloat = 92 * hullScale
+        let idleIcon: CGFloat = 38 * hullScale
+        let heroDisk: CGFloat = 154 * hullScale
+        let heroIcon: CGFloat = 62 * hullScale
+        let sideDisk: CGFloat = 64 * hullScale
+        let sideIcon: CGFloat = 26 * hullScale
 
         switch glyphRole(for: genre) {
         case .idle:
@@ -477,11 +544,13 @@ struct ResidentProfileView: View {
             return
         }
         let playlist = group.playlists.first(where: { !$0.trackTitles.isEmpty }) ?? group.playlists[0]
-        _ = playlist // Binding for future per-playlist URLs; POC uses one calm streamed loop.
 
-        withAnimation(.spring(response: 0.52, dampingFraction: 0.84)) {
+        withAnimation(.spring(response: 0.62, dampingFraction: 0.86)) {
             selectedPlayingGenre = genre
+            activePlaylist = playlist
+            activeTrackIndex = 0
         }
+        CalmExperienceFeedback.playlistStart()
         residentAudio.stop()
         residentAudio.startFresh(photoAnchored: false)
     }
@@ -492,12 +561,19 @@ struct ResidentProfileView: View {
         baseCenter: CGPoint,
         constellationHub: CGPoint,
         phase: TimeInterval,
+        canvasSize: CGSize,
         diskDiameter: CGFloat,
         iconSize: CGFloat,
         emphasis: GlyphEmphasis,
         action: @escaping () -> Void
     ) -> some View {
-        let rawΔ = GlyphFloatLayout.animatedDelta(index: index, base: baseCenter, hub: constellationHub, phase: phase)
+        let rawΔ = GlyphFloatLayout.animatedDelta(
+            index: index,
+            base: baseCenter,
+            hub: constellationHub,
+            phase: phase,
+            in: canvasSize
+        )
         /// Periphery icons still orbit the hull — drift can be lighter now that anchors sit farther out.
         let motionScale: CGFloat =
             emphasis == .sideStrip ? 0.58 : emphasis == .hero ? 0.82 : 1
@@ -508,8 +584,9 @@ struct ResidentProfileView: View {
         let roleScale: CGFloat =
             emphasis == .hero ? 1.02 : emphasis == .sideStrip ? 0.98 : 1
         let endR = diskDiameter * 0.62
+        let eqRibbon = CircularPlaylistEqualizerRing.outwardRibbon(for: diskDiameter)
         let heroOuterRingPad: CGFloat =
-            emphasis == .hero ? CircularPlaylistEqualizerRing.outwardRibbon : 0
+            emphasis == .hero ? eqRibbon : 0
         let glyphStackSquare = diskDiameter + heroOuterRingPad * 2
 
         return Button(action: action) {
@@ -519,45 +596,67 @@ struct ResidentProfileView: View {
                         phase: phase,
                         accent: genre.accent,
                         diskDiameter: diskDiameter,
-                        outwardMax: CircularPlaylistEqualizerRing.outwardRibbon
+                        outwardMax: eqRibbon
                     )
                 }
+
+                Circle()
+                    .fill(genre.accent.opacity(emphasis == .hero ? 0.38 : 0.24))
+                    .blur(radius: emphasis == .hero ? 22 : 12)
+                    .frame(width: diskDiameter * 1.14, height: diskDiameter * 1.14)
+
                 Circle()
                     .fill(
                         RadialGradient(
                             colors: [
-                                genre.accent.opacity(emphasis == .hero ? 0.58 : 0.46),
-                                BrandTheme.cream.opacity(emphasis == .hero ? 0.95 : 0.92),
+                                genre.accent.opacity(emphasis == .hero ? 0.78 : 0.62),
+                                BrandTheme.logoCyan.opacity(0.34),
+                                BrandTheme.cream.opacity(emphasis == .hero ? 0.48 : 0.36),
                             ],
                             center: .center,
-                            startRadius: 5,
+                            startRadius: 4,
                             endRadius: endR
                         )
                     )
                     .frame(width: diskDiameter, height: diskDiameter)
-                    .shadow(color: BrandTheme.brown.opacity(emphasis == .hero ? 0.12 : 0.06), radius: emphasis == .hero ? 26 : 12, y: emphasis == .hero ? 14 : 6)
+                    .shadow(color: genre.accent.opacity(emphasis == .hero ? 0.62 : 0.38), radius: emphasis == .hero ? 32 : 18)
+                    .shadow(color: BrandTheme.logoCyan.opacity(emphasis == .hero ? 0.48 : 0.28), radius: emphasis == .hero ? 24 : 14)
+                    .shadow(color: BrandTheme.logoPink.opacity(0.22), radius: emphasis == .hero ? 16 : 8)
                     .overlay(
                         Circle()
                             .stroke(
                                 LinearGradient(
                                     colors: emphasis == .hero
-                                        ? [BrandTheme.gold.opacity(0.72), BrandTheme.goldSoft.opacity(0.4)]
-                                        : [BrandTheme.gold.opacity(0.52), BrandTheme.goldSoft.opacity(0.22)],
+                                        ? [
+                                            BrandTheme.logoCyan.opacity(0.95),
+                                            BrandTheme.logoPink.opacity(0.82),
+                                            BrandTheme.gold.opacity(0.72),
+                                        ]
+                                        : [
+                                            BrandTheme.logoCyan.opacity(0.72),
+                                            BrandTheme.logoPink.opacity(0.52),
+                                            BrandTheme.goldSoft.opacity(0.38),
+                                        ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
-                                lineWidth: emphasis == .hero ? 1.4 : 1
+                                lineWidth: emphasis == .hero ? 1.6 : 1.1
                             )
                     )
                 Image(systemName: genre.iconName)
                     .font(.system(size: iconSize, weight: .light))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [BrandTheme.brown.opacity(0.48), BrandTheme.brown.opacity(0.88)],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            colors: [
+                                .white.opacity(0.96),
+                                BrandTheme.logoPink.opacity(0.92),
+                                BrandTheme.logoCyan.opacity(0.98),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
                     )
+                    .shadow(color: BrandTheme.logoCyan.opacity(0.55), radius: 6)
                     .symbolRenderingMode(.hierarchical)
             }
             .frame(width: glyphStackSquare, height: glyphStackSquare)
@@ -579,6 +678,70 @@ struct ResidentProfileView: View {
         .position(x: pos.x, y: pos.y)
         .rotationEffect(.degrees(rot))
         .scaleEffect(driftScale * roleScale, anchor: .center)
+        .blur(radius: emphasis == .sideStrip ? 1.4 : 0)
+        .opacity(emphasis == .sideStrip ? 0.62 : emphasis == .hero ? 1 : 0.97)
+        .saturation(emphasis == .sideStrip ? 0.62 : 1.08)
+        .animation(.easeInOut(duration: 0.48), value: selectedPlayingGenre)
+    }
+}
+
+// MARK: - Luminous floating controls (resident calm surface)
+
+private struct ResidentLuminousFloatingButton: View {
+    let systemImage: String
+    let accent: Color
+    var diameter: CGFloat = 52
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(accent.opacity(0.32))
+                .blur(radius: diameter * 0.22)
+                .frame(width: diameter * 1.2, height: diameter * 1.2)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            accent.opacity(0.52),
+                            BrandTheme.logoCyan.opacity(0.22),
+                            BrandTheme.cream.opacity(0.38),
+                        ],
+                        center: .center,
+                        startRadius: 2,
+                        endRadius: diameter * 0.52
+                    )
+                )
+                .frame(width: diameter, height: diameter)
+                .overlay(
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    .white.opacity(0.82),
+                                    accent.opacity(0.78),
+                                    BrandTheme.logoCyan.opacity(0.62),
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.2
+                        )
+                )
+
+            Image(systemName: systemImage)
+                .font(.system(size: diameter * 0.38, weight: .light))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.white, accent.opacity(0.95)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .shadow(color: accent.opacity(0.65), radius: 8)
+        }
+        .shadow(color: accent.opacity(0.45), radius: 14)
+        .shadow(color: BrandTheme.logoCyan.opacity(0.28), radius: 22)
     }
 }
 
@@ -586,7 +749,12 @@ struct ResidentProfileView: View {
 
 /// Radial spectrum bars seated just outside the hero disk rim — drawing stays localized so periphery glyphs are not obscured or given a larger overlap hit target (see `contentShape`).
 private struct CircularPlaylistEqualizerRing: View {
-    static let outwardRibbon: CGFloat = 22
+    /// Legacy fixed ribbon — prefer `outwardRibbon(for:)`.
+    static let outwardRibbon: CGFloat = 52
+
+    static func outwardRibbon(for diskDiameter: CGFloat) -> CGFloat {
+        max(52, diskDiameter * 0.38)
+    }
 
     let phase: TimeInterval
     let accent: Color
@@ -595,11 +763,13 @@ private struct CircularPlaylistEqualizerRing: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var barCount: Int { 26 }
-    /// Bar radial stroke thickness (tangential breadth).
-    private var lineBreadth: CGFloat { 3 }
+    private var barCount: Int { 22 }
 
-    private var innerRadius: CGFloat { diskDiameter * 0.5 + lineBreadth * 0.42 }
+    private var lineBreadth: CGFloat {
+        max(7, diskDiameter * 0.052)
+    }
+
+    private var innerRadius: CGFloat { diskDiameter * 0.5 + lineBreadth * 0.38 }
 
     var body: some View {
         let span = diskDiameter + outwardMax * 2
@@ -622,8 +792,8 @@ private struct CircularPlaylistEqualizerRing: View {
                 let chatter = CGFloat(0.54 + (sin(phase * 11.3 + Double(i) * 0.63)) * 0.24)
                 let color: Color =
                     (i % 3 == 0)
-                        ? accent.opacity(Double(0.58 + chatter * 0.22))
-                        : BrandTheme.gold.opacity(Double(0.42 + chatter * 0.35))
+                        ? accent.opacity(Double(0.62 + chatter * 0.26))
+                        : BrandTheme.gold.opacity(Double(0.48 + chatter * 0.38))
                 context.stroke(
                     seg,
                     with: .color(color),
@@ -638,7 +808,7 @@ private struct CircularPlaylistEqualizerRing: View {
 
     private func barOutwardLength(index: Int) -> CGFloat {
         guard reduceMotion == false else {
-            return outwardMax * 0.62
+            return outwardMax * 0.72
         }
         let ω = 8.1
         let wave =
@@ -646,7 +816,7 @@ private struct CircularPlaylistEqualizerRing: View {
                 + 0.36 * cos(phase * (ω * 1.51) + Double(index + 4) * 0.53)
                 + 0.2 * sin(phase * (ω * 2.14) + Double(index))
         let t = CGFloat((wave + 1.35) / 2.72)
-        return max(5, outwardMax * (0.22 + min(1, t)))
+        return max(12, outwardMax * (0.28 + min(1, t)))
     }
 }
 

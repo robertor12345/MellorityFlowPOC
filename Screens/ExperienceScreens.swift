@@ -4,7 +4,6 @@ import SwiftUI
 
 struct ProcessingFastView: View {
     @ObservedObject var state: SessionPOCState
-    @State private var progress: CGFloat = 0
     @State private var tick = 0
     private let messages = [
         "Finding the right tone…",
@@ -17,53 +16,26 @@ struct ProcessingFastView: View {
         ScreenFadeIn {
             Group {
                 if state.isResidentSession {
-                    VStack {
+                    VStack(spacing: 28) {
                         Spacer(minLength: 80)
-                        ProgressView(value: progress, total: 1)
-                            .tint(BrandTheme.goldDeep)
-                            .scaleEffect(x: 1, y: 1.2, anchor: .center)
-                            .padding(.horizontal, max(0, 40 - BrandTheme.contentGutter))
-                            .frame(maxWidth: .infinity)
+                        BreathingCalmProgressView(diameter: 72)
                         Spacer()
                     }
                 } else {
                     CenteredScrollScreen {
                         VStack(spacing: 28) {
-                            FadeInTitle(text: "Ease in slowly", delay: 0)
-                            FadeInLine(
-                                text: "Sound and motion stay gentle so nothing arrives too fast — stay with them.",
-                                font: .caption,
-                                delay: 0.1
-                            )
                             if state.isCareStaffSession, let p = state.carePatient(id: state.activeCarePatientId) {
-                                VStack(spacing: 6) {
-                                    Text("With \(p.displayName) — roughly \(state.carePlannedDurationMinutes) min if it helps (pause or stop anytime).")
-                                    if state.carePrepVRImmersiveRoute {
-                                        Text("Headset path noted — same calm when your gear is connected.")
-                                    }
-                                    if state.carePrepRoomDisplayMirroring {
-                                        Text("Room screen noted — we can stretch visuals to the wall or bedside when it’s hooked up.")
-                                    }
-                                    if state.iotPhilipsHueEnabled || state.iotHomeKitEnabled || state.iotMatterEnabled {
-                                        Text("Lights are linked — scenes can drift with this session when your bridge is live.")
-                                    }
-                                }
-                                .font(.caption2)
-                                .foregroundStyle(BrandTheme.goldDeep)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
+                                Text("With \(p.displayName)")
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(BrandTheme.brownMuted)
                             }
 
-                            ProgressView(value: progress, total: 1)
-                                .tint(BrandTheme.goldDeep)
-                                .scaleEffect(x: 1, y: 1.2, anchor: .center)
-                                .padding(.horizontal, max(0, 40 - BrandTheme.contentGutter))
-                                .frame(maxWidth: .infinity)
+                            BreathingCalmProgressView(diameter: 72)
 
                             Text(messages[tick % messages.count])
                                 .font(BrandTheme.title(.title3))
                                 .multilineTextAlignment(.center)
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.brown.opacity(0.78))
                                 .padding(.horizontal)
                                 .animation(.easeInOut(duration: 0.45), value: tick)
                                 .id(tick)
@@ -74,9 +46,7 @@ struct ProcessingFastView: View {
             }
         }
         .task {
-            progress = 0
             let totalSeconds: Double = 3.2 / 3
-            withAnimation(.easeInOut(duration: totalSeconds)) { progress = 1 }
             let steps = messages.count
             let per = UInt64((totalSeconds / Double(steps)) * 1_000_000_000)
             for i in 0..<steps {
@@ -94,102 +64,68 @@ struct ProcessingFastView: View {
 
 struct ImmersiveSessionView: View {
     @ObservedObject var state: SessionPOCState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.flowContainerSize) private var flowContainerSize
+    @Environment(\.flowOrbShellSize) private var flowOrbShellSize
     @StateObject private var ambientAudio = AmbientAudioSession()
     @State private var hrTimer: Timer?
-    @State private var showCopy = false
+
+    private var orbSize: CGSize {
+        if flowOrbShellSize.width > 1, flowOrbShellSize.height > 1 {
+            return flowOrbShellSize
+        }
+        return BrandLayout.discoveryPanelSize(in: flowContainerSize)
+    }
 
     var body: some View {
         ZStack {
-            NatureVideoCompilationView(
-                mediaSessionID: state.immersiveMediaSessionID,
-                photoAnchored: state.sessionAnchoredWithPhoto
-            )
+            if state.isResidentSession {
+                OrbInteriorMediaPanel(orbSize: orbSize) {
+                    NatureVideoCompilationView(
+                        mediaSessionID: state.immersiveMediaSessionID,
+                        photoAnchored: state.sessionAnchoredWithPhoto
+                    )
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity.animation(.easeInOut(duration: 0.55)))
+            } else {
+                NatureVideoCompilationView(
+                    mediaSessionID: state.immersiveMediaSessionID,
+                    photoAnchored: state.sessionAnchoredWithPhoto
+                )
 
-            LinearGradient(
-                stops: [
-                    .init(color: .black.opacity(0.14), location: 0),
-                    .init(color: .clear, location: 0.38),
-                    .init(color: .clear, location: 0.62),
-                    .init(color: .black.opacity(0.22), location: 1),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .allowsHitTesting(false)
-            .ignoresSafeArea()
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.14), location: 0),
+                        .init(color: .clear, location: 0.38),
+                        .init(color: .clear, location: 0.62),
+                        .init(color: .black.opacity(0.22), location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
+            }
 
             VStack(spacing: 0) {
                 HStack {
-                    Button {
+                    OrbIconNavButton(
+                        systemImage: ambientAudio.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                        accessibilityLabel: ambientAudio.isMuted ? "Unmute audio" : "Mute audio",
+                        diameter: 44
+                    ) {
                         ambientAudio.isMuted.toggle()
-                    } label: {
-                        Image(systemName: ambientAudio.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                            .font(.body)
-                            .foregroundStyle(BrandTheme.cream)
-                            .padding(10)
-                            .background(.ultraThinMaterial, in: Circle())
                     }
-                    .accessibilityLabel(ambientAudio.isMuted ? "Unmute audio" : "Mute audio")
-
                     Spacer()
-
-                    if state.isResidentSession, let genre = state.residentSessionGenre {
-                        residentPlaylistBadge(genre: genre)
-                    }
                 }
                 .padding(.horizontal, BrandTheme.contentGutter)
-                .padding(.vertical, 12)
+                .padding(.top, 8)
 
-                if state.isCareStaffSession && !state.isResidentSession, let patient = state.carePatient(id: state.activeCarePatientId) {
-                    VStack(spacing: 4) {
-                        Text("Together · \(patient.displayName)")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(BrandTheme.brown)
-                        Text("About \(state.carePlannedDurationMinutes) min if it helps — follow their pace")
-                            .font(.caption2)
-                            .foregroundStyle(BrandTheme.brownMuted)
-                        if state.carePrepVRImmersiveRoute || state.carePrepRoomDisplayMirroring {
-                            Text(
-                                [
-                                    state.carePrepVRImmersiveRoute ? "VR / immersive" : nil,
-                                    state.carePrepRoomDisplayMirroring ? "Room display" : nil,
-                                ]
-                                .compactMap(\.self)
-                                .joined(separator: " · ")
-                            )
-                                .font(.caption2)
-                                .foregroundStyle(BrandTheme.goldDeep.opacity(0.95))
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(BrandTheme.cream.opacity(0.92))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1)
-                    )
-                    .padding(.horizontal, BrandTheme.contentGutter)
-                }
-
-                Spacer(minLength: 0)
+                Spacer()
 
                 if !state.isResidentSession {
                     VStack(spacing: 12) {
-                        if showCopy {
-                            Text("You’re here")
-                                .font(BrandTheme.title(.title2))
-                                .foregroundStyle(BrandTheme.brown)
-                                .transition(.opacity.combined(with: .offset(y: 8)))
-                            Text("Everything shifts gently as you go.")
-                                .font(.caption)
-                                .foregroundStyle(BrandTheme.brownMuted)
-                                .multilineTextAlignment(.center)
-                                .transition(.opacity)
-                        }
                         Text("Music · nature video · heart rate")
                             .font(.caption2)
                             .foregroundStyle(BrandTheme.brownMuted)
@@ -223,17 +159,17 @@ struct ImmersiveSessionView: View {
                                 .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
                         )
                     }
+                    .frame(maxWidth: BrandLayout.isRegularWidth(horizontalSizeClass) ? BrandLayout.menuColumnMaxWidth : .infinity)
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, BrandTheme.contentGutter)
+                    .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
 
                     SessionBottomConfigMenu(state: state)
                         .padding(.horizontal, BrandTheme.contentGutter)
                         .padding(.top, 10)
 
                     PrimaryButton(title: "End session") {
-                        state.endSession()
-                        state.phase = .insight
+                        state.finishSessionWithSettling()
                     }
                     .padding(.horizontal, BrandTheme.contentGutter)
                     .padding(.top, 20)
@@ -241,38 +177,26 @@ struct ImmersiveSessionView: View {
                     .safeAreaPadding(.bottom, 16)
                 } else {
                     Spacer()
-                    Button {
-                        state.endSession()
-                        state.phase = .residentProfile
-                    } label: {
-                        Image(systemName: "square.grid.2x2.fill")
-                            .font(.system(size: 40, weight: .light))
-                            .foregroundStyle(
-                                LinearGradient(colors: [BrandTheme.cream, BrandTheme.cream.opacity(0.92)], startPoint: .top, endPoint: .bottom)
-                            )
-                            .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
+                    OrbIconNavButton(
+                        systemImage: "square.grid.2x2.fill",
+                        accessibilityLabel: "Return to playlists",
+                        diameter: 58
+                    ) {
+                        state.finishSessionWithSettling()
                     }
-                    .buttonStyle(.plain)
                     .padding(.horizontal, BrandTheme.contentGutter)
                     .padding(.bottom, 28)
                     .safeAreaPadding(.bottom, 16)
-                    .accessibilityLabel("Return to playlists")
                 }
             }
             .onAppear {
-                guard !state.isResidentSession else { return }
-                withAnimation(.easeOut(duration: 0.8).delay(0.15)) {
-                    showCopy = true
-                }
-            }
-        }
-        .onAppear {
-            ambientAudio.volumeMultiplier = 1
-            // Distinct Mixkit reel + ambient stream when session is photo-anchored vs Quick Start.
-            ambientAudio.startFresh(photoAnchored: state.sessionAnchoredWithPhoto)
-            hrTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
-                withAnimation(.easeInOut(duration: 1.0)) {
-                    state.mockHeartRateCurrent = max(58, state.mockHeartRateCurrent - Double.random(in: 0.2 ... 0.8))
+                ambientAudio.volumeMultiplier = 1
+                // Distinct Mixkit reel + ambient stream when session is photo-anchored vs Quick Start.
+                ambientAudio.startFresh(photoAnchored: state.sessionAnchoredWithPhoto)
+                hrTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
+                    withAnimation(.easeInOut(duration: 1.0)) {
+                        state.mockHeartRateCurrent = max(58, state.mockHeartRateCurrent - Double.random(in: 0.2 ... 0.8))
+                    }
                 }
             }
         }
@@ -281,46 +205,5 @@ struct ImmersiveSessionView: View {
             hrTimer = nil
             ambientAudio.stop()
         }
-        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
-            guard state.isResidentSession else { return }
-            state.tickLivingPlaylistSegment()
-        }
-    }
-
-    private func residentPlaylistBadge(genre: ResidentMusicGenre) -> some View {
-        let tick = max(0, min(9, state.residentLivingTickInSegment))
-        let loop = max(0, min(9, state.residentLivingLoopIndex))
-        let activeBar = CGSize(width: 4, height: 14)
-
-        return HStack(alignment: .center, spacing: 10) {
-            Image(systemName: genre.iconName)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(genre.accent)
-
-            VStack(spacing: 6) {
-                HStack(spacing: 4) {
-                    ForEach(0 ..< 10, id: \.self) { i in
-                        Capsule(style: .continuous)
-                            .fill(i <= loop ? genre.accent : BrandTheme.cream.opacity(0.22))
-                            .frame(width: 5, height: i <= loop ? 10 : 5)
-                            .overlay(
-                                Capsule(style: .continuous).stroke(genre.accent.opacity(0.55), lineWidth: i <= loop ? 0 : 0.75)
-                            )
-                    }
-                }
-                HStack(spacing: 3) {
-                    ForEach(0 ..< 10, id: \.self) { i in
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(i <= tick ? BrandTheme.cream.opacity(0.95) : BrandTheme.cream.opacity(0.2))
-                            .frame(width: activeBar.width, height: i <= tick ? activeBar.height : 6)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .accessibilityElement(children: .ignore)
-        .accessibilityHidden(true)
     }
 }
