@@ -10,6 +10,23 @@ struct SoftPressButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? pressedScale : 1)
             .opacity(configuration.isPressed ? 0.94 : 1)
             .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, isPressed in
+                if isPressed {
+                    CalmExperienceFeedback.buttonPress()
+                }
+            }
+    }
+}
+
+/// Plain buttons with the same soft chime on press.
+struct ChimingPlainButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { _, isPressed in
+                if isPressed {
+                    CalmExperienceFeedback.buttonPress()
+                }
+            }
     }
 }
 

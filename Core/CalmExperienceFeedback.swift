@@ -1,12 +1,23 @@
 import UIKit
 
-/// Light haptics + chimes on meaningful moments only — never every tap.
+/// Soft haptics + chimes for calm UI feedback.
 @MainActor
 enum CalmExperienceFeedback {
+    private static var lastButtonChimeTime: CFAbsoluteTime = 0
+
+    /// Standard soft chime for any button press (deduped within ~80ms).
+    static func buttonPress() {
+        guard !UIAccessibility.isReduceMotionEnabled else { return }
+        let now = CFAbsoluteTimeGetCurrent()
+        guard now - lastButtonChimeTime > 0.08 else { return }
+        lastButtonChimeTime = now
+        DiscoveryEtherealTapChime.playButton()
+    }
+
     static func lightTap() {
         guard !UIAccessibility.isReduceMotionEnabled else { return }
         impact(.soft, intensity: 0.42)
-        DiscoveryEtherealTapChime.playLight()
+        buttonPress()
     }
 
     static func signInSuccess() {
@@ -16,12 +27,10 @@ enum CalmExperienceFeedback {
 
     static func playlistStart() {
         impact(.soft, intensity: 0.48)
-        DiscoveryEtherealTapChime.playLight()
     }
 
     static func discoveryPick() {
         impact(.soft, intensity: 0.44)
-        DiscoveryEtherealTapChime.playLight()
     }
 
     static func sessionSettle() {

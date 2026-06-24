@@ -347,6 +347,7 @@ struct MellorityOrbEnvelopeBackdrop: View {
     var nebulaFillOpacity: CGFloat = 1
     var showArcFrame: Bool = true
     var shellGlowScale: CGFloat = 1
+    var animationElapsed: TimeInterval? = nil
 
     var body: some View {
         let scale = shellScale ?? CGFloat(0.94 + 0.06 * pulse)
@@ -358,7 +359,8 @@ struct MellorityOrbEnvelopeBackdrop: View {
             shellScale: scale,
             showArcFrame: showArcFrame,
             nebulaFillOpacity: nebulaFillOpacity,
-            shellGlowScale: shellGlowScale
+            shellGlowScale: shellGlowScale,
+            animationElapsed: animationElapsed
         )
     }
 }

@@ -1,6 +1,6 @@
 import AVFoundation
 
-/// Soft, fleeting bell-like swell for discovery mood taps (synthesised — no bundled assets).
+/// Soft, fleeting bell-like swell for taps (synthesised — no bundled assets).
 enum DiscoveryEtherealTapChime {
     /// ~0.4s decay at low level; honours main-actor AudioEngine use from SwiftUI taps.
     @MainActor
@@ -12,13 +12,19 @@ enum DiscoveryEtherealTapChime {
     static func playSuccess() {
         DiscoveryEtherealTapChimeEngine.shared.trigger(variant: .success)
     }
+
+    /// Quietest variant — generic button presses across the app.
+    @MainActor
+    static func playButton() {
+        DiscoveryEtherealTapChimeEngine.shared.trigger(variant: .button)
+    }
 }
 
 @MainActor
 private final class DiscoveryEtherealTapChimeEngine {
     static let shared = DiscoveryEtherealTapChimeEngine()
 
-    enum Variant { case light, success }
+    enum Variant { case button, light, success }
 
     private let engine = AVAudioEngine()
     private let playerNode = AVAudioPlayerNode()
@@ -40,7 +46,11 @@ private final class DiscoveryEtherealTapChimeEngine {
         }
 
         let sr = format.sampleRate
-        let duration: TimeInterval = variant == .success ? 0.72 : 0.44
+        let duration: TimeInterval = switch variant {
+        case .button: 0.30
+        case .light: 0.44
+        case .success: 0.72
+        }
         let frameCount = AVAudioFrameCount(sr * duration)
         guard frameCount > 0,
               let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
@@ -50,21 +60,23 @@ private final class DiscoveryEtherealTapChimeEngine {
 
         guard let ch = buffer.floatChannelData?.pointee else { return }
 
-        let (f1, f2, f3, volume, decayRate): (Double, Double, Double, Double, Double) = {
-            switch variant {
-            case .light:
-                return (784.0, 784.0 * 1.498, 784.0 * 2.015, 0.07, 4.95)
-            case .success:
-                return (392.0, 392.0 * 1.335, 392.0 * 2.0, 0.09, 3.35)
-            }
-        }()
+        let (f1, f2, f3, volume, decayRate, attackSeconds, swirlAmount): (
+            Double, Double, Double, Double, Double, Double, Double
+        ) = switch variant {
+        case .button:
+            (880.0, 880.0 * 1.502, 880.0 * 2.04, 0.045, 6.2, 0.018, 0.08)
+        case .light:
+            (784.0, 784.0 * 1.498, 784.0 * 2.015, 0.07, 4.95, 0.026, 0.11)
+        case .success:
+            (392.0, 392.0 * 1.335, 392.0 * 2.0, 0.09, 3.35, 0.04, 0.06)
+        }
 
         for i in 0 ..< Int(frameCount) {
             let t = Double(i) / sr
-            let attack = min(1, t / (variant == .success ? 0.04 : 0.026))
+            let attack = min(1, t / attackSeconds)
             let decay = exp(-t * decayRate)
             let env = attack * decay
-            let swirl = sin(2 * Double.pi * 9.7 * t) * (variant == .success ? 0.06 : 0.11)
+            let swirl = sin(2 * Double.pi * 9.7 * t) * swirlAmount
             let body =
                 sin(2 * Double.pi * f1 * t) * 0.74
                     + sin(2 * Double.pi * f2 * t) * 0.42

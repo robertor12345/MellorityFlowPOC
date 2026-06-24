@@ -83,7 +83,7 @@ struct PersistentFlowOrbShell: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: configuration.pulseMode == .dormant)) { timeline in
+        TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.shellFramesPerSecond, paused: configuration.pulseMode == .dormant)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(anchor) * configuration.panelPulseSpeed
             let sample = OrbPulseSample.sample(
                 at: elapsed,
@@ -104,7 +104,8 @@ struct PersistentFlowOrbShell: View {
                     kind: configuration.kind,
                     nebulaFillOpacity: configuration.nebulaFillOpacity,
                     showArcFrame: configuration.showArcFrame,
-                    shellGlowScale: configuration.shellGlowScale
+                    shellGlowScale: configuration.shellGlowScale,
+                    animationElapsed: elapsed
                 )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -129,6 +130,7 @@ private struct MorphingOrbShellBackdrop: View, Animatable {
     var nebulaFillOpacity: CGFloat = 1
     var showArcFrame: Bool = true
     var shellGlowScale: CGFloat = 1
+    var animationElapsed: TimeInterval? = nil
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
         get { AnimatablePair(width, height) }
@@ -149,7 +151,8 @@ private struct MorphingOrbShellBackdrop: View, Animatable {
                 shellScale: shellScale,
                 nebulaFillOpacity: nebulaFillOpacity,
                 showArcFrame: showArcFrame,
-                shellGlowScale: shellGlowScale
+                shellGlowScale: shellGlowScale,
+                animationElapsed: animationElapsed
             )
         }
     }

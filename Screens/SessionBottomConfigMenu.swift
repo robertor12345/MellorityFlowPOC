@@ -20,7 +20,7 @@ struct SessionBottomConfigMenu: View {
                     isExpanded: expanded
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ChimingPlainButtonStyle())
             .accessibilityLabel(expanded ? "Hide session settings" : "Show session settings")
 
             if expanded {
@@ -65,7 +65,7 @@ struct SessionBottomConfigMenu: View {
                                 .stroke(BrandTheme.gold.opacity(0.3), lineWidth: 1)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ChimingPlainButtonStyle())
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)

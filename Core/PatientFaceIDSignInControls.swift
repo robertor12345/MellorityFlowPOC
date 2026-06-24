@@ -118,6 +118,7 @@ struct PatientFaceIDSignInPanel: View {
                     }
                     .font(SignInPageLayout.captionFont)
                     .foregroundStyle(BrandTheme.brownMuted)
+                    .buttonStyle(ChimingPlainButtonStyle())
                 }
             }
             .frame(maxWidth: .infinity)

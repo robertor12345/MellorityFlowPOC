@@ -413,7 +413,7 @@ struct ResidentProfileView: View {
                             diameter: 48
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ChimingPlainButtonStyle())
                     .accessibilityLabel("Return device to staff")
                 }
 
@@ -672,7 +672,7 @@ struct ResidentProfileView: View {
                     )
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChimingPlainButtonStyle())
         .accessibilityLabel(genre.accessibilityLabel)
         .accessibilityAddTraits(selectedPlayingGenre == genre ? .isSelected : [])
         .position(x: pos.x, y: pos.y)

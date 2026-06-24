@@ -298,7 +298,7 @@ struct OrbNavTile: View {
                     }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChimingPlainButtonStyle())
     }
 }
 
@@ -319,7 +319,7 @@ struct OrbIconNavButton: View {
             }
             .frame(width: diameter, height: diameter)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChimingPlainButtonStyle())
         .accessibilityLabel(accessibilityLabel)
     }
 }
@@ -376,7 +376,7 @@ struct OrbPortraitNavButton: View {
                     }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChimingPlainButtonStyle())
     }
 }
 
@@ -431,7 +431,7 @@ struct OrbFaceLinkedTile: View {
                     }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChimingPlainButtonStyle())
     }
 }
 
@@ -474,7 +474,7 @@ struct OrbMoodNavOrb: View {
             .offset(y: floatY)
             .scaleEffect(isSelected ? 1.04 : 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChimingPlainButtonStyle())
         .animation(.spring(response: 0.4, dampingFraction: 0.78), value: isSelected)
     }
 }
