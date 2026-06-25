@@ -239,7 +239,7 @@ struct SessionSettlingView: View {
                 if state.shouldOfferSessionSentimentFeedback() {
                     state.beginSessionSentimentFeedback()
                 } else if state.isResidentSession {
-                    state.phase = .residentProfile
+                    state.returnToResidentProfile()
                 } else {
                     state.phase = .insight
                 }

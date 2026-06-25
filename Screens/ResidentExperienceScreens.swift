@@ -345,115 +345,120 @@ struct ResidentProfileView: View {
                     .accessibilityLabel("Swipe for previous or next track")
                     .accessibilityHint("Swipe right for the previous song, left for the next.")
             }
-
-            // GeometryReader OUTSIDE the TimelineView: size resolves reliably and the layout math
-            // (constellation / periphery) is computed once per size change, not every frame.
-            GeometryReader { geo in
-                let hullScale = BrandLayout.hullScale(for: geo.size)
-                let heroDiskDiameter = 154 * hullScale
-                let hub = GlyphFloatLayout.musicGlyphHub(in: geo.size)
-                let idle = GlyphFloatLayout.constellation(count: genresOnFile.count, in: geo.size)
-                let playingPeriphery: [CGPoint] = {
-                    guard let sg = selectedPlayingGenre else { return [] }
-                    let others = genresOnFile.filter { $0 != sg }
-                    guard others.isEmpty == false else { return [] }
-                    return GlyphFloatLayout.focusedInactivePeriphery(
-                        inactiveCount: others.count,
-                        heroDiameter: heroDiskDiameter,
-                        hub: hub,
-                        in: geo.size
-                    )
-                }()
-
-                TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
-                    let t = timeline.date.timeIntervalSinceReferenceDate
-                    ZStack {
-                        ForEach(Array(genresOnFile.enumerated()), id: \.offset) { index, genre in
-                            let emphasis = glyphRole(for: genre)
-                            let (computedCenter, disk, icon) = glyphFrames(
-                                genre: genre,
-                                index: index,
-                                in: geo.size,
-                                hullScale: hullScale,
-                                idleCenters: idle.centers,
-                                idleHub: idle.hub,
-                                peripheryPlayingCenters: playingPeriphery
-                            )
-                            let anchor = emphasis == .hero ? hub : computedCenter
-
-                            floatingGlyphButton(
-                                genre: genre,
-                                index: index,
-                                baseCenter: anchor,
-                                constellationHub: hub,
-                                phase: t,
-                                canvasSize: geo.size,
-                                diskDiameter: disk,
-                                iconSize: icon,
-                                emphasis: emphasis,
-                                action: { playGenreImmediately(genre) }
-                            )
-                            .zIndex(emphasis == .hero ? 50 : CGFloat(index))
-                        }
-                    }
-                    .frame(width: geo.size.width, height: geo.size.height)
-                }
-            }
-
-            VStack {
-                HStack {
-                    Spacer()
-                    Button {
-                        stopPlayback()
-                        state.leaveResidentProfileToStaff()
-                    } label: {
-                        ResidentLuminousFloatingButton(
-                            systemImage: "person.badge.key",
-                            accent: BrandTheme.logoCyan,
-                            diameter: 48
-                        )
-                    }
-                    .buttonStyle(ChimingPlainButtonStyle())
-                    .accessibilityLabel("Return to roster and record session")
-                }
-
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay {
+            residentGlyphCanvas
+        }
+        .overlay(alignment: .top) {
+            HStack {
                 Spacer()
+                Button {
+                    stopPlayback()
+                    state.leaveResidentProfileToStaff()
+                } label: {
+                    ResidentLuminousFloatingButton(
+                        systemImage: "person.badge.key",
+                        accent: BrandTheme.logoCyan,
+                        diameter: 48
+                    )
+                }
+                .buttonStyle(ChimingPlainButtonStyle())
+                .accessibilityLabel("Return to roster and record session")
             }
             .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
             .padding(.top, 10)
-
+        }
+        .overlay(alignment: .bottom) {
             if let sg = selectedPlayingGenre {
-                VStack {
-                    Spacer()
-                    Button {
-                        residentAudio.stop()
-                        state.prepareResidentImmersiveFromPlaylist(genre: sg)
-                        stopPlayback()
-                    } label: {
-                        ResidentLuminousFloatingButton(
-                            systemImage: "leaf.fill",
-                            accent: BrandTheme.logoPink,
-                            diameter: 56
-                        )
-                    }
-                    .buttonStyle(SoftPressButtonStyle())
-                    .accessibilityLabel("Calm room visuals")
-                    .padding(.bottom, 42)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                Button {
+                    residentAudio.stop()
+                    state.prepareResidentImmersiveFromPlaylist(genre: sg)
+                    stopPlayback()
+                } label: {
+                    ResidentLuminousFloatingButton(
+                        systemImage: "leaf.fill",
+                        accent: BrandTheme.logoPink,
+                        diameter: 56
+                    )
                 }
+                .buttonStyle(SoftPressButtonStyle())
+                .accessibilityLabel("Calm room visuals")
+                .padding(.bottom, 42)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
-        .animation(.spring(response: 0.52, dampingFraction: 0.82), value: selectedPlayingGenre)
-        .animation(.easeInOut(duration: 0.42), value: activeTrackIndex)
         .onChange(of: state.selectedCarePatientId) { _, _ in
             stopPlayback()
         }
         .onAppear {
+            state.reaffirmPhaseContentVisible()
             StreamAudioCache.prefetch(StreamAudioCache.ambientPlaybackURLs)
         }
         .onDisappear {
             residentAudio.stop()
         }
+    }
+
+    /// Floating genre glyphs — isolated in an overlay so layout size is stable and implicit
+    /// animations from screen transitions cannot interfere with `.position()` placement.
+    private var residentGlyphCanvas: some View {
+        GeometryReader { geo in
+            let hullScale = BrandLayout.hullScale(for: geo.size)
+            let heroDiskDiameter = 154 * hullScale
+            let hub = GlyphFloatLayout.musicGlyphHub(in: geo.size)
+            let idle = GlyphFloatLayout.constellation(count: genresOnFile.count, in: geo.size)
+            let playingPeriphery: [CGPoint] = {
+                guard let sg = selectedPlayingGenre else { return [] }
+                let others = genresOnFile.filter { $0 != sg }
+                guard others.isEmpty == false else { return [] }
+                return GlyphFloatLayout.focusedInactivePeriphery(
+                    inactiveCount: others.count,
+                    heroDiameter: heroDiskDiameter,
+                    hub: hub,
+                    in: geo.size
+                )
+            }()
+
+            TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                ZStack {
+                    ForEach(Array(genresOnFile.enumerated()), id: \.element.id) { index, genre in
+                        let emphasis = glyphRole(for: genre)
+                        let (computedCenter, disk, icon) = glyphFrames(
+                            genre: genre,
+                            index: index,
+                            in: geo.size,
+                            hullScale: hullScale,
+                            idleCenters: idle.centers,
+                            idleHub: idle.hub,
+                            peripheryPlayingCenters: playingPeriphery
+                        )
+                        let anchor = emphasis == .hero ? hub : computedCenter
+
+                        floatingGlyphButton(
+                            genre: genre,
+                            index: index,
+                            baseCenter: anchor,
+                            constellationHub: hub,
+                            phase: t,
+                            canvasSize: geo.size,
+                            diskDiameter: disk,
+                            iconSize: icon,
+                            emphasis: emphasis,
+                            action: { playGenreImmediately(genre) }
+                        )
+                        .zIndex(emphasis == .hero ? 50 : CGFloat(index))
+                    }
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transaction { transaction in
+            transaction.disablesAnimations = true
+        }
+        .allowsHitTesting(true)
     }
 
     private var playlistSwipeGesture: some Gesture {
@@ -669,7 +674,6 @@ struct ResidentProfileView: View {
         .scaleEffect(driftScale * roleScale, anchor: .center)
         .opacity(emphasis == .sideStrip ? 0.88 : 1)
         .saturation(emphasis == .sideStrip ? 0.94 : 1.04)
-        .animation(.easeInOut(duration: 0.48), value: selectedPlayingGenre)
     }
 }
 

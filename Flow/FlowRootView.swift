@@ -63,9 +63,8 @@ struct FlowRootView: View {
                 }
             }
         }
-        .animation(CalmMotion.softFade, value: state.phaseContentVisible)
-        .animation(CalmMotion.softFade, value: launchComplete)
-        .animation(CalmMotion.softFade, value: state.residentHandoffActive)
+        // Phase fades use explicit `withAnimation` in `SessionPOCState` — no root implicit
+        // animation here; it breaks TimelineView + `.position()` glyph layout on the resident surface.
         .contentShape(Rectangle())
         .onTapGesture {
             skipLaunchIfNeeded()

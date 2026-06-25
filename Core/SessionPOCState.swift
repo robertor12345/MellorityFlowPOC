@@ -110,7 +110,21 @@ final class SessionPOCState: ObservableObject {
         withAnimation(.easeOut(duration: 0.38)) {
             phaseContentVisible = false
         }
-        residentHandoffActive = true
+        withAnimation(CalmMotion.softFade) {
+            residentHandoffActive = true
+        }
+    }
+
+    /// Resident calm surface after immersive / settling — always restore visibility.
+    func returnToResidentProfile() {
+        phaseContentVisible = true
+        phase = .residentProfile
+    }
+
+    /// Defensive: transition tasks can occasionally leave content hidden.
+    func reaffirmPhaseContentVisible() {
+        guard phaseContentVisible == false else { return }
+        phaseContentVisible = true
     }
 
     func completeResidentHandoffTransition() {

@@ -344,7 +344,7 @@ struct InsightView: View {
                         accessibilityLabel: "Return to playlists",
                         diameter: 64
                     ) {
-                        state.phase = .residentProfile
+                        state.returnToResidentProfile()
                     }
                     .padding(.bottom, 32)
                     .safeAreaPadding(.bottom, 16)
