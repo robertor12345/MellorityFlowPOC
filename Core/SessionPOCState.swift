@@ -3,6 +3,8 @@ import SwiftUI
 /// In-memory state for the **care-home one-to-one** session POC (corporate sign-in).
 final class SessionPOCState: ObservableObject {
     @Published var phase: FlowPhase = .home
+    @Published private(set) var phaseContentVisible = true
+    private var phaseTransitionTask: Task<Void, Never>?
 
     @Published var supervisorUsername = ""
     @Published var supervisorPIN = ""
@@ -61,6 +63,9 @@ final class SessionPOCState: ObservableObject {
     @Published private(set) var residentSurfaceMetrics = ResidentSurfaceSessionMetrics()
     @Published private(set) var residentSurfaceFeedbackPending = false
 
+    // Live audio-reactive levels are published on `MusicReactiveBus` (isolated from navigation
+    // state) so the orb + equalizer rings can react at ~24fps without re-rendering the whole flow.
+
     // MARK: - Group session (supervisor-led, roster compiled playlist)
 
     @Published var groupSessionTracks: [GroupSessionTrack] = []
@@ -102,13 +107,39 @@ final class SessionPOCState: ObservableObject {
     func openResidentProfile() {
         guard selectedCarePatientId != nil else { return }
         residentStaffReturnPhase = .carePatientList
+        withAnimation(.easeOut(duration: 0.38)) {
+            phaseContentVisible = false
+        }
         residentHandoffActive = true
     }
 
     func completeResidentHandoffTransition() {
         guard residentHandoffActive, let pid = selectedCarePatientId else { return }
         residentHandoffActive = false
-        enterResidentInstrumentSurface(patientId: pid)
+        enterResidentInstrumentSurface(patientId: pid, setPhase: false)
+        phase = .residentProfile
+        withAnimation(CalmMotion.softFade) {
+            phaseContentVisible = true
+        }
+    }
+
+    /// Fades out current screen content, swaps phase, then fades in — avoids overlapping UI during loads.
+    func transitionToPhase(_ newPhase: FlowPhase) {
+        guard phase != newPhase else { return }
+        phaseTransitionTask?.cancel()
+        phaseTransitionTask = Task { @MainActor in
+            withAnimation(.easeOut(duration: 0.38)) {
+                phaseContentVisible = false
+            }
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            guard !Task.isCancelled else { return }
+            phase = newPhase
+            try? await Task.sleep(nanoseconds: 60_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(CalmMotion.softFade) {
+                phaseContentVisible = true
+            }
+        }
     }
 
     func leaveResidentProfileToStaff() {
@@ -159,7 +190,7 @@ final class SessionPOCState: ObservableObject {
         phase = .processingFast
     }
 
-    private func enterResidentInstrumentSurface(patientId: UUID) {
+    private func enterResidentInstrumentSurface(patientId: UUID, setPhase: Bool = true) {
         isResidentSession = true
         isCareStaffSession = false
         selectedCarePatientId = patientId
@@ -174,7 +205,10 @@ final class SessionPOCState: ObservableObject {
         replaceSelectedMoods([])
         residentSurfaceMetrics = ResidentSurfaceSessionMetrics(startedAt: Date())
         residentSurfaceFeedbackPending = true
-        phase = .residentProfile
+        if setPhase {
+            phaseContentVisible = true
+            phase = .residentProfile
+        }
     }
 
     func syncResidentMoodPickToMoods() {
@@ -265,7 +299,11 @@ final class SessionPOCState: ObservableObject {
         supervisorSignInError = nil
         isSignedIn = true
         pendingCareRosterAfterSignIn = false
-        phase = .carePatientList
+        phaseTransitionTask?.cancel()
+        phase = .supervisorWelcome
+        withAnimation(CalmMotion.softFade) {
+            phaseContentVisible = true
+        }
         return nil
     }
 
@@ -291,7 +329,8 @@ final class SessionPOCState: ObservableObject {
         selectedCarePatientId = nil
         newResidentAgeDraft = ""
         newResidentDiscoveryPatientId = nil
-        phase = .careDiscoveryAgeInput
+        StreamAudioCache.prefetch(DiscoveryFlowPOC.snippetAudioStreamURLs)
+        transitionToPhase(.careDiscoveryAgeInput)
     }
 
     func continueNewResidentDiscoveryFromAgeInput() -> String? {
@@ -328,13 +367,14 @@ final class SessionPOCState: ObservableObject {
         discoverySnippetIndex = 0
         discoveryResults = []
         discoveryPendingPick = nil
-        phase = .careDiscoveryCalibration
+        StreamAudioCache.prefetchDiscovery(order: discoverySnippetOrder)
+        transitionToPhase(.careDiscoveryCalibration)
         return nil
     }
 
     func abandonNewResidentAgeInput() {
         newResidentAgeDraft = ""
-        phase = .carePatientList
+        transitionToPhase(.carePatientList)
     }
 
     private func prepareNewResidentProfileForm() {
@@ -868,6 +908,8 @@ final class SessionPOCState: ObservableObject {
     }
 
     func resetAllForFreshAppLaunch() {
+        phaseTransitionTask?.cancel()
+        phaseContentVisible = true
         phase = .home
         supervisorUsername = ""
         supervisorPIN = ""
@@ -1001,6 +1043,8 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case careGroupSession = 20
     /// Group morale / alertness / lucidity / engagement after group session ends.
     case careGroupSessionFeedback = 21
+    /// Brief welcome after supervisor sign-in before the resident roster.
+    case supervisorWelcome = 22
 
     var id: Int { rawValue }
 }

@@ -8,19 +8,18 @@ struct LaunchIntroOverlay: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let titleFadeIn: TimeInterval = 1.35
-    private let subtitleStart: TimeInterval = 1.55
-    private let thirdLineStart: TimeInterval = 5.1
-    private let wordStagger: TimeInterval = 0.52
-    private let wordFadeDuration: TimeInterval = 0.78
+    private let titleFadeIn: TimeInterval = 0.85
+    private let subtitleStart: TimeInterval = 1.05
+    private let wordStagger: TimeInterval = 0.38
+    private let wordFadeDuration: TimeInterval = 0.62
 
     var body: some View {
         TimelineView(.animation(minimumInterval: OrbRenderBudget.contentFrameInterval(reduceMotion: reduceMotion), paused: false)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(anchor)
             let sample = OrbPulseSample.sample(at: elapsed, mode: .calm, reduceMotion: reduceMotion)
-            let fadeOutStart = max(0, totalDuration - 1.2)
+            let fadeOutStart = max(0, totalDuration - 0.85)
             let overlayOpacity = elapsed >= fadeOutStart
-                ? max(0, 1 - (elapsed - fadeOutStart) / 1.2)
+                ? max(0, 1 - (elapsed - fadeOutStart) / 0.85)
                 : 1.0
 
             let titleOpacity = reduceMotion
@@ -46,19 +45,6 @@ struct LaunchIntroOverlay: View {
                     weight: .semibold,
                     legibilityIntensity: 1.08
                 )
-
-                IntroStaggeredWords(
-                    text: "Take a slow breath — we're almost there.",
-                    elapsed: elapsed,
-                    startAt: reduceMotion ? 0.6 : thirdLineStart,
-                    wordStagger: reduceMotion ? 0 : wordStagger,
-                    fadeDuration: reduceMotion ? 0.35 : wordFadeDuration,
-                    pointSize: 32,
-                    weight: .medium,
-                    muted: true,
-                    legibilityIntensity: 1.0
-                )
-                .padding(.horizontal, 20)
             }
             .padding(.horizontal, BrandTheme.contentGutter)
             .scaleEffect(sample.innerContentScale)

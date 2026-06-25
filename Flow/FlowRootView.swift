@@ -6,7 +6,7 @@ struct FlowRootView: View {
     @State private var launchAnchor = Date()
     @State private var launchDidFinish = false
 
-    private let launchTotalDuration: Double = 11.5
+    private let launchTotalDuration: Double = 5.8
 
     var body: some View {
         GeometryReader { geo in
@@ -63,8 +63,8 @@ struct FlowRootView: View {
                 }
             }
         }
-        .animation(CalmMotion.ethereal, value: state.phase)
-        .animation(CalmMotion.ethereal, value: launchComplete)
+        .animation(CalmMotion.softFade, value: state.phaseContentVisible)
+        .animation(CalmMotion.softFade, value: launchComplete)
         .animation(CalmMotion.softFade, value: state.residentHandoffActive)
         .contentShape(Rectangle())
         .onTapGesture {
@@ -75,6 +75,7 @@ struct FlowRootView: View {
         .onAppear {
             launchAnchor = Date()
             state.resetAllForFreshAppLaunch()
+            StreamAudioCache.prefetchLaunchEssentials()
         }
         .task {
             try? await Task.sleep(nanoseconds: UInt64(launchTotalDuration * 1_000_000_000))
@@ -126,6 +127,8 @@ struct FlowRootView: View {
                 GroupSessionView(state: state)
             case .careGroupSessionFeedback:
                 GroupSessionFeedbackView(state: state)
+            case .supervisorWelcome:
+                SupervisorWelcomeView(state: state)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -136,9 +139,12 @@ struct FlowRootView: View {
             enabled: style.floats && style.showsMenuEnvelope
         )
         .id(state.phase)
-        .transition(.etherealAppear)
-        .opacity(launchComplete ? 1 : 0)
-        .allowsHitTesting(launchComplete && !state.residentHandoffActive)
+        // Removal is instant so the previous screen never lingers behind the next one.
+        // No global implicit animation here — it would interfere with screens that run their
+        // own TimelineView / continuous motion (e.g. the resident calm surface glyphs).
+        .transition(.asymmetric(insertion: .opacity, removal: .identity))
+        .opacity(launchComplete && state.phaseContentVisible ? 1 : 0)
+        .allowsHitTesting(launchComplete && !state.residentHandoffActive && state.phaseContentVisible)
     }
 
     private func skipLaunchIfNeeded() {
@@ -153,6 +159,7 @@ struct FlowRootView: View {
             launchComplete = true
         }
     }
+
 }
 
 struct BrandBackground: View {

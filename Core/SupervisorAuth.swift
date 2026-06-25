@@ -3,7 +3,7 @@ import Foundation
 /// POC gate for care-home supervisor access — username + PIN before roster.
 enum SupervisorAuth {
     /// Demo credentials; replace with secure backend validation before production.
-    static let demoUsername = "supervisor"
+    static let demoUsername = "max"
     static let demoPIN = "1234"
 
     static func validate(username: String, pin: String) -> String? {

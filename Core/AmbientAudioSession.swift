@@ -1,19 +1,14 @@
 import AVFoundation
 import Combine
 
-/// Streams **looping ambient music** (`AVPlayerLooper`) until `stop()`.
+/// Streams **looping ambient music** with a single `AVPlayer` (manual loop on end-of-item).
 ///
-/// **Immersive / resident calm loops:**
-/// - **Quick Start:** Morsi — [`song_2.mp3`](https://opengameart.org/content/calm-music) (CC0).
-/// - **Photo-anchor:** YannZ — Indie Meditations [`lvl_5_the_oasis_or_resting_place.mp3`](https://opengameart.org/content/indie-meditations-free-music-pack)
-///   (CC BY 4.0 — see pack readme). On load failure → `song_2.mp3`.
-///
-/// **Listening discovery snippets:** sequential **retro / 1950s-style** cues from incompetech — see `DiscoveryFlowPOC` (CC BY Kevin MacLeod). On failure → calm `song_2.mp3` so the calibration pass keeps running.
+/// A single player (instead of `AVPlayerLooper`) gives reliable status observation, so cache /
+/// network failures actually trigger the fallback chain instead of failing silently.
 @MainActor
 final class AmbientAudioSession: ObservableObject {
     static let quickStartStreamURL = URL(string: "https://opengameart.org/sites/default/files/song_2.mp3")!
 
-    /// Oasis / resting-place loop from the *Indie Meditations* pack (meditation ambience).
     static let photoAnchorStreamURL =
         URL(string: "https://opengameart.org/sites/default/files/lvl_5_the_oasis_or_resting_place.mp3")!
 
@@ -21,101 +16,185 @@ final class AmbientAudioSession: ObservableObject {
 
     var volumeMultiplier: Float = 1
 
-    private var activeStreamURL = AmbientAudioSession.quickStartStreamURL
+    private var sourceRemoteURL = AmbientAudioSession.quickStartStreamURL
     private var playbackFallbackURL: URL?
     private var triedStreamFallback = false
+    private var triedCacheBypass = false
 
     @Published var isMuted = false {
         didSet { applyMute() }
     }
 
-    private var queuePlayer: AVQueuePlayer?
-    private var audioLooper: AVPlayerLooper?
+    private var player: AVPlayer?
+    private var currentItem: AVPlayerItem?
     private var statusObservation: NSKeyValueObservation?
+    private var loopObserver: NSObjectProtocol?
+    private var playbackGeneration: UInt = 0
+    private let reactiveAnalyzer = MusicReactiveAnalyzer()
+
+    init() {
+        reactiveAnalyzer.setUpdateHandler { snapshot in
+            // Push to the isolated bus only — never the navigation state.
+            MusicReactiveBus.shared.publish(snapshot)
+        }
+    }
+
+    deinit {
+        if let loopObserver {
+            NotificationCenter.default.removeObserver(loopObserver)
+        }
+    }
 
     func startFresh(photoAnchored: Bool = false) {
         stop()
         triedStreamFallback = false
+        triedCacheBypass = false
         if photoAnchored {
-            activeStreamURL = Self.photoAnchorStreamURL
+            sourceRemoteURL = Self.photoAnchorStreamURL
             playbackFallbackURL = Self.quickStartStreamURL
         } else {
-            activeStreamURL = Self.quickStartStreamURL
+            sourceRemoteURL = Self.quickStartStreamURL
             playbackFallbackURL = nil
         }
-        configureSession()
-        startStream()
+        StreamAudioCache.prefetch(sourceRemoteURL)
+        if let fallback = playbackFallbackURL {
+            StreamAudioCache.prefetch(fallback)
+        }
+        AppAudioSession.activate()
+        beginPlayback()
     }
 
-    /// Loops streamed audio at `streamURL`; if the asset fails (network, CDN), retries once using `quickStartStreamURL`.
     func startFresh(streamURL: URL) {
         stop()
         triedStreamFallback = false
-        activeStreamURL = streamURL
+        triedCacheBypass = false
+        sourceRemoteURL = streamURL
         playbackFallbackURL = Self.quickStartStreamURL
-        configureSession()
-        startStream()
+        StreamAudioCache.prefetch(streamURL)
+        StreamAudioCache.prefetch(Self.quickStartStreamURL)
+        AppAudioSession.activate()
+        beginPlayback()
     }
 
-    /// Pause the current stream without tearing down the looper (playlist POC controls).
     func pausePlayback() {
-        queuePlayer?.pause()
+        player?.pause()
     }
 
-    /// Resume after `pausePlayback()`.
     func resumePlayback() {
-        queuePlayer?.play()
+        player?.play()
     }
 
     func stop() {
+        playbackGeneration &+= 1
         tearDownPlaybackOnly()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        reactiveAnalyzer.detach()
+        MusicReactiveBus.shared.clear()
+        // Session stays active (managed by AppAudioSession) so UI chimes keep working.
     }
 
-    private func configureSession() {
-        let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-        try? audioSession.setActive(true)
+    private func beginPlayback() {
+        let remote = sourceRemoteURL
+        let playbackURL = StreamAudioCache.playbackURL(for: remote)
+        startPlayer(with: playbackURL, remoteSource: remote, generation: playbackGeneration)
     }
 
-    private func startStream() {
-        statusObservation?.invalidate()
-        statusObservation = nil
+    private func startPlayer(with url: URL, remoteSource: URL, generation: UInt) {
+        guard generation == playbackGeneration else { return }
+        tearDownObservers()
 
-        let item = AVPlayerItem(url: activeStreamURL)
-        item.preferredForwardBufferDuration = 4
+        let item = AVPlayerItem(asset: AVURLAsset(url: url))
+        item.preferredForwardBufferDuration = url.isFileURL ? 0 : 2
+        currentItem = item
 
-        let qp = AVQueuePlayer()
-        qp.automaticallyWaitsToMinimizeStalling = true
-        qp.volume = effectiveVolume
-        audioLooper = AVPlayerLooper(player: qp, templateItem: item)
-        queuePlayer = qp
-        qp.play()
+        let avPlayer = player ?? AVPlayer()
+        avPlayer.replaceCurrentItem(with: item)
+        avPlayer.volume = effectiveVolume
+        avPlayer.actionAtItemEnd = .none
+        player = avPlayer
 
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] observed, _ in
-            guard let self else { return }
             Task { @MainActor in
-                self.handleItemStatus(observed.status)
+                self?.handleStatus(observed, remoteSource: remoteSource, playedURL: url, generation: generation)
             }
+        }
+
+        loopObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.loopToStart(expecting: generation)
+            }
+        }
+
+        avPlayer.play()
+    }
+
+    private func loopToStart(expecting generation: UInt) {
+        guard generation == playbackGeneration, let player else { return }
+        player.seek(to: .zero) { [weak player] _ in
+            player?.play()
         }
     }
 
-    private func handleItemStatus(_ status: AVPlayerItem.Status) {
-        guard status == .failed else { return }
+    private func handleStatus(
+        _ item: AVPlayerItem,
+        remoteSource: URL,
+        playedURL: URL,
+        generation: UInt
+    ) {
+        guard generation == playbackGeneration else { return }
+
+        switch item.status {
+        case .readyToPlay:
+            // Tracks are available now — attach the reactive tap so the orb + rings follow the music.
+            // The tap passes audio through, so this does not affect playback.
+            if item.audioMix == nil {
+                reactiveAnalyzer.applyMixIfPossible(to: item)
+            }
+            player?.play()
+        case .failed:
+            tearDownObservers()
+            if playedURL.isFileURL, !triedCacheBypass {
+                // Corrupt/unreadable cache file — purge and stream the original.
+                triedCacheBypass = true
+                StreamAudioCache.invalidate(remoteSource)
+                startPlayer(with: remoteSource, remoteSource: remoteSource, generation: generation)
+                return
+            }
+            retryWithFallbackIfNeeded()
+        default:
+            break
+        }
+    }
+
+    private func retryWithFallbackIfNeeded() {
         guard let fallback = playbackFallbackURL, !triedStreamFallback else { return }
         triedStreamFallback = true
-        tearDownPlaybackOnly()
-        activeStreamURL = fallback
+        triedCacheBypass = false
+        sourceRemoteURL = fallback
         playbackFallbackURL = nil
-        startStream()
+        StreamAudioCache.prefetch(fallback)
+        beginPlayback()
+    }
+
+    private func tearDownObservers() {
+        statusObservation?.invalidate()
+        statusObservation = nil
+        if let loopObserver {
+            NotificationCenter.default.removeObserver(loopObserver)
+            self.loopObserver = nil
+        }
     }
 
     private func tearDownPlaybackOnly() {
-        statusObservation?.invalidate()
-        statusObservation = nil
-        audioLooper = nil
-        queuePlayer?.pause()
-        queuePlayer = nil
+        tearDownObservers()
+        reactiveAnalyzer.detach(clearPublished: false)
+        currentItem?.audioMix = nil
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        currentItem = nil
     }
 
     private var effectiveVolume: Float {
@@ -123,6 +202,6 @@ final class AmbientAudioSession: ObservableObject {
     }
 
     private func applyMute() {
-        queuePlayer?.volume = effectiveVolume
+        player?.volume = effectiveVolume
     }
 }

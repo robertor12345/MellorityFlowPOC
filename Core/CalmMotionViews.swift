@@ -71,6 +71,46 @@ extension View {
 
 // MARK: - Breath ring (replaces spinners on calm waits)
 
+struct CalmCircularLoader: View {
+    var diameter: CGFloat = 72
+    @State private var rotation: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.white.opacity(0.42), lineWidth: 2.5)
+                .frame(width: diameter, height: diameter)
+            Circle()
+                .trim(from: 0.08, to: 0.72)
+                .stroke(
+                    AngularGradient(
+                        colors: [
+                            Color.white.opacity(0.55),
+                            BrandTheme.logoCyan.opacity(0.95),
+                            BrandTheme.gold.opacity(0.98),
+                            BrandTheme.goldDeep.opacity(0.92),
+                            Color.white.opacity(0.5),
+                        ],
+                        center: .center
+                    ),
+                    style: StrokeStyle(lineWidth: 4.5, lineCap: .round)
+                )
+                .frame(width: diameter, height: diameter)
+                .rotationEffect(.degrees(rotation))
+                .shadow(color: BrandTheme.logoCyan.opacity(0.55), radius: 10)
+                .shadow(color: BrandTheme.gold.opacity(0.45), radius: 6)
+        }
+        .accessibilityLabel("Loading")
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.linear(duration: 1.35).repeatForever(autoreverses: false)) {
+                rotation = 360
+            }
+        }
+    }
+}
+
 struct BreathingCalmProgressView: View {
     var diameter: CGFloat = 56
     @State private var inhale = false
@@ -79,25 +119,29 @@ struct BreathingCalmProgressView: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(BrandTheme.gold.opacity(0.22), lineWidth: 2)
+                .stroke(Color.white.opacity(0.4), lineWidth: 2.5)
                 .frame(width: diameter, height: diameter)
             Circle()
                 .trim(from: 0, to: 0.68)
                 .stroke(
                     AngularGradient(
                         colors: [
-                            BrandTheme.gold.opacity(0.15),
-                            BrandTheme.goldDeep.opacity(0.55),
-                            BrandTheme.gold.opacity(0.12),
+                            Color.white.opacity(0.52),
+                            BrandTheme.logoCyan.opacity(0.92),
+                            BrandTheme.gold.opacity(0.96),
+                            BrandTheme.goldDeep.opacity(0.88),
+                            Color.white.opacity(0.48),
                         ],
                         center: .center
                     ),
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 4.5, lineCap: .round)
                 )
                 .frame(width: diameter, height: diameter)
                 .rotationEffect(.degrees(inhale ? 24 : -12))
                 .scaleEffect(inhale ? 1.06 : 0.90)
-                .opacity(inhale ? 0.92 : 0.55)
+                .opacity(inhale ? 1 : 0.78)
+                .shadow(color: BrandTheme.logoCyan.opacity(0.5), radius: 9)
+                .shadow(color: BrandTheme.gold.opacity(0.42), radius: 5)
         }
         .accessibilityLabel("Preparing your calm space")
         .onAppear {

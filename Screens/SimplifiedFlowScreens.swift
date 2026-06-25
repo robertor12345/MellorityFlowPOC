@@ -136,6 +136,60 @@ struct HomeView: View {
     }
 }
 
+// MARK: - Supervisor welcome (post sign-in, before roster)
+
+struct SupervisorWelcomeView: View {
+    @ObservedObject var state: SessionPOCState
+    @State private var greetingVisible = false
+    @State private var loaderVisible = false
+    @State private var didScheduleExit = false
+
+    private var displayName: String {
+        let trimmed = state.supervisorUsername.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "Supervisor" }
+        return trimmed.prefix(1).uppercased() + trimmed.dropFirst().lowercased()
+    }
+
+    var body: some View {
+        ZStack {
+            VStack(spacing: 32) {
+                CalmCircularLoader(diameter: 76)
+                    .opacity(loaderVisible ? 1 : 0)
+                    .scaleEffect(loaderVisible ? 1 : 0.92)
+
+                Text("Welcome \(displayName)")
+                    .font(BrandTheme.orbTitleFont(.largeTitle))
+                    .tracking(2)
+                    .orbOverlayText()
+                    .multilineTextAlignment(.center)
+                    .opacity(greetingVisible ? 1 : 0)
+                    .offset(y: greetingVisible ? 0 : 14)
+                    .scaleEffect(greetingVisible ? 1 : 0.97)
+            }
+            .padding(.horizontal, 28)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Welcome \(displayName). Loading roster.")
+        .onAppear {
+            StreamAudioCache.prefetchWarmCatalog()
+            withAnimation(CalmMotion.softFade.delay(0.12)) {
+                loaderVisible = true
+            }
+            withAnimation(CalmMotion.gentle.delay(0.28)) {
+                greetingVisible = true
+            }
+            guard !didScheduleExit else { return }
+            didScheduleExit = true
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_200_000_000)
+                guard state.phase == .supervisorWelcome else { return }
+                state.transitionToPhase(.carePatientList)
+            }
+        }
+    }
+}
+
 // MARK: - Entry mode — Camera vs Quick Start
 
 struct EntryModeView: View {

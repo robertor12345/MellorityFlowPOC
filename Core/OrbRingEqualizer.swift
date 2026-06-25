@@ -27,47 +27,70 @@ struct OrbRingEqualizerView: View {
     var orbEdgeRadius: CGFloat
     /// 0…1 openness; discovery animates from slice timing, playlist uses 1.
     var listenProgress: CGFloat = 1
+    /// When true, rings read the live `MusicReactiveBus` each frame and follow the music's spectrum.
+    /// Read directly inside the per-frame Canvas so the parent view never re-renders for audio.
+    var reactsToMusic: Bool = false
 
     private let ringCount = 5
+
+    // The polygon geometry (angle, spectrum bar index, and angle's sin/cos) is identical every
+    // frame and across all rings — precompute once instead of ~485 trig calls per frame.
+    private static let stepCount = 96
+    private static let angles: [Double] = (0 ... stepCount).map {
+        Double($0) / Double(stepCount) * .pi * 2 - .pi / 2
+    }
+    private static let cosAngles: [Double] = angles.map(Foundation.cos)
+    private static let sinAngles: [Double] = angles.map(Foundation.sin)
+    private static let angle4: [Double] = angles.map { $0 * 4.0 }
+    private static let angle7: [Double] = angles.map { $0 * 7.0 }
+    private static let barIndices: [Int] = (0 ... stepCount).map {
+        Int(Double($0) / Double(stepCount) * Double(OrbEqualizerMotion.barCount)) % OrbEqualizerMotion.barCount
+    }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
             let frac = min(1, max(0, listenProgress))
             let t = timeline.date.timeIntervalSinceReferenceDate
+            let liveSnapshot = reactsToMusic ? MusicReactiveBus.shared.snapshot : nil
+            let audioBandLevels: [CGFloat]? = (liveSnapshot?.isActive == true) ? liveSnapshot?.bands : nil
+            let usesLiveAudio = (audioBandLevels?.count ?? 0) >= OrbEqualizerMotion.barCount
 
             Canvas { context, size in
                 let center = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
                 let shimmer = 0.72 + 0.28 * frac
+                let steps = Self.stepCount
 
                 for ring in 0 ..< ringCount {
                     let ringT = Double(ring) / Double(max(1, ringCount - 1))
                     let baseRadius = orbEdgeRadius * (1.045 + ringT * 0.095)
                     let wiggleScale = orbEdgeRadius * (0.034 - ringT * 0.007)
-                    let steps = 96
+                    let harmonicPhase = t * (2.0 + ringT * 0.8) + Double(ring) * 0.9
+                    let synthPhase = t + ringT * 0.35
 
                     var path = Path()
                     for step in 0 ... steps {
-                        let u = Double(step) / Double(steps)
-                        let angle = u * .pi * 2 - .pi / 2
-                        let barIndex = Int(u * Double(OrbEqualizerMotion.barCount)) % OrbEqualizerMotion.barCount
-                        let amp = OrbEqualizerMotion.barAmplified(
-                            index: barIndex,
-                            phase: t + ringT * 0.35,
-                            listenProgress: frac
-                        )
-                        let radialBump = (amp - 0.38) * wiggleScale * 2.4
-                        let harmonic =
-                            sin(angle * 4.0 + t * (2.0 + ringT * 0.8) + Double(ring) * 0.9)
-                            * wiggleScale
-                            * 0.32
-                        let twist =
-                            cos(angle * 7.0 - t * 1.4 + Double(barIndex) * 0.15)
-                            * wiggleScale
-                            * 0.14
+                        let barIndex = Self.barIndices[step]
+                        let amp: CGFloat
+                        if usesLiveAudio, let levels = audioBandLevels {
+                            amp = max(0.12, min(1, levels[barIndex]))
+                        } else {
+                            amp = OrbEqualizerMotion.barAmplified(
+                                index: barIndex,
+                                phase: synthPhase,
+                                listenProgress: frac
+                            )
+                        }
+                        let radialBump = (amp - (usesLiveAudio ? 0.28 : 0.38)) * wiggleScale * (usesLiveAudio ? 3.6 : 2.4)
+                        let harmonic = usesLiveAudio
+                            ? 0
+                            : sin(Self.angle4[step] + harmonicPhase) * wiggleScale * 0.32
+                        let twist = usesLiveAudio
+                            ? 0
+                            : cos(Self.angle7[step] - t * 1.4 + Double(barIndex) * 0.15) * wiggleScale * 0.14
                         let radius = baseRadius + radialBump + harmonic + twist
                         let point = CGPoint(
-                            x: center.x + CGFloat(cos(angle) * radius),
-                            y: center.y + CGFloat(sin(angle) * radius)
+                            x: center.x + CGFloat(Self.cosAngles[step] * radius),
+                            y: center.y + CGFloat(Self.sinAngles[step] * radius)
                         )
                         if step == 0 {
                             path.move(to: point)

@@ -20,6 +20,10 @@ struct GoldAmbientSparklesView: View {
         let wobblePhase: CGFloat
         let jitterAmp: CGFloat
         let curl: Double
+        // Palette is fixed per particle (by id % 3) — precomputed so the draw loop never rebuilds colors.
+        let coreTint: Color
+        let glowInner: Color
+        let glowOuter: Color
     }
 
     private let particles: [Particle]
@@ -28,7 +32,11 @@ struct GoldAmbientSparklesView: View {
         self.intensity = intensity
         var gen = SplitMix64(seed: 0xF10C_B0C5)
         particles = (0..<particleCount).map { i in
-            Particle(
+            let mod = i % 3
+            let coreTint: Color = mod == 0 ? .white : (mod == 1 ? BrandTheme.nebulaCyan : BrandTheme.nebulaPink)
+            let glowInner: Color = mod == 0 ? BrandTheme.nebulaCyan : (mod == 1 ? BrandTheme.nebulaLavender : BrandTheme.nebulaPink)
+            let glowOuter: Color = mod == 0 ? BrandTheme.nebulaTeal : (mod == 1 ? BrandTheme.nebulaPurple : BrandTheme.nebulaMagenta)
+            return Particle(
                 id: i,
                 xFrac: CGFloat.random(in: 0...1, using: &gen),
                 yFrac: CGFloat.random(in: 0...1, using: &gen),
@@ -42,7 +50,10 @@ struct GoldAmbientSparklesView: View {
                 wobbleFreq: Double.random(in: 1.47...3.19, using: &gen),
                 wobblePhase: CGFloat.random(in: 0...(CGFloat.pi * 2), using: &gen),
                 jitterAmp: CGFloat.random(in: 3.5...18, using: &gen),
-                curl: Double.random(in: 0.2...0.75, using: &gen)
+                curl: Double.random(in: 0.2...0.75, using: &gen),
+                coreTint: coreTint,
+                glowInner: glowInner,
+                glowOuter: glowOuter
             )
         }
     }
@@ -78,14 +89,9 @@ struct GoldAmbientSparklesView: View {
                         width: p.radius * 0.8,
                         height: p.radius * 0.8
                     )
-                    let coreTint: Color = p.id % 3 == 0
-                        ? Color.white
-                        : p.id % 3 == 1
-                            ? BrandTheme.nebulaCyan
-                            : BrandTheme.nebulaPink
                     context.fill(
                         Path(ellipseIn: core),
-                        with: .color(coreTint.opacity(min(1, Double(op * 1.08))))
+                        with: .color(p.coreTint.opacity(min(1, Double(op * 1.08))))
                     )
 
                     let glow = CGRect(
@@ -94,22 +100,12 @@ struct GoldAmbientSparklesView: View {
                         width: p.radius * 5,
                         height: p.radius * 5
                     )
-                    let glowInner: Color = p.id % 3 == 0
-                        ? BrandTheme.nebulaCyan
-                        : p.id % 3 == 1
-                            ? BrandTheme.nebulaLavender
-                            : BrandTheme.nebulaPink
-                    let glowOuter: Color = p.id % 3 == 0
-                        ? BrandTheme.nebulaTeal
-                        : p.id % 3 == 1
-                            ? BrandTheme.nebulaPurple
-                            : BrandTheme.nebulaMagenta
                     context.fill(
                         Path(ellipseIn: glow),
                         with: .radialGradient(
                             Gradient(colors: [
-                                glowInner.opacity(Double(min(0.95, op * 0.72))),
-                                glowOuter.opacity(Double(op * 0.22)),
+                                p.glowInner.opacity(Double(min(0.95, op * 0.72))),
+                                p.glowOuter.opacity(Double(op * 0.22)),
                                 BrandTheme.brown.opacity(Double(op * 0.06)),
                                 .clear,
                             ]),

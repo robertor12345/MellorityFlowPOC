@@ -81,16 +81,21 @@ struct PersistentFlowOrbShell: View {
     var anchor: Date
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var reactiveBus = MusicReactiveBus.shared
 
     var body: some View {
         TimelineView(.animation(minimumInterval: OrbRenderBudget.shellFrameInterval(reduceMotion: reduceMotion), paused: configuration.pulseMode == .dormant)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(anchor) * configuration.panelPulseSpeed
-            let sample = OrbPulseSample.sample(
+            let baseSample = OrbPulseSample.sample(
                 at: elapsed,
                 mode: configuration.pulseMode,
                 reduceMotion: reduceMotion,
                 speedMultiplier: configuration.panelPulseSpeed
             )
+            let reactive = reactiveBus.snapshot
+            let sample = reactive.isActive && !reduceMotion
+                ? baseSample.blendedWithMusic(pulse: reactive.pulse, glow: reactive.glow)
+                : baseSample
             let shellScale = sample.shellScale
             let floatScale: CGFloat = configuration.floats ? 0.25 : 0
 

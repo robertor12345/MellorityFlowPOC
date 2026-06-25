@@ -9,7 +9,6 @@ struct ProcessingFastView: View {
         "Finding the right tone…",
         "Letting the sound soften…",
         "Letting movement match your breath…",
-        "Almost there…",
     ]
 
     var body: some View {

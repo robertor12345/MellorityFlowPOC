@@ -69,7 +69,7 @@ struct CarePatientListView: View {
                             subtitle: subtitle
                         ) {
                             state.selectedCarePatientId = patient.id
-                            state.phase = .carePatientDetail
+                            state.transitionToPhase(.carePatientDetail)
                         }
                     }
                     .padding(.horizontal, 4)
@@ -78,6 +78,7 @@ struct CarePatientListView: View {
             }
         }
         .onAppear {
+            StreamAudioCache.prefetchWarmCatalog()
             if !state.isSignedIn {
                 state.phase = .home
             }

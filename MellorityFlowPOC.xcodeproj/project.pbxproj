@@ -48,6 +48,10 @@
 		B89B8F023B62D4B4F34DA119 /* OrbReferenceMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = E217ADFE80B1EA5AEFACC7F0 /* OrbReferenceMotion.swift */; };
 		C20B5E2D85ED0F79E3831DDC /* FlowContainerSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = F073504DD56CA1C6ED7EE69E /* FlowContainerSize.swift */; };
 		C292223B7BBBE29B08395C88 /* NatureSessionImagery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34BFB55813804EC147A6472F /* NatureSessionImagery.swift */; };
+		CC8819411EFD9D522176B29E /* MusicReactiveAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CECD608A927C02E66ED3D20 /* MusicReactiveAnalyzer.swift */; };
+		AA11BB22CC33DD44EE55FF66 /* StreamAudioCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF6677AA /* StreamAudioCache.swift */; };
+		AA22CC33DD44EE55FF6677BB /* AppAudioSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB33DD44EE55FF6677AA88CC /* AppAudioSession.swift */; };
+		AA33DD44EE55FF6677BB88CC /* MusicReactiveBus.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB44EE55FF6677AA88CC99DD /* MusicReactiveBus.swift */; };
 		D6671F82F92FF6D63E543CC7 /* CareStaffModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */; };
 		DBEE762D9765F5BD092B7EE1 /* CalmExperienceFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED62C0FC11C1EBD8AC45810C /* CalmExperienceFeedback.swift */; };
 		E114FBC4A0DAA886D2B6FCD8 /* OrbOverlayTextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E555D4C4913E7A479BECF7 /* OrbOverlayTextStyle.swift */; };
@@ -98,6 +102,10 @@
 		8D05CFB7755A842161FE4A5D /* DiscoveryEtherealTapChime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryEtherealTapChime.swift; sourceTree = "<group>"; };
 		941A042E8357746A7314E072 /* GoldAmbientSparklesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldAmbientSparklesView.swift; sourceTree = "<group>"; };
 		9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPOCState.swift; sourceTree = "<group>"; };
+		9CECD608A927C02E66ED3D20 /* MusicReactiveAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicReactiveAnalyzer.swift; sourceTree = "<group>"; };
+		BB22CC33DD44EE55FF6677AA /* StreamAudioCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamAudioCache.swift; sourceTree = "<group>"; };
+		BB33DD44EE55FF6677AA88CC /* AppAudioSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAudioSession.swift; sourceTree = "<group>"; };
+		BB44EE55FF6677AA88CC99DD /* MusicReactiveBus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicReactiveBus.swift; sourceTree = "<group>"; };
 		A30695C8E9715544131DFAEF /* NatureVideoCompilationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NatureVideoCompilationView.swift; sourceTree = "<group>"; };
 		A862ED36791951A441F6C6C7 /* PatientFaceIDSignInControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientFaceIDSignInControls.swift; sourceTree = "<group>"; };
 		ACD624A08DB09B9BD6D8C53F /* MellorityFlowPOCApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MellorityFlowPOCApp.swift; sourceTree = "<group>"; };
@@ -167,6 +175,7 @@
 			isa = PBXGroup;
 			children = (
 				416E96C758B14AB3F62708FC /* AmbientAudioSession.swift */,
+				BB33DD44EE55FF6677AA88CC /* AppAudioSession.swift */,
 				5F28363CDD8ACCE234843157 /* BrandTheme.swift */,
 				ED62C0FC11C1EBD8AC45810C /* CalmExperienceFeedback.swift */,
 				797BF377E50486923A75204F /* CalmMotionViews.swift */,
@@ -185,6 +194,8 @@
 				8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */,
 				17595CD92889E1FECC468E5F /* MellorityLogoImage.swift */,
 				F4CDA4CC6EACA74D67A879AF /* MellorityOrbView.swift */,
+				9CECD608A927C02E66ED3D20 /* MusicReactiveAnalyzer.swift */,
+				BB44EE55FF6677AA88CC99DD /* MusicReactiveBus.swift */,
 				274808F05DACF15E46E05A75 /* NoteStalgiaOrbVisuals.swift */,
 				EBB34F34F697359DE52136BB /* OrbContentMotion.swift */,
 				22389121AF71D3190F26C44D /* OrbHeartbeat.swift */,
@@ -204,6 +215,7 @@
 				68CD019E95A8AC72545862DB /* ResidentPlaylistVisuals.swift */,
 				521F124970F852119DF58EEB /* ResidentSurfaceSessionMetrics.swift */,
 				9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */,
+				BB22CC33DD44EE55FF6677AA /* StreamAudioCache.swift */,
 				861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */,
 			);
 			path = Core;
@@ -327,6 +339,10 @@
 				184FC378D7500EC88D18B7CC /* MellorityFlowPOCApp.swift in Sources */,
 				6F750947B19B75821440FB24 /* MellorityLogoImage.swift in Sources */,
 				81361D57C735FCFEF89D48C5 /* MellorityOrbView.swift in Sources */,
+				CC8819411EFD9D522176B29E /* MusicReactiveAnalyzer.swift in Sources */,
+				AA33DD44EE55FF6677BB88CC /* MusicReactiveBus.swift in Sources */,
+				AA11BB22CC33DD44EE55FF66 /* StreamAudioCache.swift in Sources */,
+				AA22CC33DD44EE55FF6677BB /* AppAudioSession.swift in Sources */,
 				C292223B7BBBE29B08395C88 /* NatureSessionImagery.swift in Sources */,
 				692C38C001E452B2873F92E3 /* NatureVideoCompilationView.swift in Sources */,
 				F928B0BBAA7D59E6611A42B3 /* NoteStalgiaOrbVisuals.swift in Sources */,

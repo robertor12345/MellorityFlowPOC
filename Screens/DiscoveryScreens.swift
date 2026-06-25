@@ -63,12 +63,20 @@ struct DiscoveryCalibrationView: View {
             audio.volumeMultiplier = 1.12
             clipFadeNonce = 0
             clipContentOpacity = 0
+            StreamAudioCache.prefetchDiscoveryUpcoming(
+                from: state.discoverySnippetIndex,
+                order: state.discoverySnippetOrder
+            )
             Task { await runDiscoveryClipTransition(skipFadeOut: true) }
         }
         .onChange(of: state.discoverySnippetIndex) { _, newIdx in
             if newIdx >= DiscoveryFlowPOC.snippetCount {
                 scheduleDiscoveryCompletionExitSequence()
             } else {
+                StreamAudioCache.prefetchDiscoveryUpcoming(
+                    from: newIdx,
+                    order: state.discoverySnippetOrder
+                )
                 Task { await runDiscoveryClipTransition(skipFadeOut: false) }
             }
         }
@@ -199,7 +207,6 @@ struct DiscoveryCalibrationView: View {
 
         let idxCapt = state.discoverySnippetIndex
 
-        audio.stop()
         audio.startFresh(streamURL: DiscoveryFlowPOC.snippetAudioStreamURL(
             snippetIndex: idxCapt,
             order: state.discoverySnippetOrder.isEmpty ? nil : state.discoverySnippetOrder
@@ -259,7 +266,13 @@ private struct DiscoveryEraListeningOrb: View {
             )
             let contentScale = sample.shellScale
             let orbEdgeRadius = OrbRingEqualizerView.orbEdgeRadius(for: coreDiameter, shellScale: contentScale)
-            let listenProgress = CGFloat(min(1, max(0, timeline.date.timeIntervalSince(sliceAnchor) / DiscoveryFlowPOC.snippetDurationSeconds)))
+            let musicActive = MusicReactiveBus.shared.snapshot.isActive
+            let listenProgress: CGFloat = {
+                if musicActive {
+                    return 1
+                }
+                return CGFloat(min(1, max(0, timeline.date.timeIntervalSince(sliceAnchor) / DiscoveryFlowPOC.snippetDurationSeconds)))
+            }()
 
             ZStack {
                 ZStack {
@@ -309,7 +322,8 @@ private struct DiscoveryEraListeningOrb: View {
                 OrbRingEqualizerView(
                     canvasDiameter: canvasDiameter,
                     orbEdgeRadius: orbEdgeRadius,
-                    listenProgress: listenProgress
+                    listenProgress: listenProgress,
+                    reactsToMusic: true
                 )
                 .allowsHitTesting(false)
                 .accessibilityElement(children: .ignore)

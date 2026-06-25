@@ -6,5 +6,9 @@ struct AppRootView: View {
         FlowRootView()
             .preferredColorScheme(.light)
             .environment(\.font, Font.system(.body, design: .rounded))
+            .task {
+                // Warm the shared audio session so the first chime/music plays without delay.
+                AppAudioSession.activate()
+            }
     }
 }

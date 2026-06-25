@@ -1,11 +1,16 @@
 import CoreGraphics
 import Foundation
 
-/// Shared reference-video orb cadence (~10s swell loop) mapped into shell scale + glow.
+/// Shared orb breathe cadence mapped into shell scale + glow.
 enum OrbHeartbeat {
-    static let beatsPerMinute: Double = 6
-    static var beatPeriodSeconds: TimeInterval { OrbReferenceMotion.cycleSeconds }
-    static var angularFrequency: Double { (2.0 * Double.pi) / beatPeriodSeconds }
+    /// Meditative cadence — 3s inhale (expand), 3s exhale (contract).
+    static let breathInSeconds: TimeInterval = 3
+    static let breathOutSeconds: TimeInterval = 3
+    static var breatheCycleSeconds: TimeInterval { breathInSeconds + breathOutSeconds }
+    static var angularFrequency: Double { (2.0 * Double.pi) / breatheCycleSeconds }
+
+    /// One full inhale + exhale loop (6s).
+    static var beatPeriodSeconds: TimeInterval { breatheCycleSeconds }
 
     /// Peak shell scale — sized so `flowOrbPanelSize` × `maxVisualExtentScale` stays inside the viewport.
     static let maxShellScale: CGFloat = 1.055

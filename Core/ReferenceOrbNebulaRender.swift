@@ -184,58 +184,93 @@ private struct ReferenceOrbNebulaVolumeField: View {
     var phase: Double
     var glowPulse: Double
 
+    /// Per-cell sampling geometry is constant for a given canvas size — cache it so each frame
+    /// only runs the (time-dependent) noise + fill, not the grid math and in-circle culling.
+    private struct Cell {
+        let nx: Double
+        let ny: Double
+        let splat: CGRect
+    }
+
+    private struct GridKey: Equatable {
+        let w: CGFloat
+        let h: CGFloat
+        let cols: Int
+    }
+    private static var gridKey: GridKey?
+    private static var gridCells: [Cell] = []
+
+    private static func cells(for size: CGSize) -> [Cell] {
+        let cols = OrbRenderBudget.nebulaGridColumns(for: size.width)
+        let key = GridKey(w: size.width, h: size.height, cols: cols)
+        if key == gridKey { return gridCells }
+
+        let rows = cols
+        let cellW = size.width / CGFloat(cols)
+        let cellH = size.height / CGFloat(rows)
+        let splatRadius = max(cellW, cellH) * 0.64
+
+        var built: [Cell] = []
+        built.reserveCapacity(cols * rows)
+        for row in 0 ..< rows {
+            for col in 0 ..< cols {
+                let ux = (CGFloat(col) + 0.5) / CGFloat(cols)
+                let uy = (CGFloat(row) + 0.5) / CGFloat(rows)
+                let nx = Double((ux - 0.5) * 2)
+                let ny = Double((uy - 0.5) * 2)
+                if nx * nx + ny * ny > 1 { continue } // cull corners once, not every frame
+                let cx = (CGFloat(col) + 0.5) * cellW
+                let cy = (CGFloat(row) + 0.5) * cellH
+                built.append(
+                    Cell(
+                        nx: nx,
+                        ny: ny,
+                        splat: CGRect(
+                            x: cx - splatRadius,
+                            y: cy - splatRadius,
+                            width: splatRadius * 2,
+                            height: splatRadius * 2
+                        )
+                    )
+                )
+            }
+        }
+
+        gridKey = key
+        gridCells = built
+        return built
+    }
+
     var body: some View {
         Canvas { context, size in
-            let cols = OrbRenderBudget.nebulaGridColumns(for: size.width)
-            let rows = cols
-            let cellW = size.width / CGFloat(cols)
-            let cellH = size.height / CGFloat(rows)
             let time = phase * 0.22
             let secondaryTime = time * 0.72
 
-            for row in 0 ..< rows {
-                for col in 0 ..< cols {
-                    let ux = (CGFloat(col) + 0.5) / CGFloat(cols)
-                    let uy = (CGFloat(row) + 0.5) / CGFloat(rows)
-                    let nx = Double((ux - 0.5) * 2)
-                    let ny = Double((uy - 0.5) * 2)
-                    let r2 = nx * nx + ny * ny
-                    if r2 > 1 { continue }
+            for cell in Self.cells(for: size) {
+                let primary = ReferenceOrbNoise.warpedCloudDensity(
+                    x: cell.nx * 1.15,
+                    y: cell.ny * 1.15,
+                    time: time,
+                    seed: 0,
+                    quality: .standard
+                )
+                let secondary = ReferenceOrbNoise.warpedCloudDensity(
+                    x: cell.nx * 1.15,
+                    y: cell.ny * 1.15,
+                    time: secondaryTime,
+                    seed: 41.7,
+                    quality: .standard
+                )
+                let density = min(1, primary + secondary * 0.48)
+                let (color, alpha) = ReferenceOrbPalette.nebulaSample(
+                    nx: cell.nx,
+                    ny: cell.ny,
+                    density: density,
+                    glowPulse: glowPulse
+                )
+                if alpha < 0.035 { continue }
 
-                    let primary = ReferenceOrbNoise.warpedCloudDensity(
-                        x: nx * 1.15,
-                        y: ny * 1.15,
-                        time: time,
-                        seed: 0,
-                        quality: .standard
-                    )
-                    let secondary = ReferenceOrbNoise.warpedCloudDensity(
-                        x: nx * 1.15,
-                        y: ny * 1.15,
-                        time: secondaryTime,
-                        seed: 41.7,
-                        quality: .standard
-                    )
-                    let density = min(1, primary + secondary * 0.48)
-                    let (color, alpha) = ReferenceOrbPalette.nebulaSample(
-                        nx: nx,
-                        ny: ny,
-                        density: density,
-                        glowPulse: glowPulse
-                    )
-                    if alpha < 0.035 { continue }
-
-                    let cx = (CGFloat(col) + 0.5) * cellW
-                    let cy = (CGFloat(row) + 0.5) * cellH
-                    let splatRadius = max(cellW, cellH) * 0.64
-                    let splat = CGRect(
-                        x: cx - splatRadius,
-                        y: cy - splatRadius,
-                        width: splatRadius * 2,
-                        height: splatRadius * 2
-                    )
-                    context.fill(Path(ellipseIn: splat), with: .color(color.opacity(alpha * 0.78)))
-                }
+                context.fill(Path(ellipseIn: cell.splat), with: .color(color.opacity(alpha * 0.78)))
             }
         }
         .compositingGroup()

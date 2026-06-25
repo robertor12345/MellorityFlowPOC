@@ -5,71 +5,124 @@ enum DiscoveryEtherealTapChime {
     /// ~0.4s decay at low level; honours main-actor AudioEngine use from SwiftUI taps.
     @MainActor
     static func playLight() {
-        DiscoveryEtherealTapChimeEngine.shared.trigger(variant: .light)
+        ChimeEngine.shared.play(.light)
     }
 
     @MainActor
     static func playSuccess() {
-        DiscoveryEtherealTapChimeEngine.shared.trigger(variant: .success)
+        ChimeEngine.shared.play(.success)
     }
 
     /// Quietest variant — generic button presses across the app.
     @MainActor
     static func playButton() {
-        DiscoveryEtherealTapChimeEngine.shared.trigger(variant: .button)
+        ChimeEngine.shared.play(.button)
     }
 }
 
-@MainActor
-private final class DiscoveryEtherealTapChimeEngine {
-    static let shared = DiscoveryEtherealTapChimeEngine()
+// MARK: - Engine
 
-    enum Variant { case button, light, success }
+@MainActor
+private final class ChimeEngine {
+    static let shared = ChimeEngine()
+
+    enum Variant: CaseIterable { case button, light, success }
 
     private let engine = AVAudioEngine()
-    private let playerNode = AVAudioPlayerNode()
-    private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+    private let player = AVAudioPlayerNode()
+    private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2)!
 
-    private init() {
-        engine.attach(playerNode)
-        engine.connect(playerNode, to: engine.mainMixerNode, format: format)
-        engine.mainMixerNode.outputVolume = 0.42
+    private var graphReady = false
+    private var buffers: [Variant: AVAudioPCMBuffer] = [:]
+
+    private init() {}
+
+    func play(_ variant: Variant) {
+        guard AppAudioSession.activate() else { return }
+        guard ensureRunning() else { return }
+        guard let buffer = buffer(for: variant) else { return }
+
+        // `.interrupts` keeps rapid taps crisp without stacking overlapping tails.
+        player.scheduleBuffer(buffer, at: nil, options: .interrupts, completionHandler: nil)
+        if !player.isPlaying {
+            player.play()
+        }
     }
 
-    func trigger(variant: Variant = .light) {
-        do {
-            if !engine.isRunning {
-                try engine.start()
-            }
-        } catch {
-            return
+    private func ensureRunning() -> Bool {
+        if !graphReady {
+            engine.attach(player)
+            engine.connect(player, to: engine.mainMixerNode, format: format)
+            engine.mainMixerNode.outputVolume = 1.0
+            engine.prepare()
+            graphReady = true
         }
 
-        let sr = format.sampleRate
-        let duration: TimeInterval = switch variant {
-        case .button: 0.30
-        case .light: 0.44
-        case .success: 0.72
+        if engine.isRunning { return true }
+
+        do {
+            try engine.start()
+            return true
+        } catch {
+            // Recover from a stale graph (e.g. after a route/interruption change).
+            engine.stop()
+            engine.reset()
+            engine.attach(player)
+            engine.connect(player, to: engine.mainMixerNode, format: format)
+            engine.mainMixerNode.outputVolume = 1.0
+            engine.prepare()
+            do {
+                try engine.start()
+                return true
+            } catch {
+                return false
+            }
         }
+    }
+
+    private func buffer(for variant: Variant) -> AVAudioPCMBuffer? {
+        if let cached = buffers[variant] { return cached }
+        guard let rendered = Self.render(variant, format: format) else { return nil }
+        buffers[variant] = rendered
+        return rendered
+    }
+
+    /// Deterministic synth — rendered once per variant, then reused on every tap.
+    private static func render(_ variant: Variant, format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        let sr = format.sampleRate
+
+        let duration: TimeInterval
+        let f1: Double
+        let f2: Double
+        let f3: Double
+        let volume: Double
+        let decayRate: Double
+        let attackSeconds: Double
+        let swirlAmount: Double
+
+        switch variant {
+        case .button:
+            duration = 0.34
+            (f1, f2, f3) = (294.0, 294.0 * 1.498, 294.0 * 2.01)
+            (volume, decayRate, attackSeconds, swirlAmount) = (0.16, 5.0, 0.020, 0.04)
+        case .light:
+            duration = 0.46
+            (f1, f2, f3) = (330.0, 330.0 * 1.498, 330.0 * 2.015)
+            (volume, decayRate, attackSeconds, swirlAmount) = (0.20, 4.6, 0.026, 0.07)
+        case .success:
+            duration = 0.74
+            (f1, f2, f3) = (392.0, 392.0 * 1.335, 392.0 * 2.0)
+            (volume, decayRate, attackSeconds, swirlAmount) = (0.26, 3.35, 0.040, 0.06)
+        }
+
         let frameCount = AVAudioFrameCount(sr * duration)
         guard frameCount > 0,
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
-        else { return }
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount),
+              let channels = buffer.floatChannelData
+        else { return nil }
 
         buffer.frameLength = frameCount
-
-        guard let ch = buffer.floatChannelData?.pointee else { return }
-
-        let (f1, f2, f3, volume, decayRate, attackSeconds, swirlAmount): (
-            Double, Double, Double, Double, Double, Double, Double
-        ) = switch variant {
-        case .button:
-            (880.0, 880.0 * 1.502, 880.0 * 2.04, 0.045, 6.2, 0.018, 0.08)
-        case .light:
-            (784.0, 784.0 * 1.498, 784.0 * 2.015, 0.07, 4.95, 0.026, 0.11)
-        case .success:
-            (392.0, 392.0 * 1.335, 392.0 * 2.0, 0.09, 3.35, 0.04, 0.06)
-        }
+        let channelCount = Int(format.channelCount)
 
         for i in 0 ..< Int(frameCount) {
             let t = Double(i) / sr
@@ -81,11 +134,12 @@ private final class DiscoveryEtherealTapChimeEngine {
                 sin(2 * Double.pi * f1 * t) * 0.74
                     + sin(2 * Double.pi * f2 * t) * 0.42
                     + sin(2 * Double.pi * f3 * t) * 0.14
-            ch[i] = Float(body * env * (1 + swirl) * volume)
+            let sample = Float(body * env * (1 + swirl) * volume)
+            for ch in 0 ..< channelCount {
+                channels[ch][i] = sample
+            }
         }
 
-        playerNode.stop()
-        playerNode.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
-        playerNode.play()
+        return buffer
     }
 }

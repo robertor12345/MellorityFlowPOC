@@ -346,52 +346,57 @@ struct ResidentProfileView: View {
                     .accessibilityHint("Swipe right for the previous song, left for the next.")
             }
 
-            TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
-                let t = timeline.date.timeIntervalSinceReferenceDate
-                GeometryReader { geo in
-                    let hullScale = BrandLayout.hullScale(for: geo.size)
-                    let heroDiskDiameter = 154 * hullScale
-                    let hub = GlyphFloatLayout.musicGlyphHub(in: geo.size)
-                    let idle = GlyphFloatLayout.constellation(count: genresOnFile.count, in: geo.size)
-                    let playingPeriphery: [CGPoint] = {
-                        guard let sg = selectedPlayingGenre else { return [] }
-                        let others = genresOnFile.filter { $0 != sg }
-                        guard others.isEmpty == false else { return [] }
-                        return GlyphFloatLayout.focusedInactivePeriphery(
-                            inactiveCount: others.count,
-                            heroDiameter: heroDiskDiameter,
-                            hub: hub,
-                            in: geo.size
-                        )
-                    }()
+            // GeometryReader OUTSIDE the TimelineView: size resolves reliably and the layout math
+            // (constellation / periphery) is computed once per size change, not every frame.
+            GeometryReader { geo in
+                let hullScale = BrandLayout.hullScale(for: geo.size)
+                let heroDiskDiameter = 154 * hullScale
+                let hub = GlyphFloatLayout.musicGlyphHub(in: geo.size)
+                let idle = GlyphFloatLayout.constellation(count: genresOnFile.count, in: geo.size)
+                let playingPeriphery: [CGPoint] = {
+                    guard let sg = selectedPlayingGenre else { return [] }
+                    let others = genresOnFile.filter { $0 != sg }
+                    guard others.isEmpty == false else { return [] }
+                    return GlyphFloatLayout.focusedInactivePeriphery(
+                        inactiveCount: others.count,
+                        heroDiameter: heroDiskDiameter,
+                        hub: hub,
+                        in: geo.size
+                    )
+                }()
 
-                    ForEach(Array(genresOnFile.enumerated()), id: \.offset) { index, genre in
-                        let emphasis = glyphRole(for: genre)
-                        let (computedCenter, disk, icon) = glyphFrames(
-                            genre: genre,
-                            index: index,
-                            in: geo.size,
-                            hullScale: hullScale,
-                            idleCenters: idle.centers,
-                            idleHub: idle.hub,
-                            peripheryPlayingCenters: playingPeriphery
-                        )
-                        let anchor = emphasis == .hero ? hub : computedCenter
+                TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
+                    let t = timeline.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        ForEach(Array(genresOnFile.enumerated()), id: \.offset) { index, genre in
+                            let emphasis = glyphRole(for: genre)
+                            let (computedCenter, disk, icon) = glyphFrames(
+                                genre: genre,
+                                index: index,
+                                in: geo.size,
+                                hullScale: hullScale,
+                                idleCenters: idle.centers,
+                                idleHub: idle.hub,
+                                peripheryPlayingCenters: playingPeriphery
+                            )
+                            let anchor = emphasis == .hero ? hub : computedCenter
 
-                        floatingGlyphButton(
-                            genre: genre,
-                            index: index,
-                            baseCenter: anchor,
-                            constellationHub: hub,
-                            phase: t,
-                            canvasSize: geo.size,
-                            diskDiameter: disk,
-                            iconSize: icon,
-                            emphasis: emphasis,
-                            action: { playGenreImmediately(genre) }
-                        )
-                        .zIndex(emphasis == .hero ? 50 : CGFloat(index))
+                            floatingGlyphButton(
+                                genre: genre,
+                                index: index,
+                                baseCenter: anchor,
+                                constellationHub: hub,
+                                phase: t,
+                                canvasSize: geo.size,
+                                diskDiameter: disk,
+                                iconSize: icon,
+                                emphasis: emphasis,
+                                action: { playGenreImmediately(genre) }
+                            )
+                            .zIndex(emphasis == .hero ? 50 : CGFloat(index))
+                        }
                     }
+                    .frame(width: geo.size.width, height: geo.size.height)
                 }
             }
 
@@ -442,6 +447,9 @@ struct ResidentProfileView: View {
         .animation(.easeInOut(duration: 0.42), value: activeTrackIndex)
         .onChange(of: state.selectedCarePatientId) { _, _ in
             stopPlayback()
+        }
+        .onAppear {
+            StreamAudioCache.prefetch(StreamAudioCache.ambientPlaybackURLs)
         }
         .onDisappear {
             residentAudio.stop()
@@ -634,7 +642,8 @@ struct ResidentProfileView: View {
                     OrbRingEqualizerView(
                         canvasDiameter: ringCanvas,
                         orbEdgeRadius: ringOrbEdge,
-                        listenProgress: 1
+                        listenProgress: 1,
+                        reactsToMusic: true
                     )
                     .accessibilityHidden(true)
                 }

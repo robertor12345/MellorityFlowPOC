@@ -105,6 +105,18 @@ struct OrbPulseSample {
     private func glowBaseBlend(_ glow: Double, factor: CGFloat) -> Double {
         0.62 + (glow - 0.62) * Double(factor)
     }
+
+    /// Blend reference orb swell with live music energy (resident playlist).
+    func blendedWithMusic(pulse musicPulse: Double, glow musicGlow: Double, musicWeight: CGFloat = 0.82) -> OrbPulseSample {
+        let w = Double(min(1, max(0, musicWeight)))
+        let ref = 1 - w
+        return OrbPulseSample(
+            pulse: pulse * ref + musicPulse * w,
+            floatY: floatY,
+            floatX: floatX,
+            glowPulse: glowPulse * ref + musicGlow * w
+        )
+    }
 }
 
 /// Pulsating sky-blue envelope that wraps menu content (soft blob, not a fixed circle).

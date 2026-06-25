@@ -22,7 +22,7 @@ struct OrbNavigationStyle: Equatable {
 
         switch phase {
         case .immersive, .careDiscoveryCalibration, .residentProfile,
-             .sessionSettling, .careGroupSession:
+             .sessionSettling, .careGroupSession, .supervisorWelcome:
             return OrbNavigationStyle(
                 pulseMode: .calm,
                 floats: false,
