@@ -43,10 +43,36 @@ enum DiscoveryFlowPOC {
         URL(string: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Americana.mp3")!, // country-western nostalgic
     ]
 
-    static func snippetAudioStreamURL(snippetIndex: Int) -> URL {
+    static func snippetAudioStreamURL(snippetIndex: Int, order: [Int]? = nil) -> URL {
         let urls = snippetAudioStreamURLs
         precondition(!urls.isEmpty, "DiscoveryFlowPOC.snippetAudioStreamURLs must not be empty")
-        let bounded = snippetIndex % urls.count
+        let physical: Int
+        if let order, snippetIndex >= 0, snippetIndex < order.count {
+            physical = order[snippetIndex]
+        } else {
+            physical = snippetIndex
+        }
+        let bounded = physical % urls.count
         return urls[bounded]
+    }
+
+    /// Reorders snippets so clips whose era sits closest to the resident’s peak listening years (15–30) play first.
+    static func orderedSnippetIndices(forResidentAge age: Int) -> [Int] {
+        let count = snippetCount
+        guard count > 0 else { return [] }
+        let currentYear = Calendar.current.component(.year, from: Date())
+        let birthYear = currentYear - max(1, age)
+        let peakMidYear = birthYear + 22
+
+        let eraYears: [Int] = (0..<count).map { idx in
+            DiscoveryEraMediaCatalog.visual(for: idx).eraYear
+        }
+
+        return Array(0..<count).sorted { a, b in
+            let distA = abs(eraYears[a] - peakMidYear)
+            let distB = abs(eraYears[b] - peakMidYear)
+            if distA != distB { return distA < distB }
+            return a < b
+        }
     }
 }

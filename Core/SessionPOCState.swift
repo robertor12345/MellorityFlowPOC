@@ -4,10 +4,14 @@ import SwiftUI
 final class SessionPOCState: ObservableObject {
     @Published var phase: FlowPhase = .home
 
-    @Published var email = ""
-    @Published var password = ""
+    @Published var supervisorUsername = ""
+    @Published var supervisorPIN = ""
     @Published var isSignedIn = false
     @Published private(set) var pendingCareRosterAfterSignIn = false
+    @Published var supervisorSignInError: String?
+
+    /// Custom portraits keyed by patient id (captured during profile setup).
+    @Published var carePatientPortraitImages: [UUID: UIImage] = [:]
 
     @Published var capturedImage: UIImage?
     @Published private(set) var selectedMoods: Set<String> = []
@@ -35,93 +39,57 @@ final class SessionPOCState: ObservableObject {
     @Published var carePrepVRImmersiveRoute: Bool = false
     @Published var carePrepRoomDisplayMirroring: Bool = false
 
-    /// Where `leaveResidentProfileToStaff()` returns (face grid vs staff detail).
+    /// Where `leaveResidentProfileToStaff()` returns after a resident session.
     @Published var residentStaffReturnPhase: FlowPhase = .carePatientList
 
     /// Staff handoff veil before resident calm surface opens.
     @Published var residentHandoffActive = false
 
-    /// Offer Face ID once after launch when a profile is linked (resident iPad).
-    @Published var shouldOfferResidentSignInOnLaunch = false
+    /// New-resident discovery: provisional profile id, age input, snippet order, profile prompt.
+    @Published private(set) var newResidentDiscoveryPatientId: UUID?
+    @Published var newResidentAgeDraft: String = ""
+    @Published private(set) var discoverySnippetOrder: [Int] = []
+    @Published var newResidentProfileNameDraft: String = ""
+    @Published var newResidentProfileAgeDraft: String = ""
+    @Published var newResidentProfilePhoto: UIImage?
 
-    /// Care profile linked to device Face ID / Touch ID (Keychain).
-    @Published private(set) var faceIDLinkedPatientId: UUID?
+    /// Sequential post-session sentiment capture (existing residents).
+    @Published var sessionSentimentStep: Int = 0
+    @Published var sessionSentimentDraft = SessionSentimentDraft()
 
-    var faceIDLinkedPatient: CarePatientProfile? {
-        carePatient(id: faceIDLinkedPatientId)
-    }
+    /// Telemetry while the resident uses the instrument surface (until supervisor handoff).
+    @Published private(set) var residentSurfaceMetrics = ResidentSurfaceSessionMetrics()
+    @Published private(set) var residentSurfaceFeedbackPending = false
 
-    init() {
-        faceIDLinkedPatientId = PatientFaceIDLinkStore.linkedPatientId()
-    }
+    // MARK: - Group session (supervisor-led, roster compiled playlist)
 
-    func refreshFaceIDLink() {
-        faceIDLinkedPatientId = PatientFaceIDLinkStore.linkedPatientId()
-    }
-
-    func linkPatientForFaceIDSignIn(_ patientId: UUID) {
-        PatientFaceIDLinkStore.setLinkedPatientId(patientId)
-        faceIDLinkedPatientId = patientId
-    }
-
-    func unlinkPatientFaceID() {
-        PatientFaceIDLinkStore.setLinkedPatientId(nil)
-        faceIDLinkedPatientId = nil
-    }
-
-    /// Device biometrics → resident calm surface (no corporate sign-in required).
-    @MainActor
-    func signInWithFaceIDToResidentProfile() async -> String? {
-        var linkedId = faceIDLinkedPatientId ?? PatientFaceIDLinkStore.linkedPatientId()
-        if linkedId == nil, PatientBiometricAuth.usesPOCMockFlow, let first = carePatients.first {
-            linkedId = first.id
-            linkPatientForFaceIDSignIn(first.id)
-        }
-        guard let linkedId else {
-            return nil
-        }
-        guard let patient = carePatient(id: linkedId) else {
-            unlinkPatientFaceID()
-            return "That linked profile is no longer on this device."
-        }
-        do {
-            try await PatientBiometricAuth.authenticate(
-                reason: "Sign in as \(patient.displayName) to open their calm surface."
-            )
-            residentStaffReturnPhase = .home
-            beginResidentFaceIDWelcome(patientId: linkedId)
-            CalmExperienceFeedback.signInSuccess()
-            return nil
-        } catch let error as PatientBiometricAuth.AuthFailure {
-            return error.errorDescription
-        } catch {
-            return PatientBiometricAuth.AuthFailure.failed.errorDescription
-        }
-    }
-
-    @MainActor
-    func linkPatientForFaceIDSignInAfterBiometric(_ patientId: UUID) async -> String? {
-        guard let patient = carePatient(id: patientId) else {
-            return "That profile is not available."
-        }
-        do {
-            try await PatientBiometricAuth.authenticate(
-                reason: "Link \(PatientBiometricAuth.biometryLabel) to \(patient.displayName) on this device."
-            )
-            linkPatientForFaceIDSignIn(patientId)
-            return nil
-        } catch let error as PatientBiometricAuth.AuthFailure {
-            return error.errorDescription
-        } catch {
-            return PatientBiometricAuth.AuthFailure.failed.errorDescription
-        }
-    }
+    @Published var groupSessionTracks: [GroupSessionTrack] = []
+    @Published var groupSessionTrackIndex: Int = 0
+    @Published private(set) var groupSessionStartedAt: Date?
+    @Published private(set) var groupSessionTracksPlayed: Int = 0
+    @Published var groupSessionRecords: [GroupSessionRecord] = []
+    @Published var groupSessionFeedbackStep: Int = 0
+    @Published var groupSessionFeedbackDraft = GroupSessionFeedbackDraft()
+    @Published private(set) var isGroupSessionActive = false
+    private var groupSessionPlayedTrackIDs: Set<UUID> = []
 
     // MARK: - Discovery calibration (traffic-light smiles + timed snippets)
 
     @Published private(set) var discoverySnippetIndex: Int = 0
     @Published private(set) var discoveryResults: [DiscoverySnippetResult] = []
     @Published var discoveryPendingPick: DiscoveryTrafficSentiment?
+
+    func portraitImage(for patientId: UUID) -> UIImage? {
+        carePatientPortraitImages[patientId]
+    }
+
+    /// Maps logical discovery clip index → physical snippet (era / audio).
+    func discoveryPhysicalSnippetIndex(logicalIndex: Int) -> Int {
+        guard logicalIndex >= 0, logicalIndex < discoverySnippetOrder.count else {
+            return max(0, logicalIndex)
+        }
+        return discoverySnippetOrder[logicalIndex]
+    }
 
     var selectedMoodsOrdered: [String] {
         moodOptions.filter { selectedMoods.contains($0) }
@@ -133,7 +101,7 @@ final class SessionPOCState: ObservableObject {
 
     func openResidentProfile() {
         guard selectedCarePatientId != nil else { return }
-        residentStaffReturnPhase = .carePatientDetail
+        residentStaffReturnPhase = .carePatientList
         residentHandoffActive = true
     }
 
@@ -143,27 +111,47 @@ final class SessionPOCState: ObservableObject {
         enterResidentInstrumentSurface(patientId: pid)
     }
 
-    /// After Face ID — portrait welcome before the calm surface.
-    func beginResidentFaceIDWelcome(patientId: UUID) {
-        selectedCarePatientId = patientId
-        activeCarePatientId = nil
-        isResidentSession = false
-        isCareStaffSession = false
-        phase = .residentFaceIDWelcome
-    }
-
-    func completeResidentFaceIDWelcome() {
-        guard phase == .residentFaceIDWelcome, let pid = selectedCarePatientId else { return }
-        enterResidentInstrumentSurface(patientId: pid)
-    }
-
     func leaveResidentProfileToStaff() {
+        let metricsSnapshot = residentSurfaceMetrics
         clearResidentSessionSurfaceState()
+
+        if newResidentDiscoveryPatientId != nil {
+            residentSurfaceMetrics = metricsSnapshot
+            prepareNewResidentProfileForm()
+            phase = .careNewResidentProfile
+            return
+        }
+
+        if residentSurfaceFeedbackPending, shouldOfferSessionSentimentFeedback() {
+            residentSurfaceMetrics = metricsSnapshot
+            beginSessionSentimentFeedback()
+            return
+        }
+
+        resetResidentSurfaceMetrics()
         phase = residentStaffReturnPhase
+    }
+
+    func recordResidentGenrePlay(_ genre: ResidentMusicGenre) {
+        residentSurfaceMetrics.recordGenrePlay(genre)
+    }
+
+    func recordResidentTrackChange() {
+        residentSurfaceMetrics.recordTrackChange()
+    }
+
+    func recordResidentImmersiveEntry() {
+        residentSurfaceMetrics.recordImmersiveEntry()
+    }
+
+    private func resetResidentSurfaceMetrics() {
+        residentSurfaceMetrics = ResidentSurfaceSessionMetrics()
+        residentSurfaceFeedbackPending = false
     }
 
     /// After choosing a genre symbol and playlist, jump into the existing calm-room pipeline.
     func prepareResidentImmersiveFromPlaylist(genre: ResidentMusicGenre) {
+        recordResidentImmersiveEntry()
         residentSessionGenre = genre
         if residentTraffic == nil { residentTraffic = .mid }
         if residentFace == nil { residentFace = .neutral }
@@ -184,6 +172,8 @@ final class SessionPOCState: ObservableObject {
         residentLivingTickInSegment = 0
         capturedImage = nil
         replaceSelectedMoods([])
+        residentSurfaceMetrics = ResidentSurfaceSessionMetrics(startedAt: Date())
+        residentSurfaceFeedbackPending = true
         phase = .residentProfile
     }
 
@@ -262,47 +252,154 @@ final class SessionPOCState: ObservableObject {
     }
 
     func enterOneToOneCalmFlow() {
-        guard isSignedIn else {
-            openCorporateSignIn(pendingRosterAfterSignIn: true)
-            return
-        }
+        guard isSignedIn else { return }
         pendingCareRosterAfterSignIn = false
         phase = .carePatientList
     }
 
-    func openCorporateSignIn(pendingRosterAfterSignIn: Bool = false) {
-        pendingCareRosterAfterSignIn = pendingRosterAfterSignIn
-        phase = .corporateSignIn
+    func completeSupervisorSignIn() -> String? {
+        if let error = SupervisorAuth.validate(username: supervisorUsername, pin: supervisorPIN) {
+            supervisorSignInError = error
+            return error
+        }
+        supervisorSignInError = nil
+        isSignedIn = true
+        pendingCareRosterAfterSignIn = false
+        phase = .carePatientList
+        return nil
     }
 
-    /// Branch for staff after a resident profile was created / linked from face capture (POC).
-    func openFaceLinkedProfilePicker() {
+    func abandonSupervisorSignIn() {
+        supervisorSignInError = nil
+        if !isSignedIn {
+            supervisorUsername = ""
+            supervisorPIN = ""
+        }
+    }
+
+    /// Supervisor tapped home from roster.
+    func navigateStaffToHome() {
+        phase = .home
+        selectedCarePatientId = nil
+    }
+
+    func beginNewResidentDiscovery() {
         guard isSignedIn else {
             phase = .home
             return
         }
         selectedCarePatientId = nil
-        phase = .careFaceLinkedPick
+        newResidentAgeDraft = ""
+        newResidentDiscoveryPatientId = nil
+        phase = .careDiscoveryAgeInput
     }
 
-    func selectCarePatientFromFacePick(_ patientId: UUID) {
-        guard isSignedIn else {
-            phase = .home
-            return
+    func continueNewResidentDiscoveryFromAgeInput() -> String? {
+        let trimmed = newResidentAgeDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let age = Int(trimmed), (55 ... 105).contains(age) else {
+            return "Enter an age between 55 and 105."
         }
-        residentStaffReturnPhase = .careFaceLinkedPick
-        enterResidentInstrumentSurface(patientId: patientId)
+        let patientId = UUID()
+        let provisional = CarePatientProfile(
+            id: patientId,
+            displayName: "New resident",
+            careContextLabel: "Discovery in progress",
+            likes: [],
+            dislikes: [],
+            preferredLight: "Soft, indirect — avoid overhead glare.",
+            scentGuidance: "Unscented room unless familiar and agreed.",
+            touchComfortNotes: "Ask before touch; go slowly.",
+            comfortThemes: [],
+            prefersGentleSoundOnsets: true,
+            musicTempoBias: 0.35,
+            natureVsAbstract: 0.3,
+            voiceVsInstrumental: 0.4,
+            residentAgeYears: age,
+            favouriteMusicGenre: .classical,
+            stockPortraitAssetName: "StockPortraitSam",
+            isProvisional: true,
+            genrePlaylistGroups: []
+        )
+        carePatients.append(provisional)
+        newResidentDiscoveryPatientId = patientId
+        selectedCarePatientId = patientId
+        activeCarePatientId = patientId
+        discoverySnippetOrder = DiscoveryFlowPOC.orderedSnippetIndices(forResidentAge: age)
+        discoverySnippetIndex = 0
+        discoveryResults = []
+        discoveryPendingPick = nil
+        phase = .careDiscoveryCalibration
+        return nil
     }
 
-    func completeCorporateSignIn() {
-        isSignedIn = true
-        pendingCareRosterAfterSignIn = false
+    func abandonNewResidentAgeInput() {
+        newResidentAgeDraft = ""
         phase = .carePatientList
     }
 
-    func abandonCorporateSignIn() {
-        if !isSignedIn { pendingCareRosterAfterSignIn = false }
-        phase = .home
+    private func prepareNewResidentProfileForm() {
+        guard let pid = newResidentDiscoveryPatientId,
+              let patient = carePatient(id: pid) else { return }
+        newResidentProfileNameDraft = ""
+        newResidentProfileAgeDraft = String(patient.residentAgeYears)
+        newResidentProfilePhoto = carePatientPortraitImages[pid]
+    }
+
+    func saveNewResidentProfile() -> String? {
+        guard let pid = newResidentDiscoveryPatientId,
+              let idx = carePatients.firstIndex(where: { $0.id == pid }) else {
+            return "That profile is no longer available."
+        }
+        let name = newResidentProfileNameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return "Enter the resident’s name." }
+        let ageTrim = newResidentProfileAgeDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let age = Int(ageTrim), (55 ... 105).contains(age) else {
+            return "Enter an age between 55 and 105."
+        }
+        guard newResidentProfilePhoto != nil else {
+            return "Add a photo so future supervisors can recognise them."
+        }
+
+        var patients = carePatients
+        patients[idx].displayName = name
+        patients[idx].residentAgeYears = age
+        patients[idx].careContextLabel = "New on roster"
+        patients[idx].isProvisional = false
+        if patients[idx].genrePlaylistGroups.isEmpty {
+            patients[idx].genrePlaylistGroups = [
+                DiscoveryPlaylistTuning.stubGenreGroup(for: patients[idx].favouriteMusicGenre),
+            ]
+        }
+        carePatients = patients
+        if let photo = newResidentProfilePhoto {
+            carePatientPortraitImages[pid] = photo
+        }
+
+        if residentSurfaceFeedbackPending {
+            appendCareSessionRecord(patientId: pid, staffNote: nil, surfaceMetrics: residentSurfaceMetrics)
+        }
+
+        newResidentDiscoveryPatientId = nil
+        newResidentProfileNameDraft = ""
+        newResidentProfileAgeDraft = ""
+        newResidentProfilePhoto = nil
+        selectedCarePatientId = pid
+        resetResidentSurfaceMetrics()
+        phase = .carePatientList
+        return nil
+    }
+
+    func cancelNewResidentProfileSave() {
+        if let pid = newResidentDiscoveryPatientId {
+            carePatients.removeAll { $0.id == pid && $0.isProvisional }
+            carePatientPortraitImages.removeValue(forKey: pid)
+        }
+        newResidentDiscoveryPatientId = nil
+        newResidentProfileNameDraft = ""
+        newResidentProfileAgeDraft = ""
+        newResidentProfilePhoto = nil
+        selectedCarePatientId = nil
+        phase = .carePatientList
     }
 
     func goBackFromEntryMode() {
@@ -345,8 +442,14 @@ final class SessionPOCState: ObservableObject {
         staffNote: String?,
         settledness: Int? = nil,
         engagement: Int? = nil,
-        comfortTolerance: Int? = nil
+        comfortTolerance: Int? = nil,
+        moodRating: Int? = nil,
+        alertnessRating: Int? = nil,
+        emotionalStateRating: Int? = nil,
+        lucidityRating: Int? = nil,
+        surfaceMetrics: ResidentSurfaceSessionMetrics? = nil
     ) {
+        let metrics = surfaceMetrics ?? (residentSurfaceFeedbackPending ? residentSurfaceMetrics : nil)
         let rec = CareSessionRecord(
             id: UUID(),
             patientId: patientId,
@@ -356,9 +459,280 @@ final class SessionPOCState: ObservableObject {
             staffNote: staffNote,
             settledness: settledness,
             engagement: engagement,
-            comfortTolerance: comfortTolerance
+            comfortTolerance: comfortTolerance,
+            moodRating: moodRating,
+            alertnessRating: alertnessRating,
+            emotionalStateRating: emotionalStateRating,
+            lucidityRating: lucidityRating,
+            sessionDurationSeconds: metrics?.durationSeconds,
+            residentGenrePlayCount: metrics.map(\.totalGenrePlays).flatMap { $0 > 0 ? $0 : nil },
+            residentTrackChangeCount: metrics.map(\.trackChangeCount).flatMap { $0 > 0 ? $0 : nil },
+            residentImmersiveEntryCount: metrics.map(\.immersiveEntryCount).flatMap { $0 > 0 ? $0 : nil },
+            residentGenresPlayedSummary: metrics?.genresPlayedSummary()
         )
         careSessionRecords.insert(rec, at: 0)
+    }
+
+    func shouldOfferSessionSentimentFeedback() -> Bool {
+        guard newResidentDiscoveryPatientId == nil,
+              let pid = activeCarePatientId ?? selectedCarePatientId,
+              let patient = carePatient(id: pid),
+              !patient.isProvisional
+        else { return false }
+        return residentSurfaceFeedbackPending || isCareStaffSession
+    }
+
+    func beginSessionSentimentFeedback() {
+        sessionSentimentStep = 0
+        sessionSentimentDraft = SessionSentimentDraft()
+        phase = .careSessionSentimentFeedback
+    }
+
+    func sessionSentimentBinding(for step: CareSessionSentimentStep) -> Binding<Int?> {
+        switch step {
+        case .mood:
+            return Binding(
+                get: { self.sessionSentimentDraft.mood },
+                set: { self.sessionSentimentDraft.mood = $0 }
+            )
+        case .alertness:
+            return Binding(
+                get: { self.sessionSentimentDraft.alertness },
+                set: { self.sessionSentimentDraft.alertness = $0 }
+            )
+        case .emotionalState:
+            return Binding(
+                get: { self.sessionSentimentDraft.emotionalState },
+                set: { self.sessionSentimentDraft.emotionalState = $0 }
+            )
+        case .lucidity:
+            return Binding(
+                get: { self.sessionSentimentDraft.lucidity },
+                set: { self.sessionSentimentDraft.lucidity = $0 }
+            )
+        }
+    }
+
+    func advanceSessionSentimentStep() {
+        sessionSentimentStep = min(sessionSentimentStep + 1, CareSessionSentimentStep.allCases.count - 1)
+    }
+
+    func retreatSessionSentimentStep() {
+        sessionSentimentStep = max(sessionSentimentStep - 1, 0)
+    }
+
+    func saveSessionSentimentFeedback() {
+        guard let pid = activeCarePatientId ?? selectedCarePatientId,
+              let mood = sessionSentimentDraft.mood,
+              let alertness = sessionSentimentDraft.alertness,
+              let emotional = sessionSentimentDraft.emotionalState,
+              let lucidity = sessionSentimentDraft.lucidity
+        else { return }
+
+        let note = sessionSentimentDraft.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        appendCareSessionRecord(
+            patientId: pid,
+            staffNote: note.isEmpty ? nil : note,
+            moodRating: mood,
+            alertnessRating: alertness,
+            emotionalStateRating: emotional,
+            lucidityRating: lucidity
+        )
+        finishAfterSessionFeedback(patientId: pid)
+    }
+
+    func skipSessionSentimentFeedback() {
+        let pid = activeCarePatientId ?? selectedCarePatientId
+        if let pid {
+            appendCareSessionRecord(patientId: pid, staffNote: nil)
+        }
+        if let pid {
+            finishAfterSessionFeedback(patientId: pid)
+        } else {
+            phase = .carePatientList
+        }
+    }
+
+    private func finishAfterSessionFeedback(patientId: UUID) {
+        sessionSentimentStep = 0
+        sessionSentimentDraft = SessionSentimentDraft()
+        isCareStaffSession = false
+        activeCarePatientId = nil
+        selectedCarePatientId = patientId
+        clearResidentSessionSurfaceState()
+        resetResidentSurfaceMetrics()
+        phase = .carePatientList
+    }
+
+    func sentimentSummary(for patientId: UUID) -> CareSessionSentimentSummary {
+        CareSessionSentimentAnalytics.summary(for: recordsForPatient(patientId))
+    }
+
+    func careHomeSentimentOverview() -> CareSessionSentimentSummary {
+        let roster = carePatients.filter { !$0.isProvisional }
+        return CareSessionSentimentAnalytics.homeOverview(for: roster, records: careSessionRecords)
+    }
+
+    // MARK: - Group session
+
+    func beginGroupSession() {
+        guard isSignedIn else {
+            phase = .home
+            return
+        }
+        groupSessionTracks = GroupSessionPlaylistCompiler.compile(
+            patients: carePatients,
+            sessionRecords: careSessionRecords
+        )
+        groupSessionTrackIndex = 0
+        groupSessionStartedAt = Date()
+        groupSessionTracksPlayed = 0
+        groupSessionPlayedTrackIDs = []
+        groupSessionFeedbackStep = 0
+        groupSessionFeedbackDraft = GroupSessionFeedbackDraft()
+        isGroupSessionActive = true
+        phase = .careGroupSession
+    }
+
+    func endGroupSession() {
+        guard isGroupSessionActive else { return }
+        isGroupSessionActive = false
+        groupSessionFeedbackStep = 0
+        groupSessionFeedbackDraft = GroupSessionFeedbackDraft()
+        phase = .careGroupSessionFeedback
+    }
+
+    func groupSessionNextTrack() {
+        guard !groupSessionTracks.isEmpty else { return }
+        groupSessionTrackIndex = (groupSessionTrackIndex + 1) % groupSessionTracks.count
+    }
+
+    func groupSessionPreviousTrack() {
+        guard !groupSessionTracks.isEmpty else { return }
+        groupSessionTrackIndex = (groupSessionTrackIndex - 1 + groupSessionTracks.count) % groupSessionTracks.count
+    }
+
+    func groupSessionSelectTrack(at index: Int) {
+        guard groupSessionTracks.indices.contains(index) else { return }
+        groupSessionTrackIndex = index
+    }
+
+    func markGroupTrackPlayed() {
+        guard groupSessionTracks.indices.contains(groupSessionTrackIndex) else { return }
+        let id = groupSessionTracks[groupSessionTrackIndex].id
+        guard !groupSessionPlayedTrackIDs.contains(id) else { return }
+        groupSessionPlayedTrackIDs.insert(id)
+        groupSessionTracksPlayed += 1
+    }
+
+    func groupSessionDurationSummary() -> String? {
+        var parts: [String] = []
+        if let startedAt = groupSessionStartedAt {
+            let seconds = max(1, Int(Date().timeIntervalSince(startedAt).rounded()))
+            let mins = seconds / 60
+            let secs = seconds % 60
+            if mins > 0 {
+                parts.append(String(format: "%dm %ds", mins, secs))
+            } else {
+                parts.append("\(secs)s")
+            }
+        }
+        if groupSessionTracksPlayed > 0 {
+            parts.append("\(groupSessionTracksPlayed) track\(groupSessionTracksPlayed == 1 ? "" : "s") played")
+        }
+        if !groupSessionTracks.isEmpty {
+            parts.append("\(groupSessionTracks.count) in compiled playlist")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    func groupSessionFeedbackBinding(for step: GroupSessionFeedbackStep) -> Binding<Int?> {
+        switch step {
+        case .morale:
+            return Binding(get: { self.groupSessionFeedbackDraft.morale }, set: { self.groupSessionFeedbackDraft.morale = $0 })
+        case .alertness:
+            return Binding(get: { self.groupSessionFeedbackDraft.alertness }, set: { self.groupSessionFeedbackDraft.alertness = $0 })
+        case .lucidity:
+            return Binding(get: { self.groupSessionFeedbackDraft.lucidity }, set: { self.groupSessionFeedbackDraft.lucidity = $0 })
+        case .engagement:
+            return Binding(get: { self.groupSessionFeedbackDraft.engagement }, set: { self.groupSessionFeedbackDraft.engagement = $0 })
+        }
+    }
+
+    func advanceGroupSessionFeedbackStep() {
+        groupSessionFeedbackStep = min(groupSessionFeedbackStep + 1, GroupSessionFeedbackStep.allCases.count - 1)
+    }
+
+    func retreatGroupSessionFeedbackStep() {
+        groupSessionFeedbackStep = max(groupSessionFeedbackStep - 1, 0)
+    }
+
+    func saveGroupSessionFeedback() {
+        guard let morale = groupSessionFeedbackDraft.morale,
+              let alertness = groupSessionFeedbackDraft.alertness,
+              let lucidity = groupSessionFeedbackDraft.lucidity,
+              let engagement = groupSessionFeedbackDraft.engagement
+        else { return }
+
+        let note = groupSessionFeedbackDraft.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let duration = groupSessionStartedAt.map { max(1, Int(Date().timeIntervalSince($0).rounded())) } ?? 0
+        let snapshot = groupSessionTracks.map(\.title)
+
+        let rec = GroupSessionRecord(
+            id: UUID(),
+            date: Date(),
+            durationSeconds: duration,
+            tracksPlayed: groupSessionTracksPlayed,
+            moraleRating: morale,
+            alertnessRating: alertness,
+            lucidityRating: lucidity,
+            engagementRating: engagement,
+            staffNote: note.isEmpty ? nil : note,
+            playlistSnapshot: snapshot
+        )
+        groupSessionRecords.insert(rec, at: 0)
+        resetGroupSessionState()
+        phase = .carePatientList
+    }
+
+    func skipGroupSessionFeedback() {
+        let duration = groupSessionStartedAt.map { max(1, Int(Date().timeIntervalSince($0).rounded())) } ?? 0
+        let rec = GroupSessionRecord(
+            id: UUID(),
+            date: Date(),
+            durationSeconds: duration,
+            tracksPlayed: groupSessionTracksPlayed,
+            moraleRating: nil,
+            alertnessRating: nil,
+            lucidityRating: nil,
+            engagementRating: nil,
+            staffNote: nil,
+            playlistSnapshot: groupSessionTracks.map(\.title)
+        )
+        groupSessionRecords.insert(rec, at: 0)
+        resetGroupSessionState()
+        phase = .carePatientList
+    }
+
+    private func resetGroupSessionState() {
+        groupSessionTracks = []
+        groupSessionTrackIndex = 0
+        groupSessionStartedAt = nil
+        groupSessionTracksPlayed = 0
+        groupSessionPlayedTrackIDs = []
+        groupSessionFeedbackStep = 0
+        groupSessionFeedbackDraft = GroupSessionFeedbackDraft()
+        isGroupSessionActive = false
+    }
+
+    func latestGroupSessionSummaryLine() -> String? {
+        guard let last = groupSessionRecords.first,
+              let morale = last.moraleRating,
+              let alertness = last.alertnessRating,
+              let lucidity = last.lucidityRating,
+              let engagement = last.engagementRating
+        else { return nil }
+        return String(format: "Last group: morale %d · alert %d · lucidity %d · engaged %d", morale, alertness, lucidity, engagement)
     }
 
     func saveCareFeedback(
@@ -383,8 +757,10 @@ final class SessionPOCState: ObservableObject {
             staffNote: note.isEmpty ? nil : note,
             settledness: settledness,
             engagement: engagement,
-            comfortTolerance: comfortTolerance
+            comfortTolerance: comfortTolerance,
+            surfaceMetrics: residentSurfaceFeedbackPending ? residentSurfaceMetrics : nil
         )
+        resetResidentSurfaceMetrics()
         isCareStaffSession = false
         activeCarePatientId = nil
         selectedCarePatientId = pid
@@ -493,10 +869,12 @@ final class SessionPOCState: ObservableObject {
 
     func resetAllForFreshAppLaunch() {
         phase = .home
-        email = ""
-        password = ""
+        supervisorUsername = ""
+        supervisorPIN = ""
+        supervisorSignInError = nil
         isSignedIn = false
         pendingCareRosterAfterSignIn = false
+        carePatientPortraitImages = [:]
         capturedImage = nil
         selectedMoods = []
         mockHeartRateStart = 78
@@ -515,15 +893,10 @@ final class SessionPOCState: ObservableObject {
         resetCareSessionFlags()
         clearResidentSessionSurfaceState()
         resetDiscoveryState()
+        resetNewResidentFlowState()
+        resetGroupSessionState()
         resetCarePrepForNewSession()
         resetIoTDefaults()
-        refreshFaceIDLink()
-        if PatientBiometricAuth.usesPOCMockFlow,
-           faceIDLinkedPatientId == nil,
-           let first = carePatients.first {
-            linkPatientForFaceIDSignIn(first.id)
-        }
-        shouldOfferResidentSignInOnLaunch = faceIDLinkedPatientId != nil
     }
 
     private func resetIoTDefaults() {
@@ -541,6 +914,11 @@ final class SessionPOCState: ObservableObject {
         }
         selectedCarePatientId = patientId
         activeCarePatientId = patientId
+        if let patient = carePatient(id: patientId) {
+            discoverySnippetOrder = DiscoveryFlowPOC.orderedSnippetIndices(forResidentAge: patient.residentAgeYears)
+        } else {
+            discoverySnippetOrder = Array(0..<DiscoveryFlowPOC.snippetCount)
+        }
         discoverySnippetIndex = 0
         discoveryResults = []
         discoveryPendingPick = nil
@@ -571,13 +949,27 @@ final class SessionPOCState: ObservableObject {
         discoverySnippetIndex = 0
         discoveryResults = []
         discoveryPendingPick = nil
-        phase = .carePatientDetail
+        if newResidentDiscoveryPatientId != nil {
+            phase = .carePatientList
+        } else {
+            phase = .carePatientDetail
+        }
     }
 
     private func resetDiscoveryState() {
         discoverySnippetIndex = 0
         discoveryResults = []
         discoveryPendingPick = nil
+        discoverySnippetOrder = []
+    }
+
+    private func resetNewResidentFlowState() {
+        newResidentDiscoveryPatientId = nil
+        newResidentAgeDraft = ""
+        newResidentProfileNameDraft = ""
+        newResidentProfileAgeDraft = ""
+        newResidentProfilePhoto = nil
+        resetResidentSurfaceMetrics()
     }
 }
 
@@ -599,10 +991,16 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case careDiscoveryCalibration = 13
     /// Quiet breath before insight or resident return.
     case sessionSettling = 14
-    /// Portrait + welcome after Face ID sign-in.
-    case residentFaceIDWelcome = 15
-    /// Staff corporate credentials — native flow page inside the orb shell.
-    case corporateSignIn = 16
+    /// Resident age before a new-resident discovery pass.
+    case careDiscoveryAgeInput = 17
+    /// Supervisor captures name, age, and photo after a new-resident session.
+    case careNewResidentProfile = 18
+    /// Sequential 1–10 sentiment ratings after sessions with existing residents.
+    case careSessionSentimentFeedback = 19
+    /// Supervisor-led group listening with compiled cross-resident playlist.
+    case careGroupSession = 20
+    /// Group morale / alertness / lucidity / engagement after group session ends.
+    case careGroupSessionFeedback = 21
 
     var id: Int { rawValue }
 }

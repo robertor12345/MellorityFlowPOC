@@ -20,10 +20,10 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Face ID lets a linked resident open their calm surface without typing a password.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Mellority captures your environment to tailor visuals and sound to the moment.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Reserved for a future release; supervisor PIN is used for staff access in this build.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Optional heart rate and mindfulness data help adapt your session when you connect Health.</string>
 	<key>NSHealthUpdateUsageDescription</key>

@@ -326,6 +326,7 @@ struct OrbIconNavButton: View {
 
 struct OrbPortraitNavButton: View {
     let portraitAssetName: String
+    var customPortraitImage: UIImage?
     let title: String
     let subtitle: String
     var portraitSize: CGFloat?
@@ -344,12 +345,20 @@ struct OrbPortraitNavButton: View {
             HStack(spacing: 14) {
                 ZStack {
                     MellorityOrbBackdrop(diameter: frameSize, pulse: 0.5, glowPulse: 0.62)
-                    Image(portraitAssetName)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: resolvedPortraitSize, height: resolvedPortraitSize)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.white.opacity(0.55), lineWidth: 1.5))
+                    Group {
+                        if let customPortraitImage {
+                            Image(uiImage: customPortraitImage)
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            Image(portraitAssetName)
+                                .resizable()
+                                .scaledToFill()
+                        }
+                    }
+                    .frame(width: resolvedPortraitSize, height: resolvedPortraitSize)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.55), lineWidth: 1.5))
                 }
                 .frame(width: frameSize, height: frameSize)
 

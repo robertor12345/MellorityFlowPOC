@@ -27,7 +27,7 @@ struct ProcessingFastView: View {
                             if state.isCareStaffSession, let p = state.carePatient(id: state.activeCarePatientId) {
                                 Text("With \(p.displayName)")
                                     .font(.caption.weight(.medium))
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .orbOverlayText(muted: true)
                             }
 
                             BreathingCalmProgressView(diameter: 72)
@@ -35,7 +35,7 @@ struct ProcessingFastView: View {
                             Text(messages[tick % messages.count])
                                 .font(BrandTheme.title(.title3))
                                 .multilineTextAlignment(.center)
-                                .foregroundStyle(BrandTheme.brown.opacity(0.78))
+                                .orbOverlayText()
                                 .padding(.horizontal)
                                 .animation(.easeInOut(duration: 0.45), value: tick)
                                 .id(tick)

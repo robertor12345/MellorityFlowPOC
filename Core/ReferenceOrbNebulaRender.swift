@@ -17,6 +17,7 @@ struct ReferenceOrbNebulaInterior: View {
     var body: some View {
         ZStack {
             referencePlanetBase
+            referenceCoreRadiance
 
             if useLiteInterior {
                 referenceLimbDarkening
@@ -45,16 +46,17 @@ struct ReferenceOrbNebulaInterior: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                .white.opacity(0.20 * glowPulse),
-                                BrandTheme.nebulaBeltHighlight.opacity(0.12 * glowPulse),
+                                .white.opacity(0.32 * glowPulse),
+                                BrandTheme.nebulaBeltHighlight.opacity(0.20 * glowPulse),
                                 .clear,
                             ],
                             center: UnitPoint(x: 0.36, y: 0.38),
                             startRadius: 0,
-                            endRadius: diameter * 0.26
+                            endRadius: diameter * 0.28
                         )
                     )
-                    .blur(radius: diameter * 0.035)
+                    .blur(radius: diameter * 0.038)
+                    .blendMode(.plusLighter)
 
                 ReferenceOrbRimSparkles(
                     diameter: diameter,
@@ -68,16 +70,36 @@ struct ReferenceOrbNebulaInterior: View {
         .drawingGroup(opaque: false, colorMode: .nonLinear)
     }
 
+    private var referenceCoreRadiance: some View {
+        Circle()
+            .fill(
+                RadialGradient(
+                    colors: [
+                        .white.opacity(0.18 * glowPulse),
+                        BrandTheme.nebulaCyan.opacity(0.24 * glowPulse),
+                        BrandTheme.nebulaLavender.opacity(0.10),
+                        .clear,
+                    ],
+                    center: UnitPoint(x: 0.42, y: 0.40),
+                    startRadius: 0,
+                    endRadius: diameter * 0.36
+                )
+            )
+            .blur(radius: diameter * 0.042)
+            .blendMode(.plusLighter)
+            .allowsHitTesting(false)
+    }
+
     private var referencePlanetBase: some View {
         ZStack {
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [
-                            BrandTheme.nebulaDeep.opacity(0.94),
-                            BrandTheme.nebulaBeltShadow.opacity(0.82),
-                            BrandTheme.nebulaPurple.opacity(0.58),
-                            BrandTheme.nebulaDeep.opacity(0.90),
+                            BrandTheme.nebulaDeep.opacity(0.82),
+                            BrandTheme.nebulaBeltShadow.opacity(0.72),
+                            BrandTheme.nebulaPurple.opacity(0.52),
+                            BrandTheme.nebulaDeep.opacity(0.78),
                         ],
                         center: UnitPoint(x: 0.48, y: 0.50),
                         startRadius: 0,
@@ -89,30 +111,33 @@ struct ReferenceOrbNebulaInterior: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            BrandTheme.nebulaCyan.opacity(0.58 * glowPulse),
-                            BrandTheme.nebulaTeal.opacity(0.32),
+                            BrandTheme.nebulaCyan.opacity(0.72 * glowPulse),
+                            BrandTheme.nebulaTeal.opacity(0.42),
+                            BrandTheme.nebulaBeltHighlight.opacity(0.12),
                             .clear,
                         ],
                         center: UnitPoint(x: 0.30, y: 0.40),
                         startRadius: 0,
-                        endRadius: diameter * 0.48
+                        endRadius: diameter * 0.50
                     )
                 )
+                .blendMode(.plusLighter)
 
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [
-                            BrandTheme.nebulaPeach.opacity(0.52 * glowPulse),
-                            BrandTheme.nebulaSalmon.opacity(0.34),
-                            BrandTheme.nebulaMagenta.opacity(0.12),
+                            BrandTheme.nebulaPeach.opacity(0.66 * glowPulse),
+                            BrandTheme.nebulaSalmon.opacity(0.44),
+                            BrandTheme.nebulaMagenta.opacity(0.16),
                             .clear,
                         ],
                         center: UnitPoint(x: 0.70, y: 0.42),
                         startRadius: 0,
-                        endRadius: diameter * 0.46
+                        endRadius: diameter * 0.48
                     )
                 )
+                .blendMode(.plusLighter)
         }
     }
 
@@ -123,12 +148,12 @@ struct ReferenceOrbNebulaInterior: View {
                     colors: [
                         .clear,
                         .clear,
-                        BrandTheme.nebulaDeep.opacity(0.16),
-                        BrandTheme.nebulaDeep.opacity(0.38),
-                        BrandTheme.nebulaDeep.opacity(0.58),
+                        BrandTheme.nebulaDeep.opacity(0.10),
+                        BrandTheme.nebulaDeep.opacity(0.26),
+                        BrandTheme.nebulaDeep.opacity(0.42),
                     ],
                     center: .center,
-                    startRadius: diameter * 0.20,
+                    startRadius: diameter * 0.22,
                     endRadius: diameter * 0.52
                 )
             )
@@ -137,16 +162,17 @@ struct ReferenceOrbNebulaInterior: View {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                BrandTheme.nebulaCyan.opacity(0.20 * glowPulse),
-                                BrandTheme.nebulaLavender.opacity(0.10),
-                                BrandTheme.nebulaPeach.opacity(0.14 * glowPulse),
+                                BrandTheme.nebulaCyan.opacity(0.38 * glowPulse),
+                                BrandTheme.nebulaLavender.opacity(0.22),
+                                BrandTheme.nebulaPeach.opacity(0.30 * glowPulse),
+                                .white.opacity(0.18 * glowPulse),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: max(1, diameter * 0.003)
+                        lineWidth: max(1.2, diameter * 0.004)
                     )
-                    .blur(radius: 0.5)
+                    .blur(radius: max(0.8, diameter * 0.002))
             }
     }
 }
@@ -242,11 +268,16 @@ private struct ReferenceOrbInteriorTopography: View {
                     width: radius * 2,
                     height: radius * 2
                 )
-                let strokeOpacity = (0.11 - t * 0.04) * shimmer
+                let strokeOpacity = (0.15 - t * 0.05) * shimmer
                 context.stroke(
                     Path(ellipseIn: ringRect),
                     with: .color(BrandTheme.nebulaCyan.opacity(strokeOpacity)),
                     lineWidth: max(0.35, diameter * 0.0012)
+                )
+                context.stroke(
+                    Path(ellipseIn: ringRect),
+                    with: .color(.white.opacity(strokeOpacity * 0.35)),
+                    lineWidth: max(0.55, diameter * 0.0018)
                 )
 
                 if ring.isMultiple(of: 4) {
@@ -320,8 +351,8 @@ private struct ReferenceOrbSoftGlowPatches: View {
         case 0:
             return RadialGradient(
                 colors: [
-                    BrandTheme.nebulaCyan.opacity(0.38 * glowPulse),
-                    BrandTheme.nebulaTeal.opacity(0.14),
+                    BrandTheme.nebulaCyan.opacity(0.48 * glowPulse),
+                    BrandTheme.nebulaTeal.opacity(0.20),
                     .clear,
                 ],
                 center: .center,
@@ -331,8 +362,8 @@ private struct ReferenceOrbSoftGlowPatches: View {
         case 1:
             return RadialGradient(
                 colors: [
-                    BrandTheme.nebulaPeach.opacity(0.36 * glowPulse),
-                    BrandTheme.nebulaSalmon.opacity(0.12),
+                    BrandTheme.nebulaPeach.opacity(0.46 * glowPulse),
+                    BrandTheme.nebulaSalmon.opacity(0.18),
                     .clear,
                 ],
                 center: .center,
@@ -456,7 +487,7 @@ private enum ReferenceOrbNoise {
 private enum ReferenceOrbPalette {
     static func nebulaSample(nx: Double, ny: Double, density: Double, glowPulse: Double) -> (Color, Double) {
         let lr = smoothstep(0.22, 0.78, (nx + 1) * 0.5 + (density - 0.5) * 0.38)
-        let lift = density * (0.72 + 0.28 * glowPulse)
+        let lift = density * (0.82 + 0.32 * glowPulse)
 
         let cyanMix = Color(red: 0.30 + lift * 0.12, green: 0.78 + lift * 0.10, blue: 0.92)
         let tealMix = Color(red: 0.24, green: 0.68, blue: 0.82)
@@ -471,7 +502,7 @@ private enum ReferenceOrbPalette {
         let color = mix(mix(leftTone, bridge, t: lr * 0.42), rightTone, t: lr)
 
         let rim = 1 - pow(nx * nx + ny * ny, 0.94)
-        let alpha = pow(max(0, density - 0.06), 1.05) * rim * (0.42 + 0.58 * glowPulse)
+        let alpha = pow(max(0, density - 0.05), 0.98) * rim * (0.50 + 0.62 * glowPulse)
         return (color, alpha)
     }
 

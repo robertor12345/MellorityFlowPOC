@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Body copy — soft fade + slight rise.
+/// Body copy — soft fade + slight rise (on the orb).
 struct FadeInLine: View {
     let text: String
     var font: Font = .body
     var magnification: CGFloat = 1
-    var color: Color = BrandTheme.logoLavenderBlue
+    var muted: Bool = false
     var delay: Double = 0
     @State private var visible = false
 
@@ -16,7 +16,7 @@ struct FadeInLine: View {
     var body: some View {
         Text(text)
             .font(resolvedFont)
-            .foregroundStyle(color)
+            .orbOverlayText(muted: muted)
             .multilineTextAlignment(.center)
             .opacity(visible ? 1 : 0)
             .offset(y: visible ? 0 : 10)
@@ -29,13 +29,12 @@ struct FadeInLine: View {
     }
 }
 
-/// Serif title fade.
+/// Title fade on the orb.
 struct FadeInTitle: View {
     let text: String
     var size: Font.TextStyle = .title
     var magnification: CGFloat = 1
     var delay: Double = 0
-    var useBrandGradient: Bool = false
     @State private var visible = false
 
     private var resolvedFont: Font {
@@ -48,7 +47,7 @@ struct FadeInTitle: View {
         Text(text)
             .font(resolvedFont)
             .tracking(magnification > 1 ? 3 : 2)
-            .foregroundStyle(useBrandGradient ? AnyShapeStyle(Color.white) : AnyShapeStyle(BrandTheme.brown))
+            .orbOverlayText()
             .multilineTextAlignment(.center)
             .opacity(visible ? 1 : 0)
             .offset(y: visible ? 0 : 12)

@@ -118,11 +118,16 @@ struct NoteStalgiaOrbRippleRings: View {
                     width: radius * 2,
                     height: radius * 2
                 )
-                let strokeOpacity = (0.34 - Double(ring) * 0.08) * shimmer
+                let strokeOpacity = (0.42 - Double(ring) * 0.09) * shimmer
                 context.stroke(
                     Path(ellipseIn: ringRect),
                     with: .color(.white.opacity(strokeOpacity)),
                     lineWidth: max(0.6, diameter * 0.0018)
+                )
+                context.stroke(
+                    Path(ellipseIn: ringRect),
+                    with: .color(BrandTheme.nebulaCyan.opacity(strokeOpacity * 0.55)),
+                    lineWidth: max(0.45, diameter * 0.0014)
                 )
 
                 let topoCount = 3 + ring
@@ -168,8 +173,9 @@ struct NoteStalgiaOrbExteriorWisps: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            BrandTheme.nebulaCyan.opacity(0.72 * glowPulse),
-                            BrandTheme.nebulaTeal.opacity(0.28),
+                            BrandTheme.nebulaCyan.opacity(0.82 * glowPulse),
+                            BrandTheme.nebulaTeal.opacity(0.36),
+                            BrandTheme.nebulaBeltHighlight.opacity(0.14),
                             .clear,
                         ],
                         startPoint: .trailing,
@@ -184,9 +190,9 @@ struct NoteStalgiaOrbExteriorWisps: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            BrandTheme.nebulaPeach.opacity(0.68 * glowPulse),
-                            BrandTheme.nebulaSalmon.opacity(0.42),
-                            BrandTheme.nebulaLavender.opacity(0.18),
+                            BrandTheme.nebulaPeach.opacity(0.78 * glowPulse),
+                            BrandTheme.nebulaSalmon.opacity(0.48),
+                            BrandTheme.nebulaLavender.opacity(0.22),
                             .clear,
                         ],
                         startPoint: .leading,
@@ -285,6 +291,8 @@ struct NoteStalgiaNebulaOrbShell: View {
         let wispDrift = OrbReferenceMotion.wispDrift(at: elapsed)
 
         return ZStack {
+            orbRadianceHalo(glowStrength: glowStrength)
+
             proceduralOrbInterior(
                 swirl: swirl,
                 breathe: breathe,
@@ -295,11 +303,56 @@ struct NoteStalgiaNebulaOrbShell: View {
             )
         }
         .frame(width: diameter * OrbHeartbeat.visualHeadroom, height: diameter * OrbHeartbeat.visualHeadroom)
+        .shadow(color: BrandTheme.nebulaCyan.opacity(0.34 * glowPulse * Double(glowStrength)), radius: bounds * 0.24, y: 0)
+        .shadow(color: BrandTheme.nebulaPeach.opacity(0.22 * glowPulse * Double(glowStrength)), radius: bounds * 0.17, y: 0)
         .shadow(
-            color: BrandTheme.nebulaMagenta.opacity(0.22 * glowPulse * Double(glowStrength)),
+            color: BrandTheme.nebulaMagenta.opacity(0.20 * glowPulse * Double(glowStrength)),
             radius: bounds * 0.11,
-            y: bounds * 0.018
+            y: bounds * 0.014
         )
+    }
+
+    /// Soft outer corona + inner bloom — reads as radiant light without extra canvas work.
+    private func orbRadianceHalo(glowStrength: CGFloat) -> some View {
+        let bloom = glowPulse * Double(glowStrength)
+        return ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            BrandTheme.nebulaCyan.opacity(bloom * 0.32),
+                            BrandTheme.nebulaLavender.opacity(bloom * 0.18),
+                            BrandTheme.nebulaPeach.opacity(bloom * 0.10),
+                            .clear,
+                        ],
+                        center: .center,
+                        startRadius: diameter * 0.34,
+                        endRadius: diameter * 0.82
+                    )
+                )
+                .frame(width: diameter * 1.42, height: diameter * 1.42)
+                .blur(radius: diameter * 0.09)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            .white.opacity(bloom * 0.22),
+                            BrandTheme.nebulaBeltHighlight.opacity(bloom * 0.38),
+                            BrandTheme.nebulaCyan.opacity(bloom * 0.16),
+                            .clear,
+                        ],
+                        center: UnitPoint(x: 0.40, y: 0.36),
+                        startRadius: 0,
+                        endRadius: diameter * 0.44
+                    )
+                )
+                .frame(width: diameter * 1.08, height: diameter * 1.08)
+                .blur(radius: diameter * 0.048)
+                .blendMode(.plusLighter)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder
@@ -351,22 +404,40 @@ struct NoteStalgiaNebulaOrbShell: View {
     }
 
     private func nebulaGlowLayer(glowStrength: CGFloat) -> some View {
-        Circle()
-            .fill(
-                RadialGradient(
-                    colors: [
-                        BrandTheme.nebulaCyan.opacity(glowPulse * 0.52 * Double(glowStrength)),
-                        BrandTheme.nebulaLavender.opacity(glowPulse * 0.28 * Double(glowStrength)),
-                        BrandTheme.nebulaPeach.opacity(glowPulse * 0.18 * Double(glowStrength)),
-                        .clear,
-                    ],
-                    center: .center,
-                    startRadius: diameter * 0.06,
-                    endRadius: diameter * 0.58
+        let bloom = glowPulse * Double(glowStrength)
+        return ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            BrandTheme.nebulaCyan.opacity(bloom * 0.62),
+                            BrandTheme.nebulaLavender.opacity(bloom * 0.38),
+                            BrandTheme.nebulaPeach.opacity(bloom * 0.24),
+                            .clear,
+                        ],
+                        center: .center,
+                        startRadius: diameter * 0.04,
+                        endRadius: diameter * 0.62
+                    )
                 )
-            )
-            .frame(width: diameter * 1.02, height: diameter * 1.02)
-            .blur(radius: diameter * 0.05)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            .white.opacity(bloom * 0.26),
+                            BrandTheme.nebulaBeltHighlight.opacity(bloom * 0.20),
+                            .clear,
+                        ],
+                        center: UnitPoint(x: 0.38, y: 0.34),
+                        startRadius: 0,
+                        endRadius: diameter * 0.28
+                    )
+                )
+                .blendMode(.plusLighter)
+        }
+        .frame(width: diameter * 1.04, height: diameter * 1.04)
+        .blur(radius: diameter * 0.058)
     }
 }
 
@@ -389,7 +460,7 @@ struct NoteStalgiaWordmark: View {
             .font(.system(size: trademarkSize, weight: .medium, design: .default))
             .baselineOffset(trademarkBaselineOffset))
             .foregroundStyle(.white)
+            .orbOverlayTextStyle()
             .accessibilityLabel("NoteStalgia")
     }
 }
-

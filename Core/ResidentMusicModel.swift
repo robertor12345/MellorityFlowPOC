@@ -65,6 +65,19 @@ enum ResidentMusicGenre: String, CaseIterable, Identifiable, Codable, Equatable 
         case .soul: return Color(red: 0.58, green: 0.74, blue: 0.82).opacity(0.78)
         }
     }
+
+    /// Saturated instrument icon tint for resident glyph buttons (readable on white puck).
+    var glyphIconColor: Color {
+        switch self {
+        case .jazz: return Color(red: 0.62, green: 0.42, blue: 0.14)
+        case .classical: return Color(red: 0.16, green: 0.44, blue: 0.68)
+        case .pop: return Color(red: 0.22, green: 0.38, blue: 0.72)
+        case .rock: return Color(red: 0.20, green: 0.38, blue: 0.34)
+        case .gospel: return Color(red: 0.72, green: 0.38, blue: 0.22)
+        case .country: return Color(red: 0.58, green: 0.40, blue: 0.16)
+        case .soul: return Color(red: 0.24, green: 0.36, blue: 0.58)
+        }
+    }
 }
 
 enum ResidentTrafficMood: Int, CaseIterable, Identifiable {

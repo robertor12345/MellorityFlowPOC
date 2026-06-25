@@ -24,7 +24,7 @@ struct GoldAmbientSparklesView: View {
 
     private let particles: [Particle]
 
-    init(particleCount: Int = 112, intensity: CGFloat = 1) {
+    init(particleCount: Int = BrandTheme.ambientSparkleParticleCount, intensity: CGFloat = BrandTheme.ambientSparkleIntensity) {
         self.intensity = intensity
         var gen = SplitMix64(seed: 0xF10C_B0C5)
         particles = (0..<particleCount).map { i in

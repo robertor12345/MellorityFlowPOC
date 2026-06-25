@@ -287,6 +287,13 @@ private enum GlyphFloatLayout {
     }
 }
 
+/// Rest drift, hero bloom, or periphery positions when another genre’s playlist is audible.
+private enum ResidentGlyphEmphasis {
+    case idle
+    case hero
+    case sideStrip
+}
+
 struct ResidentProfileView: View {
     @ObservedObject var state: SessionPOCState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -328,18 +335,6 @@ struct ResidentProfileView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.opacity.animation(.easeInOut(duration: 0.45)))
-            }
-
-            if selectedPlayingGenre != nil {
-                GoldAmbientSparklesView(intensity: 0.10)
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea()
-                    .accessibilityHidden(true)
-            } else {
-                GoldAmbientSparklesView(intensity: 0.22)
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea()
-                    .accessibilityHidden(true)
             }
 
             if activePlaylist != nil {
@@ -414,7 +409,7 @@ struct ResidentProfileView: View {
                         )
                     }
                     .buttonStyle(ChimingPlainButtonStyle())
-                    .accessibilityLabel("Return device to staff")
+                    .accessibilityLabel("Return to roster and record session")
                 }
 
                 Spacer()
@@ -462,10 +457,12 @@ struct ResidentProfileView: View {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         activeTrackIndex = (activeTrackIndex + 1) % count
                     }
+                    state.recordResidentTrackChange()
                 } else if value.translation.width >= 50 {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         activeTrackIndex = (activeTrackIndex - 1 + count) % count
                     }
+                    state.recordResidentTrackChange()
                 }
             }
     }
@@ -483,14 +480,7 @@ struct ResidentProfileView: View {
         activeTrackIndex = 0
     }
 
-    /// Rest drift, hero bloom, or **periphery** positions when another genre’s playlist is audible.
-    private enum GlyphEmphasis {
-        case idle
-        case hero
-        case sideStrip
-    }
-
-    private func glyphRole(for genre: ResidentMusicGenre) -> GlyphEmphasis {
+    private func glyphRole(for genre: ResidentMusicGenre) -> ResidentGlyphEmphasis {
         guard let sel = selectedPlayingGenre else { return .idle }
         return genre == sel ? .hero : .sideStrip
     }
@@ -505,11 +495,11 @@ struct ResidentProfileView: View {
         peripheryPlayingCenters: [CGPoint]
     ) -> (CGPoint, CGFloat, CGFloat) {
         let idleDisk: CGFloat = 92 * hullScale
-        let idleIcon: CGFloat = 38 * hullScale
+        let idleIcon: CGFloat = 42 * hullScale
         let heroDisk: CGFloat = 154 * hullScale
-        let heroIcon: CGFloat = 62 * hullScale
-        let sideDisk: CGFloat = 64 * hullScale
-        let sideIcon: CGFloat = 26 * hullScale
+        let heroIcon: CGFloat = 66 * hullScale
+        let sideDisk: CGFloat = 68 * hullScale
+        let sideIcon: CGFloat = 30 * hullScale
 
         switch glyphRole(for: genre) {
         case .idle:
@@ -551,6 +541,7 @@ struct ResidentProfileView: View {
             activeTrackIndex = 0
         }
         CalmExperienceFeedback.playlistStart()
+        state.recordResidentGenrePlay(genre)
         residentAudio.stop()
         residentAudio.startFresh(photoAnchored: false)
     }
@@ -564,7 +555,7 @@ struct ResidentProfileView: View {
         canvasSize: CGSize,
         diskDiameter: CGFloat,
         iconSize: CGFloat,
-        emphasis: GlyphEmphasis,
+        emphasis: ResidentGlyphEmphasis,
         action: @escaping () -> Void
     ) -> some View {
         let rawΔ = GlyphFloatLayout.animatedDelta(
@@ -600,12 +591,12 @@ struct ResidentProfileView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                genre.accent.opacity(emphasis == .hero ? 0.78 : 0.62),
-                                BrandTheme.logoCyan.opacity(0.34),
-                                BrandTheme.cream.opacity(emphasis == .hero ? 0.48 : 0.36),
+                                Color.white.opacity(emphasis == .hero ? 0.96 : 0.92),
+                                genre.accent.opacity(emphasis == .hero ? 0.72 : 0.64),
+                                genre.accent.opacity(emphasis == .hero ? 0.52 : 0.46),
                             ],
                             center: .center,
-                            startRadius: 4,
+                            startRadius: 2,
                             endRadius: endR
                         )
                     )
@@ -634,21 +625,8 @@ struct ResidentProfileView: View {
                                 lineWidth: emphasis == .hero ? 1.6 : 1.1
                             )
                     )
-                Image(systemName: genre.iconName)
-                    .font(.system(size: iconSize, weight: .light))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.96),
-                                BrandTheme.logoPink.opacity(0.92),
-                                BrandTheme.logoCyan.opacity(0.98),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: BrandTheme.logoCyan.opacity(0.55), radius: 6)
-                    .symbolRenderingMode(.hierarchical)
+
+                ResidentGenreGlyphIcon(genre: genre, iconSize: iconSize, emphasis: emphasis)
             }
             .frame(width: diskDiameter, height: diskDiameter)
             .background {
@@ -680,10 +658,34 @@ struct ResidentProfileView: View {
         .position(x: pos.x, y: pos.y)
         .rotationEffect(.degrees(rot))
         .scaleEffect(driftScale * roleScale, anchor: .center)
-        .blur(radius: emphasis == .sideStrip ? 1.4 : 0)
-        .opacity(emphasis == .sideStrip ? 0.62 : emphasis == .hero ? 1 : 0.97)
-        .saturation(emphasis == .sideStrip ? 0.62 : 1.08)
+        .opacity(emphasis == .sideStrip ? 0.88 : 1)
+        .saturation(emphasis == .sideStrip ? 0.94 : 1.04)
         .animation(.easeInOut(duration: 0.48), value: selectedPlayingGenre)
+    }
+}
+
+// MARK: - Genre instrument glyph (high-contrast on luminous disks)
+
+private struct ResidentGenreGlyphIcon: View {
+    let genre: ResidentMusicGenre
+    let iconSize: CGFloat
+    let emphasis: ResidentGlyphEmphasis
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white.opacity(emphasis == .hero ? 0.98 : 0.94))
+                .frame(width: iconSize * 1.62, height: iconSize * 1.62)
+                .shadow(color: .black.opacity(0.14), radius: 2, y: 1)
+
+            Image(systemName: genre.iconName)
+                .font(.system(size: iconSize, weight: .semibold))
+                .foregroundStyle(genre.glyphIconColor)
+                .shadow(color: .white.opacity(0.55), radius: 0, x: 0, y: -0.5)
+                .shadow(color: .black.opacity(0.22), radius: 1.5, y: 1)
+                .symbolRenderingMode(.monochrome)
+        }
+        .accessibilityHidden(true)
     }
 }
 

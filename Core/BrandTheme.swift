@@ -32,6 +32,12 @@ enum BrandTheme {
     static let orbGlowOuter = nebulaCyan
     static let orbShellShadow = Color(red: 0.02, green: 0.02, blue: 0.08)
 
+    // MARK: - Ambient background sparkles
+    static let ambientSparkleParticleCount: Int = 300
+    static let ambientSparkleIntensity: CGFloat = 0.6
+    /// Softer layer when stacked (e.g. resident playlist playing).
+    static let ambientSparkleIntensitySubtle: CGFloat = 0.32
+
     // MARK: - Logo wordmark tones (readable on cosmic canvas)
     static let logoPink = Color(red: 0.91, green: 0.72, blue: 0.84)
     static let logoCyan = Color(red: 0.56, green: 0.84, blue: 0.93)

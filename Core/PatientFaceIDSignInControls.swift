@@ -42,7 +42,7 @@ struct ResidentFaceIDHomeSignInButton: View {
             if let statusMessage, !statusMessage.isEmpty {
                 Text(statusMessage)
                     .font(SignInPageLayout.captionFont)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .orbOverlayText(muted: true)
                     .multilineTextAlignment(.center)
             }
         }

@@ -1,9 +1,14 @@
 import SwiftUI
+import PhotosUI
 
 // MARK: - Patient roster
 
 struct CarePatientListView: View {
     @ObservedObject var state: SessionPOCState
+
+    private var rosterPatients: [CarePatientProfile] {
+        state.carePatients.filter { !$0.isProvisional }
+    }
 
     var body: some View {
         ScreenFadeIn {
@@ -11,29 +16,47 @@ struct CarePatientListView: View {
                 backAccessibilityLabel: "Back to home",
                 onBack: {
                     state.selectedCarePatientId = nil
-                    state.phase = .home
+                    state.navigateStaffToHome()
                 }
             ) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "One-to-one calm", delay: 0)
 
-                    PrimaryButton(title: "Face-linked profiles") {
-                        state.openFaceLinkedProfilePicker()
+                    careHomeSentimentCard
+
+                    PrimaryButton(title: "Start discovery for new resident") {
+                        state.beginNewResidentDiscovery()
                     }
                     .padding(.horizontal, 24)
 
+                    SecondaryButton(title: "Group mode") {
+                        state.beginGroupSession()
+                    }
+                    .padding(.horizontal, 24)
+
+                    groupModeHint
+
+                    if let groupLine = state.latestGroupSessionSummaryLine() {
+                        FadeInLine(text: groupLine, font: .caption2, muted: true, delay: 0.12)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
+                    }
+
                     FadeInLine(
-                        text: "Starts the resident session (floating instrument symbols); it does not open the staff profile first.",
+                        text: "First-time listening pass — age shapes which clips we try, then their calm surface opens.",
                         font: .caption2,
-                        color: BrandTheme.brownMuted.opacity(0.9),
+                        muted: true,
                         delay: 0.1
                     )
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 12)
 
-                    ForEach(state.carePatients) { patient in
+                    ForEach(rosterPatients) { patient in
                         let subtitle: String = {
                             var parts = [patient.careContextLabel]
+                            if let sentiment = state.sentimentSummary(for: patient.id).formattedAveragesLine() {
+                                parts.append(sentiment)
+                            }
                             if let last = state.recordsForPatient(patient.id).first {
                                 parts.append(lastSessionSummary(last))
                             }
@@ -41,6 +64,7 @@ struct CarePatientListView: View {
                         }()
                         OrbPortraitNavButton(
                             portraitAssetName: patient.stockPortraitAssetName,
+                            customPortraitImage: state.portraitImage(for: patient.id),
                             title: patient.displayName,
                             subtitle: subtitle
                         ) {
@@ -67,92 +91,243 @@ struct CarePatientListView: View {
         }
         return parts.joined(separator: " · ")
     }
+
+    private var careHomeSentimentCard: some View {
+        let overview = state.careHomeSentimentOverview()
+        return Group {
+            if overview.hasData {
+                BrandCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Care home — supervisor observations")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(BrandTheme.brownMuted)
+                        Text("Rolling averages across recent sessions with sentiment ratings.")
+                            .font(.caption)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let line = overview.formattedAveragesLine() {
+                            Text(line)
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(BrandTheme.brown)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Text("\(overview.sessionCount) rated session\(overview.sessionCount == 1 ? "" : "s") on file")
+                            .font(.caption2)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+    }
+
+    private var groupModeHint: some View {
+        FadeInLine(
+            text: "Traditional playlist controls for a shared room — tracks are compiled from resident listening data on this home’s roster.",
+            font: .caption2,
+            muted: true,
+            delay: 0.08
+        )
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 12)
+    }
 }
 
-// MARK: - Face-linked profile pick (after face enrollment, POC)
+// MARK: - New resident discovery — age input (feeds snippet algorithm)
 
-struct CareFaceLinkedPickView: View {
+struct CareDiscoveryAgeInputView: View {
     @ObservedObject var state: SessionPOCState
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var linkingPatientId: UUID?
-    @State private var faceIDMessage: String?
+    @FocusState private var ageFocused: Bool
+    @State private var errorMessage: String?
 
     var body: some View {
         ScreenFadeIn {
             CenteredScrollScreen(
-                backAccessibilityLabel: "Back to full roster",
-                onBack: { state.phase = .carePatientList }
+                backAccessibilityLabel: "Back to roster",
+                onBack: { state.abandonNewResidentAgeInput() }
             ) {
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
+                    FadeInTitle(text: "About this resident", delay: 0)
                     FadeInLine(
-                        text: "Profiles here were created when their face was captured on this device. Tap someone to start their session — floating instrument icons tap to play; the playing symbol grows at the centre (no playlist list shown on this surface).",
-                        font: .caption,
-                        color: BrandTheme.brownMuted,
-                        delay: 0.06
+                        text: "Their approximate age helps us pick music from the right era for the listening pass.",
+                        delay: 0.08
                     )
 
-                    LazyVGrid(columns: BrandLayout.faceLinkedGridColumns(for: horizontalSizeClass), spacing: 16) {
-                        ForEach(state.carePatients) { patient in
-                            OrbFaceLinkedTile(
-                                portraitAssetName: patient.stockPortraitAssetName,
-                                title: patient.displayName,
-                                subtitle: patient.careContextLabel
-                            ) {
-                                state.selectCarePatientFromFacePick(patient.id)
-                            }
-                            .contextMenu {
-                                Button("Link \(PatientBiometricAuth.biometryLabel) to \(patient.displayName)") {
-                                    linkFaceID(for: patient.id)
-                                }
-                                .disabled(linkingPatientId == patient.id)
-                                if state.faceIDLinkedPatientId == patient.id {
-                                    Button("Remove \(PatientBiometricAuth.biometryLabel) link", role: .destructive) {
-                                        state.unlinkPatientFaceID()
-                                        faceIDMessage = nil
-                                    }
-                                }
-                            }
-                            .overlay(alignment: .topTrailing) {
-                                if state.faceIDLinkedPatientId == patient.id {
-                                    Image(systemName: "faceid")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(BrandTheme.gold)
-                                        .padding(8)
-                                        .background(Circle().fill(BrandTheme.cream.opacity(0.92)))
-                                        .padding(6)
-                                        .accessibilityLabel("\(PatientBiometricAuth.biometryLabel) linked")
-                                }
-                            }
+                    BrandCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Age")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(BrandTheme.brownMuted)
+                            TextField("e.g. 82", text: $state.newResidentAgeDraft)
+                                .keyboardType(.numberPad)
+                                .focused($ageFocused)
+                                .font(.title2.weight(.medium))
+                                .foregroundStyle(BrandTheme.brown)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(BrandTheme.creamMid.opacity(0.95))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+                                )
+                            Text("We use peak listening years (roughly teens through twenties) to order calm clips.")
+                                .font(.caption)
+                                .foregroundStyle(BrandTheme.brownMuted)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(.horizontal, 4)
 
-                    if let faceIDMessage, !faceIDMessage.isEmpty {
-                        Text(faceIDMessage)
+                    if let errorMessage, !errorMessage.isEmpty {
+                        Text(errorMessage)
                             .font(.caption)
                             .foregroundStyle(BrandTheme.brownMuted)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
                     }
+
+                    PrimaryButton(title: "Begin listening discovery") {
+                        errorMessage = state.continueNewResidentDiscoveryFromAgeInput()
+                    }
+                    .padding(.horizontal, 24)
                 }
                 .padding(.vertical, 28)
             }
         }
         .onAppear {
             if !state.isSignedIn { state.phase = .home }
-            state.refreshFaceIDLink()
+        }
+    }
+}
+
+// MARK: - New resident profile capture (after first session)
+
+struct CareNewResidentProfileView: View {
+    @ObservedObject var state: SessionPOCState
+    @State private var photoItem: PhotosPickerItem?
+    @State private var showCamera = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        ScreenFadeIn {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to roster",
+                onBack: { state.cancelNewResidentProfileSave() }
+            ) {
+                VStack(spacing: 22) {
+                    FadeInTitle(text: "Save this resident", delay: 0)
+                    FadeInLine(
+                        text: "So the next supervisor can recognise them on the roster.",
+                        delay: 0.08
+                    )
+
+                    BrandCard {
+                        VStack(spacing: 18) {
+                            photoSection
+
+                            profileField(title: "Name", text: $state.newResidentProfileNameDraft, prompt: "Full name or preferred name")
+
+                            profileField(title: "Age", text: $state.newResidentProfileAgeDraft, prompt: "Age", keyboard: .numberPad)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 4)
+
+                    if let errorMessage, !errorMessage.isEmpty {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
+                    }
+
+                    PrimaryButton(title: "Save to roster") {
+                        errorMessage = state.saveNewResidentProfile()
+                        if errorMessage == nil {
+                            CalmExperienceFeedback.signInSuccess()
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+                .padding(.vertical, 28)
+            }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker(image: $state.newResidentProfilePhoto)
+                .ignoresSafeArea()
+        }
+        .onChange(of: photoItem) { _, new in
+            Task {
+                guard let new else { return }
+                if let data = try? await new.loadTransferable(type: Data.self),
+                   let ui = UIImage(data: data) {
+                    await MainActor.run { state.newResidentProfilePhoto = ui }
+                }
+            }
         }
     }
 
-    private func linkFaceID(for patientId: UUID) {
-        guard linkingPatientId == nil else { return }
-        linkingPatientId = patientId
-        faceIDMessage = nil
-        Task {
-            let error = await state.linkPatientForFaceIDSignInAfterBiometric(patientId)
-            linkingPatientId = nil
-            faceIDMessage = error
+    @ViewBuilder
+    private var photoSection: some View {
+        VStack(spacing: 14) {
+            if let photo = state.newResidentProfilePhoto {
+                Image(uiImage: photo)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 120, height: 120)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(BrandTheme.gold.opacity(0.45), lineWidth: 2))
+                    .shadow(color: BrandTheme.brown.opacity(0.12), radius: 10, y: 4)
+            } else {
+                ZStack {
+                    MellorityOrbBackdrop(diameter: 132, pulse: 0.5, glowPulse: 0.62)
+                    Image(systemName: "person.crop.circle.badge.plus")
+                        .font(.system(size: 44))
+                        .foregroundStyle(BrandTheme.goldDeep)
+                }
+                .frame(width: 132, height: 132)
+            }
+
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                OrbPickerLabel(title: "Choose photo", systemImage: "photo.stack")
+            }
+
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button { showCamera = true } label: {
+                    OrbPickerLabel(title: "Take photo", systemImage: "camera.fill")
+                }
+                .buttonStyle(ChimingPlainButtonStyle())
+            }
         }
+    }
+
+    private func profileField(
+        title: String,
+        text: Binding<String>,
+        prompt: String,
+        keyboard: UIKeyboardType = .default
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(BrandTheme.brownMuted)
+            TextField(prompt, text: text)
+                .keyboardType(keyboard)
+                .font(.body)
+                .foregroundStyle(BrandTheme.brown)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(BrandTheme.creamMid.opacity(0.95))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+                )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -177,7 +352,7 @@ struct CareSessionPrepView: View {
                     FadeInLine(
                         text: "If you use smart lights, a headset, or a TV in the room, set that up here so the session matches the space. None of this is required — it’s just so Mellority knows what you have.",
                         font: .caption,
-                        color: BrandTheme.brownMuted,
+                        muted: true,
                         delay: 0.06
                     )
                     .frame(maxWidth: .infinity)
@@ -339,25 +514,26 @@ struct CarePatientDetailView: View {
             ) {
                 VStack(spacing: 26) {
                     if let patient {
-                        Image(patient.stockPortraitAssetName)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: portraitSize, height: portraitSize)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(BrandTheme.gold.opacity(0.42), lineWidth: 2))
-                            .shadow(color: BrandTheme.brown.opacity(0.12), radius: 10, y: 4)
+                        CarePatientPortraitView(
+                            assetName: patient.stockPortraitAssetName,
+                            customImage: state.portraitImage(for: patient.id),
+                            size: portraitSize
+                        )
+                        .shadow(color: BrandTheme.brown.opacity(0.12), radius: 10, y: 4)
 
                         VStack(spacing: 6) {
                             Text(patient.displayName)
                                 .font(DetailTypography.name)
-                                .foregroundStyle(BrandTheme.brown)
+                                .orbOverlayText()
                                 .multilineTextAlignment(.center)
                             Text(patient.careContextLabel)
                                 .font(DetailTypography.context)
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .orbOverlayText(muted: true)
                                 .multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity)
+
+                        patientSentimentSummaryCard(patient)
 
                         genrePlaylistsCard(patient)
 
@@ -436,59 +612,6 @@ struct CarePatientDetailView: View {
                                 Text(patient.touchComfortNotes)
                                     .font(DetailTypography.body)
                                     .foregroundStyle(BrandTheme.brown)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(.horizontal, 4)
-
-                        BrandCard {
-                            VStack(alignment: .leading, spacing: 14) {
-                                Text("Themes that help them land")
-                                    .font(DetailTypography.section)
-                                    .foregroundStyle(BrandTheme.brownMuted)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 10)], spacing: 10) {
-                                    ForEach(patient.comfortThemes, id: \.self) { theme in
-                                        Text(theme)
-                                            .font(DetailTypography.pill)
-                                            .foregroundStyle(BrandTheme.brown)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 8)
-                                            .background(Capsule().fill(BrandTheme.creamDeep.opacity(0.85)))
-                                            .overlay(
-                                                Capsule().stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
-                                            )
-                                    }
-                                }
-                                if patient.prefersGentleSoundOnsets {
-                                    Text("Sound: very gentle starts — no sudden jumps.")
-                                        .font(DetailTypography.secondary)
-                                        .foregroundStyle(BrandTheme.brownMuted)
-                                        .padding(.top, 4)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(.horizontal, 4)
-
-                        BrandCard {
-                            VStack(alignment: .leading, spacing: 14) {
-                                Text("Likes")
-                                    .font(DetailTypography.section)
-                                    .foregroundStyle(BrandTheme.brownMuted)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 10)], spacing: 10) {
-                                    ForEach(patient.likes, id: \.self) { tag in
-                                        tagPill(tag, positive: true)
-                                    }
-                                }
-                                Text("Dislikes")
-                                    .font(DetailTypography.section)
-                                    .foregroundStyle(BrandTheme.brownMuted)
-                                    .padding(.top, 4)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 10)], spacing: 10) {
-                                    ForEach(patient.dislikes, id: \.self) { tag in
-                                        tagPill(tag, positive: false)
-                                    }
-                                }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -585,6 +708,36 @@ struct CarePatientDetailView: View {
         return "Last pass: red (uncomfortable) \(unpleasant), amber (unsure) \(neutral), green (comforting) \(pleasant)."
     }
 
+    private func patientSentimentSummaryCard(_ patient: CarePatientProfile) -> some View {
+        let summary = state.sentimentSummary(for: patient.id)
+        return Group {
+            if summary.hasData {
+                BrandCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Supervisor sentiment (recent sessions)")
+                            .font(DetailTypography.section)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                        Text("Rolling averages from post-session 1–10 ratings — mood, alertness, emotional state, and lucidity.")
+                            .font(DetailTypography.secondary)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let line = summary.formattedAveragesLine() {
+                            Text(line)
+                                .font(DetailTypography.body.weight(.medium))
+                                .foregroundStyle(BrandTheme.brown)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Text("Based on \(summary.sessionCount) rated session\(summary.sessionCount == 1 ? "" : "s")")
+                            .font(DetailTypography.secondary)
+                            .foregroundStyle(BrandTheme.brownMuted)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+    }
+
     private func orderedPlaylistGroups(_ patient: CarePatientProfile) -> [CareGenrePlaylistGroup] {
         patient.genrePlaylistGroups.sorted { $0.genre.rawValue < $1.genre.rawValue }
     }
@@ -644,22 +797,6 @@ struct CarePatientDetailView: View {
         }
     }
 
-    private func tagPill(_ text: String, positive: Bool) -> some View {
-        Text(text)
-            .font(DetailTypography.pill)
-            .foregroundStyle(BrandTheme.brown)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                Capsule()
-                    .fill(positive ? BrandTheme.goldSoft.opacity(0.45) : BrandTheme.creamDeep.opacity(0.9))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(BrandTheme.gold.opacity(positive ? 0.35 : 0.18), lineWidth: 1)
-            )
-    }
-
     private func meterRow(_ title: String, value: Double) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -685,12 +822,223 @@ struct CarePatientDetailView: View {
     }
 
     private func outcomeLine(_ rec: CareSessionRecord) -> String? {
-        guard rec.settledness != nil || rec.engagement != nil || rec.comfortTolerance != nil else { return nil }
-        var p: [String] = []
-        if let s = rec.settledness { p.append("Settled \(s)%") }
-        if let e = rec.engagement { p.append("Engaged \(e)%") }
-        if let c = rec.comfortTolerance { p.append("Comfort \(c)%") }
-        return p.joined(separator: " · ")
+        var parts: [String] = []
+        if let line = rec.residentInteractionSummaryLine() { parts.append(line) }
+        if let line = sentimentLine(rec) { parts.append(line) }
+        if rec.settledness != nil || rec.engagement != nil || rec.comfortTolerance != nil {
+            if let s = rec.settledness { parts.append("Settled \(s)%") }
+            if let e = rec.engagement { parts.append("Engaged \(e)%") }
+            if let c = rec.comfortTolerance { parts.append("Comfort \(c)%") }
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func sentimentLine(_ rec: CareSessionRecord) -> String? {
+        var parts: [String] = []
+        if let v = rec.moodRating { parts.append("Mood \(v)/10") }
+        if let v = rec.alertnessRating { parts.append("Alert \(v)/10") }
+        if let v = rec.emotionalStateRating { parts.append("Emotion \(v)/10") }
+        if let v = rec.lucidityRating { parts.append("Lucidity \(v)/10") }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - Sequential post-session sentiment (existing residents)
+
+struct CareSessionSentimentFeedbackView: View {
+    @ObservedObject var state: SessionPOCState
+
+    private var patient: CarePatientProfile? {
+        state.carePatient(id: state.activeCarePatientId ?? state.selectedCarePatientId)
+    }
+
+    private var currentStep: CareSessionSentimentStep {
+        CareSessionSentimentStep(rawValue: state.sessionSentimentStep) ?? .mood
+    }
+
+    private var isLastStep: Bool {
+        state.sessionSentimentStep >= CareSessionSentimentStep.allCases.count - 1
+    }
+
+    private var currentSelection: Int? {
+        switch currentStep {
+        case .mood: return state.sessionSentimentDraft.mood
+        case .alertness: return state.sessionSentimentDraft.alertness
+        case .emotionalState: return state.sessionSentimentDraft.emotionalState
+        case .lucidity: return state.sessionSentimentDraft.lucidity
+        }
+    }
+
+    var body: some View {
+        ScreenFadeIn {
+            CenteredScrollScreen(
+                backAccessibilityLabel: backLabel,
+                onBack: handleBack
+            ) {
+                VStack(spacing: 24) {
+                    if let patient {
+                        FadeInTitle(text: "Quick check-in", delay: 0)
+                        FadeInLine(
+                            text: "How did \(patient.displayName) seem after this session?",
+                            delay: 0.06
+                        )
+
+                        if let metricsLine = state.residentSurfaceMetrics.interactionSummary() {
+                            BrandCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Session captured automatically")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(BrandTheme.brownMuted)
+                                    Text(metricsLine)
+                                        .font(.body)
+                                        .foregroundStyle(BrandTheme.brown)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.horizontal, 4)
+                        }
+
+                        stepProgress
+
+                        BrandCard {
+                            VStack(alignment: .leading, spacing: 18) {
+                                Text("Step \(state.sessionSentimentStep + 1) of \(CareSessionSentimentStep.allCases.count)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                Text(currentStep.title)
+                                    .font(.title2.weight(.semibold))
+                                    .foregroundStyle(BrandTheme.brown)
+                                Text(currentStep.prompt)
+                                    .font(.body)
+                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                SentimentScalePicker(
+                                    selection: state.sessionSentimentBinding(for: currentStep),
+                                    lowCaption: currentStep.lowCaption,
+                                    highCaption: currentStep.highCaption
+                                )
+
+                                if isLastStep {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Optional note")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(BrandTheme.brownMuted)
+                                        TextField("Anything else to remember?", text: $state.sessionSentimentDraft.note, axis: .vertical)
+                                            .lineLimit(1 ... 4)
+                                            .font(.body)
+                                            .foregroundStyle(BrandTheme.brown)
+                                            .padding(12)
+                                            .background(BrandTheme.creamMid.opacity(0.95))
+                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                    .stroke(BrandTheme.gold.opacity(0.25), lineWidth: 1)
+                                            )
+                                    }
+                                    .padding(.top, 4)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.horizontal, 4)
+
+                        PrimaryButton(title: isLastStep ? "Save to profile" : "Next") {
+                            if isLastStep {
+                                state.saveSessionSentimentFeedback()
+                                CalmExperienceFeedback.signInSuccess()
+                            } else {
+                                state.advanceSessionSentimentStep()
+                            }
+                        }
+                        .disabled(currentSelection == nil)
+                        .opacity(currentSelection == nil ? 0.45 : 1)
+                        .padding(.horizontal, 24)
+
+                        SecondaryButton(title: "Skip for now") {
+                            state.skipSessionSentimentFeedback()
+                        }
+                        .padding(.horizontal, 24)
+                    } else {
+                        FadeInLine(text: "No resident linked to this session.", delay: 0)
+                    }
+                }
+                .padding(.vertical, 28)
+            }
+        }
+    }
+
+    private var stepProgress: some View {
+        HStack(spacing: 8) {
+            ForEach(CareSessionSentimentStep.allCases) { step in
+                Capsule()
+                    .fill(step.rawValue <= state.sessionSentimentStep ? BrandTheme.gold : BrandTheme.brown.opacity(0.12))
+                    .frame(height: 4)
+            }
+        }
+        .padding(.horizontal, 4)
+        .accessibilityLabel("Step \(state.sessionSentimentStep + 1) of \(CareSessionSentimentStep.allCases.count)")
+    }
+
+    private var backLabel: String {
+        state.sessionSentimentStep > 0 ? "Previous question" : "Skip feedback"
+    }
+
+    private func handleBack() {
+        if state.sessionSentimentStep > 0 {
+            state.retreatSessionSentimentStep()
+        } else {
+            state.skipSessionSentimentFeedback()
+        }
+    }
+}
+
+struct SentimentScalePicker: View {
+    @Binding var selection: Int?
+    let lowCaption: String
+    let highCaption: String
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(1 ... 10, id: \.self) { value in
+                    Button {
+                        selection = value
+                        CalmExperienceFeedback.discoveryPick()
+                    } label: {
+                        Text("\(value)")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(selection == value ? BrandTheme.brown : BrandTheme.brownMuted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(selection == value ? BrandTheme.goldSoft.opacity(0.55) : BrandTheme.creamMid.opacity(0.95))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(selection == value ? BrandTheme.gold.opacity(0.55) : BrandTheme.gold.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(ChimingPlainButtonStyle())
+                    .accessibilityLabel("\(value) out of 10")
+                }
+            }
+
+            HStack {
+                Text(lowCaption)
+                    .font(.caption2)
+                    .foregroundStyle(BrandTheme.brownMuted)
+                Spacer(minLength: 8)
+                Text(highCaption)
+                    .font(.caption2)
+                    .foregroundStyle(BrandTheme.brownMuted)
+                    .multilineTextAlignment(.trailing)
+            }
+        }
     }
 }
 
@@ -721,7 +1069,7 @@ struct CareSessionFeedbackView: View {
                         FadeInLine(
                             text: "How did \(patient.displayName) seem? This isn’t a grade for you — it nudges the sound for next time.",
                             font: .caption,
-                            color: BrandTheme.brownMuted,
+                            muted: true,
                             delay: 0.08
                         )
 

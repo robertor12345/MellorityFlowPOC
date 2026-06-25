@@ -34,7 +34,7 @@ struct DiscoveryCalibrationView: View {
             ScreenFadeIn {
                 ZStack {
                     DiscoveryEraListeningOrb(
-                        snippetIndex: state.discoverySnippetIndex,
+                        snippetIndex: state.discoveryPhysicalSnippetIndex(logicalIndex: state.discoverySnippetIndex),
                         sliceAnchor: sliceStartedAt,
                         orbSize: orbSize,
                         pendingPick: state.discoveryPendingPick,
@@ -51,7 +51,7 @@ struct DiscoveryCalibrationView: View {
 
             VStack {
                 FlowTopBackBar(
-                    accessibilityLabel: "Back to profile",
+                    accessibilityLabel: state.newResidentDiscoveryPatientId != nil ? "Back to roster" : "Back to profile",
                     action: { state.abandonDiscoveryCalibration() }
                 )
                 Spacer(minLength: 0)
@@ -200,7 +200,10 @@ struct DiscoveryCalibrationView: View {
         let idxCapt = state.discoverySnippetIndex
 
         audio.stop()
-        audio.startFresh(streamURL: DiscoveryFlowPOC.snippetAudioStreamURL(snippetIndex: idxCapt))
+        audio.startFresh(streamURL: DiscoveryFlowPOC.snippetAudioStreamURL(
+            snippetIndex: idxCapt,
+            order: state.discoverySnippetOrder.isEmpty ? nil : state.discoverySnippetOrder
+        ))
 
         sliceDeadlineTask = Task { @MainActor in
             let ns = UInt64(DiscoveryFlowPOC.snippetDurationSeconds * 1_000_000_000)

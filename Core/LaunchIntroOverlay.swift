@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Launch copy inside the orb — motion locked to the same pulse anchor as the envelope.
 struct LaunchIntroOverlay: View {
@@ -7,10 +8,11 @@ struct LaunchIntroOverlay: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let thirdLineAfter: TimeInterval = 4.2
-    private let titleFadeIn: TimeInterval = 0.85
-    private let subtitleFadeStart: TimeInterval = 2.0
-    private let subtitleFadeEnd: TimeInterval = 3.2
+    private let titleFadeIn: TimeInterval = 1.35
+    private let subtitleStart: TimeInterval = 1.55
+    private let thirdLineStart: TimeInterval = 5.1
+    private let wordStagger: TimeInterval = 0.52
+    private let wordFadeDuration: TimeInterval = 0.78
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
@@ -21,49 +23,42 @@ struct LaunchIntroOverlay: View {
                 ? max(0, 1 - (elapsed - fadeOutStart) / 1.2)
                 : 1.0
 
-            let titleOpacity = min(1, max(0, elapsed / titleFadeIn))
-            let subtitleOpacity = min(
-                1,
-                max(0, (elapsed - subtitleFadeStart) / (subtitleFadeEnd - subtitleFadeStart))
-            )
-            let thirdOpacity = elapsed >= thirdLineAfter
-                ? min(1, (elapsed - thirdLineAfter) / 0.55)
-                : 0
+            let titleOpacity = reduceMotion
+                ? min(1, max(0, elapsed / 0.4))
+                : min(1, max(0, elapsed / titleFadeIn))
 
-            VStack(spacing: 18) {
+            VStack(spacing: 22) {
                 NoteStalgiaWordmark(
-                    font: .system(size: 42, weight: .medium, design: .default),
-                    tracking: 5,
-                    pointSize: 42
+                    font: .system(size: 56, weight: .medium, design: .default),
+                    tracking: 6,
+                    pointSize: 56
                 )
-                .introLegibilityShadow(intensity: 1.15)
                 .opacity(titleOpacity)
+                .offset(y: reduceMotion ? 0 : (1 - titleOpacity) * 14)
 
-                Text("Sound you can live in.")
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
-                    .foregroundStyle(BrandTheme.introSubtitle)
-                    .multilineTextAlignment(.center)
-                    .introLegibilityShadow(intensity: 1.0)
-                    .opacity(subtitleOpacity)
+                IntroStaggeredWords(
+                    text: "Sound that takes you back....",
+                    elapsed: elapsed,
+                    startAt: reduceMotion ? 0.3 : subtitleStart,
+                    wordStagger: reduceMotion ? 0 : wordStagger,
+                    fadeDuration: reduceMotion ? 0.35 : wordFadeDuration,
+                    pointSize: 36,
+                    weight: .semibold,
+                    legibilityIntensity: 1.0
+                )
 
-                Text("Take a slow breath — we're almost there.")
-                    .font(.system(size: 21, weight: .medium, design: .rounded))
-                    .foregroundStyle(BrandTheme.introBody)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 28)
-                    .introLegibilityShadow(intensity: 0.9)
-                    .opacity(thirdOpacity)
-            }
-            .padding(.vertical, 28)
-            .padding(.horizontal, 20)
-            .background {
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .fill(BrandTheme.cream.opacity(0.72))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 32, style: .continuous)
-                            .stroke(BrandTheme.nebulaLavender.opacity(0.28), lineWidth: 1)
-                    }
-                    .shadow(color: BrandTheme.orbShellShadow.opacity(0.35), radius: 18, y: 8)
+                IntroStaggeredWords(
+                    text: "Take a slow breath — we're almost there.",
+                    elapsed: elapsed,
+                    startAt: reduceMotion ? 0.6 : thirdLineStart,
+                    wordStagger: reduceMotion ? 0 : wordStagger,
+                    fadeDuration: reduceMotion ? 0.35 : wordFadeDuration,
+                    pointSize: 28,
+                    weight: .medium,
+                    muted: true,
+                    legibilityIntensity: 0.9
+                )
+                .padding(.horizontal, 20)
             }
             .padding(.horizontal, BrandTheme.contentGutter)
             .scaleEffect(sample.innerContentScale)
@@ -72,18 +67,67 @@ struct LaunchIntroOverlay: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(false)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("NoteStalgia is starting. Sound you can live in.")
+            .accessibilityLabel("NoteStalgia is starting. Sound that takes you back.")
         }
     }
 }
 
-private extension View {
-    /// Light halo + soft drop shadow so intro copy reads on the sky-blue orb.
-    func introLegibilityShadow(intensity: CGFloat = 1) -> some View {
-        let i = max(0.5, intensity)
-        return self
-            .shadow(color: BrandTheme.introTextHalo, radius: 0.5 * i, x: 0, y: 0)
-            .shadow(color: BrandTheme.introTextHalo.opacity(0.65), radius: 6 * i, x: 0, y: 0)
-            .shadow(color: BrandTheme.introTextShadow, radius: 5 * i, x: 0, y: 3 * i)
+/// Fades each word in sequentially.
+private struct IntroStaggeredWords: View {
+    let text: String
+    let elapsed: TimeInterval
+    let startAt: TimeInterval
+    var wordStagger: TimeInterval
+    var fadeDuration: TimeInterval
+    let pointSize: CGFloat
+    let weight: Font.Weight
+    var muted: Bool = false
+    var legibilityIntensity: CGFloat = 1
+
+    var body: some View {
+        Text(staggeredAttributedString)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .orbOverlayTextStyle(intensity: legibilityIntensity)
+    }
+
+    private var staggeredAttributedString: AttributedString {
+        let words = text.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+        var line = AttributedString()
+        let uiWeight = weight.uiFontWeight
+        let baseAlpha: CGFloat = muted ? 0.88 : 1
+
+        for (index, word) in words.enumerated() {
+            let progress = wordProgress(for: index)
+            var chunk = AttributedString((index == 0 ? "" : " ") + word)
+            var attributes = AttributeContainer()
+            attributes.font = .systemFont(ofSize: pointSize, weight: uiWeight)
+            attributes.foregroundColor = UIColor.white.withAlphaComponent(baseAlpha * progress)
+            chunk.mergeAttributes(attributes)
+            line.append(chunk)
+        }
+        return line
+    }
+
+    private func wordProgress(for index: Int) -> CGFloat {
+        let start = startAt + Double(index) * wordStagger
+        return CGFloat(min(1, max(0, (elapsed - start) / max(0.001, fadeDuration))))
+    }
+}
+
+private extension Font.Weight {
+    var uiFontWeight: UIFont.Weight {
+        switch self {
+        case .ultraLight: .ultraLight
+        case .thin: .thin
+        case .light: .light
+        case .regular: .regular
+        case .medium: .medium
+        case .semibold: .semibold
+        case .bold: .bold
+        case .heavy: .heavy
+        case .black: .black
+        default: .regular
+        }
     }
 }

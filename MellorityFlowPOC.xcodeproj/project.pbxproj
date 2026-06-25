@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00F9DB181D64C7B8BEAAFBAF /* CareSessionSentiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 381A145E7552BBCE67E3A2AA /* CareSessionSentiment.swift */; };
 		07F779D6550C21828C49CE7F /* LaunchIntroOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */; };
+		090B3D543F873537850D36FA /* SupervisorAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */; };
 		0CD0423EBB0A418530DD92C7 /* DiscoveryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C74CB3706ED1807454D4A26 /* DiscoveryModels.swift */; };
 		0D5F61F88E976BB8433C98AB /* SimplifiedFlowScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FDF6F31EE0C864E0C1DE18F /* SimplifiedFlowScreens.swift */; };
 		0FCBA4CF867F01D255D0EFC5 /* CalmMotionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797BF377E50486923A75204F /* CalmMotionViews.swift */; };
@@ -32,8 +34,10 @@
 		6F750947B19B75821440FB24 /* MellorityLogoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17595CD92889E1FECC468E5F /* MellorityLogoImage.swift */; };
 		77FB7BBC8129A9FDC0A2C7DB /* OrbShellConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD59A8A7E78EDAAD1B17527B /* OrbShellConfiguration.swift */; };
 		7A25D9437F793E797A98890D /* PatientFaceIDLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */; };
+		7D3F48570175DD42AEAF9C49 /* CarePatientPortrait.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A3964AA8E484580CBD8CDA /* CarePatientPortrait.swift */; };
 		81361D57C735FCFEF89D48C5 /* MellorityOrbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CDA4CC6EACA74D67A879AF /* MellorityOrbView.swift */; };
 		834195D9EF7618D4111C44A8 /* OrbNavigationStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */; };
+		85240F31E028F533711ACBB6 /* GroupSessionScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D07377628E076323E2BC08 /* GroupSessionScreens.swift */; };
 		8782E3E1949A033A3EAB15D1 /* OrbRingEqualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5A6279C9D0318573D5B5F3 /* OrbRingEqualizer.swift */; };
 		8E0C3FFDF7961AB665E8487C /* CareStaffScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = F36F6CE06F46E7B1282377F8 /* CareStaffScreens.swift */; };
 		9D245774B42B588FDF793751 /* OrbHeartbeat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22389121AF71D3190F26C44D /* OrbHeartbeat.swift */; };
@@ -46,6 +50,8 @@
 		C292223B7BBBE29B08395C88 /* NatureSessionImagery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34BFB55813804EC147A6472F /* NatureSessionImagery.swift */; };
 		D6671F82F92FF6D63E543CC7 /* CareStaffModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */; };
 		DBEE762D9765F5BD092B7EE1 /* CalmExperienceFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED62C0FC11C1EBD8AC45810C /* CalmExperienceFeedback.swift */; };
+		E114FBC4A0DAA886D2B6FCD8 /* OrbOverlayTextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E555D4C4913E7A479BECF7 /* OrbOverlayTextStyle.swift */; };
+		E1C4B6E7938A94C03FA9913B /* GroupSessionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C51B58665B7A924254D9E1 /* GroupSessionModels.swift */; };
 		E733A9AC472F8DD38835045B /* ResidentMusicModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */; };
 		E8D32E72E03FFD11B3825A94 /* OrbContentMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB34F34F697359DE52136BB /* OrbContentMotion.swift */; };
 		EA6F7464DCB01DE2FE788E42 /* SessionPOCState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */; };
@@ -55,6 +61,7 @@
 		EF832AEC00AC774287A3D261 /* OrbRenderBudget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9979DB1CACE630F2B4042F /* OrbRenderBudget.swift */; };
 		F2AA8574F87529ED6715A27C /* ExperienceScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */; };
 		F928B0BBAA7D59E6611A42B3 /* NoteStalgiaOrbVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 274808F05DACF15E46E05A75 /* NoteStalgiaOrbVisuals.swift */; };
+		FF2FD441DD46D24F35DCFD13 /* ResidentSurfaceSessionMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521F124970F852119DF58EEB /* ResidentSurfaceSessionMetrics.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,10 +75,12 @@
 		22389121AF71D3190F26C44D /* OrbHeartbeat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbHeartbeat.swift; sourceTree = "<group>"; };
 		274808F05DACF15E46E05A75 /* NoteStalgiaOrbVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStalgiaOrbVisuals.swift; sourceTree = "<group>"; };
 		34BFB55813804EC147A6472F /* NatureSessionImagery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NatureSessionImagery.swift; sourceTree = "<group>"; };
+		381A145E7552BBCE67E3A2AA /* CareSessionSentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareSessionSentiment.swift; sourceTree = "<group>"; };
 		3B46E84F01DDCD3A4897C934 /* DiscoveryPlaylistTuning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryPlaylistTuning.swift; sourceTree = "<group>"; };
 		416E96C758B14AB3F62708FC /* AmbientAudioSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientAudioSession.swift; sourceTree = "<group>"; };
 		4C4443F8F896BE776BC2D899 /* ResidentExperienceScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentExperienceScreens.swift; sourceTree = "<group>"; };
 		51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientFaceIDLinkStore.swift; sourceTree = "<group>"; };
+		521F124970F852119DF58EEB /* ResidentSurfaceSessionMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentSurfaceSessionMetrics.swift; sourceTree = "<group>"; };
 		581245CE63F69A24FE34574B /* FadeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FadeText.swift; sourceTree = "<group>"; };
 		5F28363CDD8ACCE234843157 /* BrandTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandTheme.swift; sourceTree = "<group>"; };
 		664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryScreens.swift; sourceTree = "<group>"; };
@@ -82,6 +91,7 @@
 		7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareStaffModels.swift; sourceTree = "<group>"; };
 		7C9979DB1CACE630F2B4042F /* OrbRenderBudget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbRenderBudget.swift; sourceTree = "<group>"; };
 		83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentMusicModel.swift; sourceTree = "<group>"; };
+		861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupervisorAuth.swift; sourceTree = "<group>"; };
 		8624CE65C536C13A8A29E9FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		882A2F05FD9061B38840680A /* PatientBiometricAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientBiometricAuth.swift; sourceTree = "<group>"; };
 		8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchIntroOverlay.swift; sourceTree = "<group>"; };
@@ -91,8 +101,12 @@
 		A30695C8E9715544131DFAEF /* NatureVideoCompilationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NatureVideoCompilationView.swift; sourceTree = "<group>"; };
 		A862ED36791951A441F6C6C7 /* PatientFaceIDSignInControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientFaceIDSignInControls.swift; sourceTree = "<group>"; };
 		ACD624A08DB09B9BD6D8C53F /* MellorityFlowPOCApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MellorityFlowPOCApp.swift; sourceTree = "<group>"; };
+		B1D07377628E076323E2BC08 /* GroupSessionScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSessionScreens.swift; sourceTree = "<group>"; };
 		B25869C2181BF1DAFDB0984E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C4C51B58665B7A924254D9E1 /* GroupSessionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSessionModels.swift; sourceTree = "<group>"; };
+		C4E555D4C4913E7A479BECF7 /* OrbOverlayTextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbOverlayTextStyle.swift; sourceTree = "<group>"; };
 		CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbNavigationStyle.swift; sourceTree = "<group>"; };
+		D5A3964AA8E484580CBD8CDA /* CarePatientPortrait.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarePatientPortrait.swift; sourceTree = "<group>"; };
 		D87189281B7EEBEB983BAFC9 /* OrbInteriorMediaPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbInteriorMediaPanel.swift; sourceTree = "<group>"; };
 		DB6DDB227F98CFA348AE27D2 /* FlowRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowRootView.swift; sourceTree = "<group>"; };
 		DD59A8A7E78EDAAD1B17527B /* OrbShellConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbShellConfiguration.swift; sourceTree = "<group>"; };
@@ -156,6 +170,8 @@
 				5F28363CDD8ACCE234843157 /* BrandTheme.swift */,
 				ED62C0FC11C1EBD8AC45810C /* CalmExperienceFeedback.swift */,
 				797BF377E50486923A75204F /* CalmMotionViews.swift */,
+				D5A3964AA8E484580CBD8CDA /* CarePatientPortrait.swift */,
+				381A145E7552BBCE67E3A2AA /* CareSessionSentiment.swift */,
 				7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */,
 				EAC5F095407AE14CB9B2C797 /* CenteredScrollScreen.swift */,
 				EB45B845D070101D7353A9E8 /* DiscoveryEraMedia.swift */,
@@ -165,6 +181,7 @@
 				581245CE63F69A24FE34574B /* FadeText.swift */,
 				F073504DD56CA1C6ED7EE69E /* FlowContainerSize.swift */,
 				941A042E8357746A7314E072 /* GoldAmbientSparklesView.swift */,
+				C4C51B58665B7A924254D9E1 /* GroupSessionModels.swift */,
 				8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */,
 				17595CD92889E1FECC468E5F /* MellorityLogoImage.swift */,
 				F4CDA4CC6EACA74D67A879AF /* MellorityOrbView.swift */,
@@ -174,6 +191,7 @@
 				D87189281B7EEBEB983BAFC9 /* OrbInteriorMediaPanel.swift */,
 				1F8B6136C59B0DA60C121408 /* OrbNavControls.swift */,
 				CDE220149C8D5E97B15EF9EE /* OrbNavigationStyle.swift */,
+				C4E555D4C4913E7A479BECF7 /* OrbOverlayTextStyle.swift */,
 				E217ADFE80B1EA5AEFACC7F0 /* OrbReferenceMotion.swift */,
 				7C9979DB1CACE630F2B4042F /* OrbRenderBudget.swift */,
 				6E5A6279C9D0318573D5B5F3 /* OrbRingEqualizer.swift */,
@@ -184,7 +202,9 @@
 				FD7F90840C8354B2C9F730A0 /* ReferenceOrbNebulaRender.swift */,
 				83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */,
 				68CD019E95A8AC72545862DB /* ResidentPlaylistVisuals.swift */,
+				521F124970F852119DF58EEB /* ResidentSurfaceSessionMetrics.swift */,
 				9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */,
+				861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -196,6 +216,7 @@
 				F36F6CE06F46E7B1282377F8 /* CareStaffScreens.swift */,
 				664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */,
 				6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */,
+				B1D07377628E076323E2BC08 /* GroupSessionScreens.swift */,
 				0A5E452A92A9B925A4C923C5 /* LeafBreezeLayer.swift */,
 				34BFB55813804EC147A6472F /* NatureSessionImagery.swift */,
 				A30695C8E9715544131DFAEF /* NatureVideoCompilationView.swift */,
@@ -284,6 +305,8 @@
 				DBEE762D9765F5BD092B7EE1 /* CalmExperienceFeedback.swift in Sources */,
 				0FCBA4CF867F01D255D0EFC5 /* CalmMotionViews.swift in Sources */,
 				EC0D3DD8293D1C1A3D5FC984 /* CaptureScreens.swift in Sources */,
+				7D3F48570175DD42AEAF9C49 /* CarePatientPortrait.swift in Sources */,
+				00F9DB181D64C7B8BEAAFBAF /* CareSessionSentiment.swift in Sources */,
 				D6671F82F92FF6D63E543CC7 /* CareStaffModels.swift in Sources */,
 				8E0C3FFDF7961AB665E8487C /* CareStaffScreens.swift in Sources */,
 				AC9B320E18F3949B71ABBF3C /* CenteredScrollScreen.swift in Sources */,
@@ -297,6 +320,8 @@
 				C20B5E2D85ED0F79E3831DDC /* FlowContainerSize.swift in Sources */,
 				60B2D6EDB1BDAAF3FDFEF406 /* FlowRootView.swift in Sources */,
 				47313660A81BEAC6B1E498A1 /* GoldAmbientSparklesView.swift in Sources */,
+				E1C4B6E7938A94C03FA9913B /* GroupSessionModels.swift in Sources */,
+				85240F31E028F533711ACBB6 /* GroupSessionScreens.swift in Sources */,
 				07F779D6550C21828C49CE7F /* LaunchIntroOverlay.swift in Sources */,
 				576CBE6F4965A11B3751F846 /* LeafBreezeLayer.swift in Sources */,
 				184FC378D7500EC88D18B7CC /* MellorityFlowPOCApp.swift in Sources */,
@@ -310,6 +335,7 @@
 				180FBE733338967EC4323922 /* OrbInteriorMediaPanel.swift in Sources */,
 				527AC1CCED7B1B353ED16D0B /* OrbNavControls.swift in Sources */,
 				834195D9EF7618D4111C44A8 /* OrbNavigationStyle.swift in Sources */,
+				E114FBC4A0DAA886D2B6FCD8 /* OrbOverlayTextStyle.swift in Sources */,
 				B89B8F023B62D4B4F34DA119 /* OrbReferenceMotion.swift in Sources */,
 				EF832AEC00AC774287A3D261 /* OrbRenderBudget.swift in Sources */,
 				8782E3E1949A033A3EAB15D1 /* OrbRingEqualizer.swift in Sources */,
@@ -321,10 +347,12 @@
 				1D64D8350D9A7636E2625743 /* ResidentExperienceScreens.swift in Sources */,
 				E733A9AC472F8DD38835045B /* ResidentMusicModel.swift in Sources */,
 				401BD5A9941B9E3EEF21CD0B /* ResidentPlaylistVisuals.swift in Sources */,
+				FF2FD441DD46D24F35DCFD13 /* ResidentSurfaceSessionMetrics.swift in Sources */,
 				60FFCA6CAA1511E381DF3C7E /* SessionBottomConfigMenu.swift in Sources */,
 				EA6F7464DCB01DE2FE788E42 /* SessionPOCState.swift in Sources */,
 				0D5F61F88E976BB8433C98AB /* SimplifiedFlowScreens.swift in Sources */,
 				ECBF72F0A1B6B0F73B5EA246 /* SplashScreenView.swift in Sources */,
+				090B3D543F873537850D36FA /* SupervisorAuth.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,13 +1,12 @@
 import SwiftUI
 
-// MARK: - Home — corporate sign-in + care roster
+// MARK: - Home — supervisor username + PIN → roster
 
 struct HomeView: View {
     @ObservedObject var state: SessionPOCState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var faceIDBusy = false
-    @State private var faceIDMessage: String?
-    @State private var showStaffOptions = false
+    @FocusState private var focusedField: Field?
+    private enum Field: Hashable { case username, pin }
 
     var body: some View {
         ScreenFadeIn {
@@ -18,9 +17,6 @@ struct HomeView: View {
                 }
             }
         }
-        .onAppear {
-            state.refreshFaceIDLink()
-        }
     }
 
     @ViewBuilder
@@ -30,112 +26,87 @@ struct HomeView: View {
 
             FadeInNoteStalgiaWordmark(magnification: SignInPageLayout.scale, delay: 0)
 
-            VStack(spacing: SignInPageLayout.stackSpacing) {
-                if !showStaffOptions {
-                    ResidentFaceIDHomeSignInButton(
-                        linkedPatient: state.faceIDLinkedPatient,
-                        isBusy: faceIDBusy,
-                        statusMessage: faceIDMessage,
-                        onSignIn: { performFaceIDSignIn() }
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                HomeStaffToggleButton(isExpanded: showStaffOptions) {
-                    withAnimation(.easeInOut(duration: 0.35)) {
-                        showStaffOptions.toggle()
-                    }
-                }
-
-                if showStaffOptions {
-                    VStack(spacing: SignInPageLayout.points(10)) {
-                        if !state.isSignedIn {
-                            SignInSecondaryButton(title: "Corporate sign-in") {
-                                state.openCorporateSignIn()
-                            }
-                        }
-                        if state.isSignedIn {
-                            SignInSecondaryButton(title: "One-to-one calm") {
-                                state.enterOneToOneCalmFlow()
-                            }
-                        }
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+            if state.isSignedIn {
+                signedInContent
+            } else {
+                supervisorSignInContent
             }
-            .animation(.easeInOut(duration: 0.35), value: showStaffOptions)
-            .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
 
             Spacer(minLength: SignInPageLayout.sectionSpacing)
         }
     }
 
-    private func performFaceIDSignIn() {
-        guard !faceIDBusy else { return }
-        faceIDBusy = true
-        faceIDMessage = nil
-        Task {
-            let error = await state.signInWithFaceIDToResidentProfile()
-            faceIDBusy = false
-            faceIDMessage = error
+    private var signedInContent: some View {
+        VStack(spacing: SignInPageLayout.stackSpacing) {
+            FadeInLine(
+                text: "Signed in — open the resident roster or sign out.",
+                delay: 0.06
+            )
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
+
+            PrimaryButton(title: "One-to-one calm") {
+                state.enterOneToOneCalmFlow()
+            }
+            .padding(.horizontal, 24)
+
+            SecondaryButton(title: "Sign out") {
+                state.isSignedIn = false
+                state.supervisorUsername = ""
+                state.supervisorPIN = ""
+            }
+            .padding(.horizontal, 24)
         }
     }
-}
 
-// MARK: - Corporate sign-in (native flow page — orb shell + dissolve transition)
+    private var supervisorSignInContent: some View {
+        VStack(spacing: SignInPageLayout.stackSpacing) {
+            FadeInLine(
+                text: "Supervisor sign-in for this care home.",
+                delay: 0.06
+            )
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
 
-struct CorporateSignInView: View {
-    @ObservedObject var state: SessionPOCState
-    @FocusState private var focusedField: Field?
-    private enum Field: Hashable { case email, password }
-
-    var body: some View {
-        ScreenFadeIn {
-            CenteredScrollScreen(
-                backAccessibilityLabel: "Back to home",
-                onBack: { state.abandonCorporateSignIn() }
-            ) {
-                VStack(spacing: 24) {
-                    FadeInTitle(text: "Corporate sign-in", delay: 0)
-                    FadeInLine(
-                        text: "Staff roster, room prep, and session notes.",
-                        delay: 0.08
-                    )
-
-                    BrandCard {
-                        VStack(alignment: .leading, spacing: 18) {
-                            labeledField(
-                                title: "Email",
-                                content: {
-                                    TextField("you@example.com", text: $state.email)
-                                        .textContentType(.emailAddress)
-                                        .keyboardType(.emailAddress)
-                                        .textInputAutocapitalization(.never)
-                                        .autocorrectionDisabled()
-                                        .focused($focusedField, equals: .email)
-                                        .submitLabel(.next)
-                                        .onSubmit { focusedField = .password }
-                                }
-                            )
-                            labeledField(
-                                title: "Password",
-                                content: {
-                                    SecureField("Password", text: $state.password)
-                                        .textContentType(.password)
-                                        .focused($focusedField, equals: .password)
-                                        .submitLabel(.go)
-                                        .onSubmit(signInContinue)
-                                }
-                            )
+            BrandCard {
+                VStack(alignment: .leading, spacing: 18) {
+                    labeledField(
+                        title: "Username",
+                        content: {
+                            TextField("Username", text: $state.supervisorUsername)
+                                .textContentType(.username)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .focused($focusedField, equals: .username)
+                                .submitLabel(.next)
+                                .onSubmit { focusedField = .pin }
                         }
-                    }
-                    .padding(.horizontal, 4)
-
-                    PrimaryButton(title: "Continue", action: signInContinue)
-                        .padding(.horizontal, 24)
+                    )
+                    labeledField(
+                        title: "PIN",
+                        content: {
+                            SecureField("PIN", text: $state.supervisorPIN)
+                                .textContentType(.oneTimeCode)
+                                .keyboardType(.numberPad)
+                                .focused($focusedField, equals: .pin)
+                                .submitLabel(.go)
+                                .onSubmit(attemptSignIn)
+                        }
+                    )
                 }
-                .padding(.vertical, 28)
             }
+            .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
+
+            if let error = state.supervisorSignInError, !error.isEmpty {
+                Text(error)
+                    .font(SignInPageLayout.captionFont)
+                    .orbOverlayText(muted: true)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
+
+            PrimaryButton(title: "Continue", action: attemptSignIn)
+                .padding(.horizontal, 24)
         }
     }
 
@@ -158,9 +129,10 @@ struct CorporateSignInView: View {
         }
     }
 
-    private func signInContinue() {
-        state.completeCorporateSignIn()
-        CalmExperienceFeedback.signInSuccess()
+    private func attemptSignIn() {
+        if state.completeSupervisorSignIn() == nil {
+            CalmExperienceFeedback.signInSuccess()
+        }
     }
 }
 
@@ -354,4 +326,3 @@ struct InsightView: View {
         }
     }
 }
-

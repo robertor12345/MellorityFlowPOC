@@ -30,8 +30,10 @@ struct CarePatientProfile: Identifiable, Equatable {
     var residentAgeYears: Int
     /// Preferred genre for resident iPad playlists.
     var favouriteMusicGenre: ResidentMusicGenre
-    /// Asset name in `Assets.xcassets` (stock portrait for face-linked roster POC).
+    /// Asset name in `Assets.xcassets` (stock portrait fallback).
     var stockPortraitAssetName: String
+    /// Temporary profile created during new-resident discovery — replaced when supervisor saves details.
+    var isProvisional: Bool
     /// Curated playlists keyed by genre — shown when staff opens this profile (e.g. from face-linked photo).
     var genrePlaylistGroups: [CareGenrePlaylistGroup]
 }
@@ -66,6 +68,17 @@ struct CareSessionRecord: Identifiable, Equatable {
     var engagement: Int?
     /// 0–100: struggled to tolerate vs comfortable throughout.
     var comfortTolerance: Int?
+    /// Supervisor 1–10 ratings (nil if skipped).
+    var moodRating: Int?
+    var alertnessRating: Int?
+    var emotionalStateRating: Int?
+    var lucidityRating: Int?
+    /// Resident calm-surface session length (seconds).
+    var sessionDurationSeconds: Int?
+    var residentGenrePlayCount: Int?
+    var residentTrackChangeCount: Int?
+    var residentImmersiveEntryCount: Int?
+    var residentGenresPlayedSummary: String?
 }
 
 enum CareStaffMockData {
@@ -91,6 +104,7 @@ enum CareStaffMockData {
             residentAgeYears: 82,
             favouriteMusicGenre: .classical,
             stockPortraitAssetName: "StockPortraitElena",
+            isProvisional: false,
             genrePlaylistGroups: [
                 CareGenrePlaylistGroup(
                     genre: .classical,
@@ -142,6 +156,7 @@ enum CareStaffMockData {
             residentAgeYears: 76,
             favouriteMusicGenre: .jazz,
             stockPortraitAssetName: "StockPortraitJames",
+            isProvisional: false,
             genrePlaylistGroups: [
                 CareGenrePlaylistGroup(
                     genre: .jazz,
@@ -193,6 +208,7 @@ enum CareStaffMockData {
             residentAgeYears: 71,
             favouriteMusicGenre: .classical,
             stockPortraitAssetName: "StockPortraitSam",
+            isProvisional: false,
             genrePlaylistGroups: [
                 CareGenrePlaylistGroup(
                     genre: .classical,
@@ -232,7 +248,16 @@ enum CareStaffMockData {
             staffNote: "Eyes closed most of time; shorter block next visit.",
             settledness: 72,
             engagement: 58,
-            comfortTolerance: 80
+            comfortTolerance: 80,
+            moodRating: 6,
+            alertnessRating: 5,
+            emotionalStateRating: 7,
+            lucidityRating: 6,
+            sessionDurationSeconds: 720,
+            residentGenrePlayCount: 4,
+            residentTrackChangeCount: 2,
+            residentImmersiveEntryCount: 1,
+            residentGenresPlayedSummary: "Classical ×2, Gospel ×2"
         ),
         CareSessionRecord(
             id: UUID(uuidString: "bbbbbbbb-bbbb-4ccc-8ddd-222222222202")!,
@@ -254,7 +279,11 @@ enum CareStaffMockData {
             staffNote: "Dim lights helped; even slower intro next time.",
             settledness: 55,
             engagement: 44,
-            comfortTolerance: 62
+            comfortTolerance: 62,
+            moodRating: 4,
+            alertnessRating: 5,
+            emotionalStateRating: 4,
+            lucidityRating: 7
         ),
         CareSessionRecord(
             id: UUID(uuidString: "bbbbbbbb-bbbb-4ccc-8ddd-222222222204")!,
@@ -265,7 +294,11 @@ enum CareStaffMockData {
             staffNote: "Voice + ocean landed well; stayed for full length.",
             settledness: 68,
             engagement: 74,
-            comfortTolerance: 85
+            comfortTolerance: 85,
+            moodRating: 7,
+            alertnessRating: 6,
+            emotionalStateRating: 8,
+            lucidityRating: 7
         ),
     ]
 }

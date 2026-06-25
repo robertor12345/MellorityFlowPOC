@@ -107,11 +107,11 @@ struct ResidentStaffHandoffOverlay: View {
                 if let patientName {
                     Text(patientName)
                         .font(.title3.weight(.medium))
-                        .foregroundStyle(BrandTheme.cream)
+                        .orbOverlayText()
                 }
                 Text("Handing to calm")
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(BrandTheme.cream.opacity(0.82))
+                    .orbOverlayText(muted: true)
             }
             .opacity(copyOpacity)
         }
@@ -151,7 +151,7 @@ struct SessionSettlingView: View {
                 BreathingCalmProgressView(diameter: 80)
                 Text(state.isResidentSession ? "Settling" : "A quiet moment")
                     .font(.title3.weight(.medium))
-                    .foregroundStyle(BrandTheme.brown.opacity(0.88))
+                    .orbOverlayText()
             }
             .opacity(visible ? 1 : 0)
             .scaleEffect(visible ? 1 : 0.98)
@@ -168,113 +168,14 @@ struct SessionSettlingView: View {
             }
             try? await Task.sleep(nanoseconds: 560_000_000)
             await MainActor.run {
-                if state.isResidentSession {
+                if state.shouldOfferSessionSentimentFeedback() {
+                    state.beginSessionSentimentFeedback()
+                } else if state.isResidentSession {
                     state.phase = .residentProfile
                 } else {
                     state.phase = .insight
                 }
             }
-        }
-    }
-}
-
-// MARK: - Face ID welcome (portrait + greeting before calm surface)
-
-struct ResidentFaceIDWelcomeView: View {
-    @ObservedObject var state: SessionPOCState
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var contentOpacity: Double = 0
-    @State private var portraitScale: CGFloat = 0.92
-    @State private var advanceTask: Task<Void, Never>?
-
-    private var patient: CarePatientProfile? {
-        state.carePatient(id: state.selectedCarePatientId)
-    }
-
-    private var portraitDiameter: CGFloat {
-        BrandLayout.scaled(148, regular: 200, horizontalSizeClass: horizontalSizeClass)
-    }
-
-    var body: some View {
-        ZStack {
-            if let patient {
-                VStack(spacing: 28) {
-                    Image(patient.stockPortraitAssetName)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: portraitDiameter, height: portraitDiameter)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [BrandTheme.gold.opacity(0.7), BrandTheme.goldSoft.opacity(0.35)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 3
-                                )
-                        )
-                        .shadow(color: BrandTheme.brown.opacity(0.14), radius: 20, y: 8)
-                        .scaleEffect(portraitScale)
-
-                    VStack(spacing: 12) {
-                        Text("Welcome")
-                            .font(BrandTheme.title(.largeTitle))
-                            .foregroundStyle(BrandTheme.logoPink)
-
-                        Text(patient.displayName)
-                            .font(BrandTheme.title(.title))
-                            .foregroundStyle(BrandTheme.brown)
-                            .multilineTextAlignment(.center)
-
-                        Text("Your calm space is ready.")
-                            .font(.title3.weight(.regular))
-                            .foregroundStyle(BrandTheme.logoLavenderBlue)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
-                .opacity(contentOpacity)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Welcome, \(patient.displayName). Your calm space is ready.")
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture { completeWelcome() }
-        .onAppear { runWelcomeSequence() }
-        .onDisappear {
-            advanceTask?.cancel()
-            advanceTask = nil
-        }
-    }
-
-    private func runWelcomeSequence() {
-        advanceTask?.cancel()
-        withAnimation(.easeOut(duration: 0.75)) {
-            contentOpacity = 1
-            portraitScale = 1
-        }
-        advanceTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 2_800_000_000)
-            guard !Task.isCancelled else { return }
-            completeWelcome()
-        }
-    }
-
-    private func completeWelcome() {
-        guard state.phase == .residentFaceIDWelcome else { return }
-        advanceTask?.cancel()
-        advanceTask = nil
-        withAnimation(.easeInOut(duration: 0.55)) {
-            contentOpacity = 0
-            portraitScale = 1.04
-        }
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 520_000_000)
-            guard state.phase == .residentFaceIDWelcome else { return }
-            state.completeResidentFaceIDWelcome()
         }
     }
 }

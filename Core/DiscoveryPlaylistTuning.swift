@@ -68,7 +68,7 @@ enum DiscoveryPlaylistTuning {
         return true
     }
 
-    private static func stubGenreGroup(for genre: ResidentMusicGenre, encoreOnly: Bool = false) -> CareGenrePlaylistGroup {
+    static func stubGenreGroup(for genre: ResidentMusicGenre, encoreOnly: Bool = false) -> CareGenrePlaylistGroup {
         CareGenrePlaylistGroup(genre: genre, playlists: [encoreOnly ? stubEncore(for: genre) : stubPrimary(for: genre)])
     }
 

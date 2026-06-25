@@ -5,7 +5,6 @@ struct FlowRootView: View {
     @State private var launchComplete = false
     @State private var launchAnchor = Date()
     @State private var launchDidFinish = false
-    @State private var offeredLaunchFaceID = false
 
     private let launchTotalDuration: Double = 11.5
 
@@ -27,6 +26,15 @@ struct FlowRootView: View {
 
             ZStack {
                 BrandBackground(showSparkles: false)
+
+                GoldAmbientSparklesView(
+                    particleCount: BrandTheme.ambientSparkleParticleCount,
+                    intensity: BrandTheme.ambientSparkleIntensity
+                )
+                .ignoresSafeArea()
+                .zIndex(0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
 
                 PersistentFlowOrbShell(configuration: shellConfig, anchor: launchAnchor)
                     .zIndex(1)
@@ -103,15 +111,21 @@ struct FlowRootView: View {
             case .residentProfile:
                 ResidentProfileView(state: state)
             case .careFaceLinkedPick:
-                CareFaceLinkedPickView(state: state)
+                CarePatientListView(state: state)
             case .careDiscoveryCalibration:
                 DiscoveryCalibrationView(state: state)
             case .sessionSettling:
                 SessionSettlingView(state: state)
-            case .residentFaceIDWelcome:
-                ResidentFaceIDWelcomeView(state: state)
-            case .corporateSignIn:
-                CorporateSignInView(state: state)
+            case .careDiscoveryAgeInput:
+                CareDiscoveryAgeInputView(state: state)
+            case .careNewResidentProfile:
+                CareNewResidentProfileView(state: state)
+            case .careSessionSentimentFeedback:
+                CareSessionSentimentFeedbackView(state: state)
+            case .careGroupSession:
+                GroupSessionView(state: state)
+            case .careGroupSessionFeedback:
+                GroupSessionFeedbackView(state: state)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -137,22 +151,6 @@ struct FlowRootView: View {
         withAnimation(.easeInOut(duration: 0.62)) {
             launchComplete = true
         }
-        offerLaunchFaceIDIfNeeded()
-    }
-
-    private func offerLaunchFaceIDIfNeeded() {
-        guard !offeredLaunchFaceID,
-              state.shouldOfferResidentSignInOnLaunch,
-              state.faceIDLinkedPatient != nil,
-              PatientBiometricAuth.isAvailable
-        else { return }
-        offeredLaunchFaceID = true
-        state.shouldOfferResidentSignInOnLaunch = false
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 900_000_000)
-            guard state.phase == .home else { return }
-            _ = await state.signInWithFaceIDToResidentProfile()
-        }
     }
 }
 
@@ -175,8 +173,11 @@ struct BrandBackground: View {
             )
             .ignoresSafeArea()
             if showSparkles {
-                GoldAmbientSparklesView(intensity: 0.22)
-                    .ignoresSafeArea()
+                GoldAmbientSparklesView(
+                    particleCount: BrandTheme.ambientSparkleParticleCount,
+                    intensity: BrandTheme.ambientSparkleIntensity
+                )
+                .ignoresSafeArea()
             }
         }
     }
