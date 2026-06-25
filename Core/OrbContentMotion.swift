@@ -10,7 +10,7 @@ struct OrbContentMotion: ViewModifier {
 
     func body(content: Content) -> some View {
         if enabled && !reduceMotion {
-            TimelineView(.animation(minimumInterval: 1 / 30, paused: pulseMode == .dormant)) { timeline in
+            TimelineView(.animation(minimumInterval: OrbRenderBudget.contentFrameInterval(reduceMotion: reduceMotion), paused: pulseMode == .dormant)) { timeline in
                 let elapsed = timeline.date.timeIntervalSince(anchor)
             let sample = OrbPulseSample.sample(
                 at: elapsed,

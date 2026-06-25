@@ -48,7 +48,7 @@ struct GoldAmbientSparklesView: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 50, paused: false)) { timeline in
+        TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.sparkleFramesPerSecond, paused: false)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
                 // No full-screen radial “haze” here — only particles — avoids a dome / semicircle tint on pastel UI.
@@ -68,6 +68,9 @@ struct GoldAmbientSparklesView: View {
                     let cy = p.yFrac * size.height + CGFloat(wobbleY)
                     let tw = 0.38 + 0.62 * pow(sin(t * p.twinkleSpeed + Double(p.id) * 0.37), 2)
                     let op = p.baseOpacity * CGFloat(tw) * intensity
+
+                    // Skip near-invisible particles — halves draw calls during low twinkle at 60fps.
+                    if op < 0.012 { continue }
 
                     let core = CGRect(
                         x: cx - p.radius * 0.4,
@@ -117,7 +120,6 @@ struct GoldAmbientSparklesView: View {
                     )
                 }
             }
-            .blur(radius: 0.35)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)

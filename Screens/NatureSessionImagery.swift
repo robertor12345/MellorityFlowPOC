@@ -58,7 +58,7 @@ private struct SessionSkyAndMist: View {
 
 private struct NatureAmbientOrbs: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / OrbRenderBudget.ambientFramesPerSecond)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             ZStack {
                 ForEach(0 ..< 8, id: \.self) { i in
@@ -94,7 +94,7 @@ private struct NatureAmbientOrbs: View {
 
 private struct MountainSilhouetteStack: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / OrbRenderBudget.ambientFramesPerSecond)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let drift = CGFloat(sin(t * 0.06)) * 14
             GeometryReader { geo in
@@ -189,7 +189,7 @@ private struct LakeWaterStack: View {
     var body: some View {
         GeometryReader { geo in
             let h = geo.size.height
-            TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / OrbRenderBudget.ambientFramesPerSecond)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 ZStack(alignment: .bottom) {
                     LakeBandShape(phase: t * 1.1, secondary: false)
@@ -284,7 +284,7 @@ private struct NatureSymbolDrift: View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
-            TimelineView(.animation(minimumInterval: 1.0 / 35)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / OrbRenderBudget.ambientFramesPerSecond)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 ZStack {
                     ForEach(0 ..< Self.symbols.count, id: \.self) { i in

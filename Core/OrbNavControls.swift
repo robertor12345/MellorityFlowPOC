@@ -95,7 +95,7 @@ struct PrimaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(BrandTheme.buttonLabel(.headline))
-                .foregroundStyle(Color.white)
+                .foregroundStyle(BrandTheme.textOnOrb)
                 .shadow(color: Color(red: 0.42, green: 0.58, blue: 0.72).opacity(0.38), radius: 1.5, y: 1)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -116,7 +116,7 @@ struct SecondaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(BrandTheme.buttonLabel(.subheadline))
-                .foregroundStyle(BrandTheme.brown)
+                .foregroundStyle(BrandTheme.textPrimary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -143,7 +143,7 @@ struct FlowSmallBackButton: View {
                 Text(title)
                     .font(.caption.weight(.medium))
             }
-            .foregroundStyle(BrandTheme.brown.opacity(0.9))
+            .foregroundStyle(BrandTheme.textPrimary.opacity(0.9))
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
             .background {
@@ -187,7 +187,7 @@ struct SignInPrimaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(SignInPageLayout.subheadFont)
-                .foregroundStyle(Color.white.opacity(0.98))
+                .foregroundStyle(BrandTheme.textOnOrb.opacity(0.98))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, SignInPageLayout.buttonVerticalPadding)
@@ -207,7 +207,7 @@ struct SignInSecondaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(SignInPageLayout.subheadFont)
-                .foregroundStyle(BrandTheme.brown.opacity(0.92))
+                .foregroundStyle(BrandTheme.textPrimary.opacity(0.92))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, SignInPageLayout.buttonVerticalPadding)
@@ -231,7 +231,7 @@ struct HomeStaffToggleButton: View {
                 Text(isExpanded ? "Hide staff" : "Staff")
                     .font(SignInPageLayout.staffToggleFont)
             }
-            .foregroundStyle(BrandTheme.brownMuted.opacity(0.92))
+            .foregroundStyle(BrandTheme.textSecondary.opacity(0.92))
             .padding(.vertical, SignInPageLayout.staffToggleVerticalPadding)
             .padding(.horizontal, SignInPageLayout.staffToggleHorizontalPadding)
             .background {
@@ -269,7 +269,7 @@ struct OrbNavTile: View {
                     MellorityOrbBackdrop(diameter: iconOrbDiameter, pulse: 0.52, glowPulse: 0.68)
                     Image(systemName: systemImage)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(BrandTheme.textOnOrb)
                         .shadow(color: Color(red: 0.38, green: 0.58, blue: 0.78).opacity(0.35), radius: 4, y: 1)
                 }
                 .frame(width: iconOrbDiameter, height: iconOrbDiameter)
@@ -277,10 +277,10 @@ struct OrbNavTile: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(BrandTheme.title(.headline))
-                        .foregroundStyle(BrandTheme.brown)
+                        .foregroundStyle(BrandTheme.textPrimary)
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -314,7 +314,7 @@ struct OrbIconNavButton: View {
                 MellorityOrbBackdrop(diameter: diameter, pulse: 0.5, glowPulse: 0.66)
                 Image(systemName: systemImage)
                     .font(.system(size: diameter * 0.38, weight: .medium))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(BrandTheme.textOnOrb)
                     .shadow(color: Color(red: 0.38, green: 0.58, blue: 0.78).opacity(0.35), radius: 4, y: 1)
             }
             .frame(width: diameter, height: diameter)
@@ -365,10 +365,10 @@ struct OrbPortraitNavButton: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(BrandTheme.title(.headline))
-                        .foregroundStyle(BrandTheme.brown)
+                        .foregroundStyle(BrandTheme.textPrimary)
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
@@ -422,10 +422,10 @@ struct OrbFaceLinkedTile: View {
                 VStack(spacing: 2) {
                     Text(title)
                         .font(BrandTheme.title(.headline))
-                        .foregroundStyle(BrandTheme.brown)
+                        .foregroundStyle(BrandTheme.textPrimary)
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                         .multilineTextAlignment(.center)
                 }
             }
@@ -472,7 +472,7 @@ struct OrbMoodNavOrb: View {
                 )
                 Text(title)
                     .font(.system(size: isSelected ? 17 : 15, weight: isSelected ? .semibold : .regular, design: .rounded))
-                    .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.92))
+                    .foregroundStyle(isSelected ? BrandTheme.textOnOrb : BrandTheme.textOnOrb.opacity(0.92))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .minimumScaleFactor(0.7)
@@ -498,12 +498,12 @@ struct OrbPickerLabel: View {
                 MellorityOrbBackdrop(diameter: 36, pulse: 0.5, glowPulse: 0.62)
                 Image(systemName: systemImage)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(BrandTheme.textOnOrb)
             }
             .frame(width: 36, height: 36)
             Text(title)
                 .font(BrandTheme.buttonLabel(.subheadline))
-                .foregroundStyle(BrandTheme.brown)
+                .foregroundStyle(BrandTheme.textPrimary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
@@ -524,7 +524,7 @@ struct OrbSessionSettingsChip: View {
                 MellorityOrbBackdrop(diameter: 28, pulse: 0.5, glowPulse: 0.6)
                 Image(systemName: systemImage)
                     .font(.caption2.weight(.bold))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(BrandTheme.textOnOrb)
             }
             .frame(width: 28, height: 28)
             Text(title)
@@ -532,7 +532,7 @@ struct OrbSessionSettingsChip: View {
             Image(systemName: isExpanded ? "chevron.compact.down" : "chevron.compact.up")
                 .font(.caption2.weight(.bold))
         }
-        .foregroundStyle(BrandTheme.brown.opacity(0.95))
+        .foregroundStyle(BrandTheme.textPrimary.opacity(0.95))
         .padding(.vertical, 7)
         .padding(.horizontal, 12)
         .background { OrbSkyCapsuleFill().opacity(0.92) }

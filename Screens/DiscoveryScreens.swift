@@ -250,7 +250,7 @@ private struct DiscoveryEraListeningOrb: View {
     var body: some View {
         let coreDiameter = min(orbSize.width, orbSize.height)
         let canvasDiameter = OrbRingEqualizerView.canvasDiameter(for: coreDiameter)
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+        TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(pulseAnchor) * flowPanelPulseSpeed
             let sample = OrbPulseSample.sample(
                 at: elapsed,

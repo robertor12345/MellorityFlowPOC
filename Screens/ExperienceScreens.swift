@@ -26,14 +26,14 @@ struct ProcessingFastView: View {
                         VStack(spacing: 28) {
                             if state.isCareStaffSession, let p = state.carePatient(id: state.activeCarePatientId) {
                                 Text("With \(p.displayName)")
-                                    .font(.caption.weight(.medium))
+                                    .font(BrandTheme.orbHintFont())
                                     .orbOverlayText(muted: true)
                             }
 
                             BreathingCalmProgressView(diameter: 72)
 
                             Text(messages[tick % messages.count])
-                                .font(BrandTheme.title(.title3))
+                                .font(BrandTheme.orbLineFont())
                                 .multilineTextAlignment(.center)
                                 .orbOverlayText()
                                 .padding(.horizontal)
@@ -128,25 +128,25 @@ struct ImmersiveSessionView: View {
                     VStack(spacing: 12) {
                         Text("Music · nature video · heart rate")
                             .font(.caption2)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                             .multilineTextAlignment(.center)
 
                         HStack(spacing: 24) {
                             VStack(spacing: 4) {
                                 Text("HR")
                                     .font(.caption2)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text("\(Int(state.mockHeartRateCurrent))")
                                     .font(.title2.monospacedDigit())
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                             }
                             VStack(spacing: 4) {
                                 Text("Calm")
                                     .font(.caption2)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text("\(Int(state.calmScore * 100))%")
                                     .font(.title2.monospacedDigit())
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                             }
                         }
                         .padding()

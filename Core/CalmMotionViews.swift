@@ -1,5 +1,29 @@
 import SwiftUI
 
+// MARK: - Shared calm motion language (ethereal, unhurried)
+
+/// Centralised animation curves so transitions across the app feel consistent and calm.
+enum CalmMotion {
+    /// Cross-screen phase changes — slow, weightless cross-dissolve.
+    static let ethereal: Animation = .easeInOut(duration: 0.8)
+    /// In-place content changes (cards, step swaps) — soft settle, no bounce.
+    static let gentle: Animation = .spring(response: 0.66, dampingFraction: 0.92, blendDuration: 0.2)
+    /// Screen content fading in after a transition.
+    static let softFade: Animation = .easeOut(duration: 0.6)
+    /// Small state tweaks (button enable, progress fill) — quick but smooth.
+    static let subtle: Animation = .easeInOut(duration: 0.34)
+}
+
+extension AnyTransition {
+    /// Opacity + the faintest scale and upward drift — content "arrives" rather than snaps.
+    static var etherealAppear: AnyTransition {
+        .asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.99)).combined(with: .offset(y: 8)),
+            removal: .opacity.combined(with: .scale(scale: 1.006))
+        )
+    }
+}
+
 // MARK: - Soft press (buttons feel organic, not sharp)
 
 struct SoftPressButtonStyle: ButtonStyle {
@@ -106,11 +130,11 @@ struct ResidentStaffHandoffOverlay: View {
                     .scaleEffect(1 + orbGlow * 0.08)
                 if let patientName {
                     Text(patientName)
-                        .font(.title3.weight(.medium))
+                        .font(BrandTheme.orbTitleFont(.title2))
                         .orbOverlayText()
                 }
                 Text("Handing to calm")
-                    .font(.subheadline.weight(.medium))
+                    .font(BrandTheme.orbLineFont())
                     .orbOverlayText(muted: true)
             }
             .opacity(copyOpacity)
@@ -150,7 +174,7 @@ struct SessionSettlingView: View {
             VStack(spacing: 22) {
                 BreathingCalmProgressView(diameter: 80)
                 Text(state.isResidentSession ? "Settling" : "A quiet moment")
-                    .font(.title3.weight(.medium))
+                    .font(BrandTheme.orbTitleFont(.title2))
                     .orbOverlayText()
             }
             .opacity(visible ? 1 : 0)

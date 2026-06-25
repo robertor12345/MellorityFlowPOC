@@ -31,6 +31,8 @@ struct GroupSessionView: View {
                     }
                 }
                 .padding(.vertical, 20)
+                .animation(CalmMotion.gentle, value: currentIndex)
+                .animation(CalmMotion.subtle, value: isPlaying)
             }
         }
         .onAppear {
@@ -56,7 +58,7 @@ struct GroupSessionView: View {
                     Text("End session")
                         .font(.subheadline.weight(.semibold))
                 }
-                .foregroundStyle(BrandTheme.brown)
+                .foregroundStyle(BrandTheme.textPrimary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(BrandTheme.cream.opacity(0.94))
@@ -69,7 +71,7 @@ struct GroupSessionView: View {
 
             Text("Group mode")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(BrandTheme.brownMuted)
+                .foregroundStyle(BrandTheme.textSecondary)
         }
         .padding(.horizontal, BrandTheme.contentGutter)
         .padding(.top, 12)
@@ -81,7 +83,7 @@ struct GroupSessionView: View {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Now playing")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
 
                 HStack(spacing: 14) {
                     ZStack {
@@ -96,18 +98,18 @@ struct GroupSessionView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(track.title)
                             .font(.title3.weight(.semibold))
-                            .foregroundStyle(BrandTheme.brown)
+                            .foregroundStyle(BrandTheme.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
                         Text("\(track.genre.accessibilityLabel) · drawn from \(track.sourceResidentName)")
                             .font(.caption)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
                 Text("Track \(currentIndex + 1) of \(tracks.count) · playlist compiled from resident listening data across your home.")
                     .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -146,7 +148,7 @@ struct GroupSessionView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Group playlist")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
 
                 ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
                     Button {
@@ -162,11 +164,11 @@ struct GroupSessionView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(track.title)
                                     .font(.body.weight(index == currentIndex ? .semibold : .regular))
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                                     .multilineTextAlignment(.leading)
                                 Text(track.sourceResidentName)
                                     .font(.caption2)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                             }
                             Spacer(minLength: 0)
                             if index == currentIndex {
@@ -230,11 +232,11 @@ private struct GroupTransportButton: View {
                         )
                     Image(systemName: systemImage)
                         .font(prominent ? .title2.weight(.semibold) : .body.weight(.semibold))
-                        .foregroundStyle(BrandTheme.brown)
+                        .foregroundStyle(BrandTheme.textPrimary)
                 }
                 Text(label)
                     .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
             }
         }
         .buttonStyle(ChimingPlainButtonStyle())
@@ -282,10 +284,10 @@ struct GroupSessionFeedbackView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Session captured")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text(summary)
                                     .font(.body)
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -299,13 +301,13 @@ struct GroupSessionFeedbackView: View {
                         VStack(alignment: .leading, spacing: 18) {
                             Text("Step \(state.groupSessionFeedbackStep + 1) of \(GroupSessionFeedbackStep.allCases.count)")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .foregroundStyle(BrandTheme.textSecondary)
                             Text(currentStep.title)
                                 .font(.title2.weight(.semibold))
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.textPrimary)
                             Text(currentStep.prompt)
                                 .font(.body)
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .foregroundStyle(BrandTheme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
 
                             SentimentScalePicker(
@@ -318,11 +320,11 @@ struct GroupSessionFeedbackView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Optional note")
                                         .font(.caption.weight(.semibold))
-                                        .foregroundStyle(BrandTheme.brownMuted)
+                                        .foregroundStyle(BrandTheme.textSecondary)
                                     TextField("Anything else about the group?", text: $state.groupSessionFeedbackDraft.note, axis: .vertical)
                                         .lineLimit(1 ... 4)
                                         .font(.body)
-                                        .foregroundStyle(BrandTheme.brown)
+                                        .foregroundStyle(BrandTheme.textPrimary)
                                         .padding(12)
                                         .background(BrandTheme.creamMid.opacity(0.95))
                                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -335,8 +337,11 @@ struct GroupSessionFeedbackView: View {
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .id(state.groupSessionFeedbackStep)
+                        .transition(.etherealAppear)
                     }
                     .padding(.horizontal, 4)
+                    .animation(CalmMotion.gentle, value: state.groupSessionFeedbackStep)
 
                     PrimaryButton(title: isLastStep ? "Save & return to roster" : "Next") {
                         if isLastStep {
@@ -348,6 +353,7 @@ struct GroupSessionFeedbackView: View {
                     }
                     .disabled(currentSelection == nil)
                     .opacity(currentSelection == nil ? 0.45 : 1)
+                    .animation(CalmMotion.subtle, value: currentSelection)
                     .padding(.horizontal, 24)
 
                     SecondaryButton(title: "Skip — back to roster") {
@@ -369,6 +375,7 @@ struct GroupSessionFeedbackView: View {
             }
         }
         .padding(.horizontal, 4)
+        .animation(CalmMotion.subtle, value: state.groupSessionFeedbackStep)
     }
 
     private var backLabel: String {

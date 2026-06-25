@@ -9,7 +9,7 @@ struct LeafBreezeLayer: View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
-            TimelineView(.animation(minimumInterval: 1.0 / 45)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / OrbRenderBudget.ambientFramesPerSecond)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 ZStack {
                     ForEach(0 ..< leafCount, id: \.self) { i in

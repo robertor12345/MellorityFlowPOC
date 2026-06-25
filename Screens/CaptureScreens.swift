@@ -46,7 +46,7 @@ struct CapturePhotoView: View {
                         .foregroundStyle(BrandTheme.goldDeep)
                     Text("Add a photo to move on")
                         .font(.caption)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)

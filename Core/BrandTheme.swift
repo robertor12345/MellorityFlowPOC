@@ -38,18 +38,6 @@ enum BrandTheme {
     /// Softer layer when stacked (e.g. resident playlist playing).
     static let ambientSparkleIntensitySubtle: CGFloat = 0.32
 
-    // MARK: - Logo wordmark tones (readable on cosmic canvas)
-    static let logoPink = Color(red: 0.91, green: 0.72, blue: 0.84)
-    static let logoCyan = Color(red: 0.56, green: 0.84, blue: 0.93)
-    static let logoLavenderBlue = Color(red: 0.78, green: 0.82, blue: 0.98)
-
-    // MARK: - Typography & accents (semantic names kept for existing screens)
-    static let brown = Color(red: 0.96, green: 0.88, blue: 0.94)
-    static let brownMuted = logoLavenderBlue.opacity(0.92)
-    static let gold = logoCyan
-    static let goldSoft = logoPink.opacity(0.88)
-    static let goldDeep = Color(red: 0.62, green: 0.88, blue: 0.96)
-
     // MARK: - Intro / splash copy on dark field
     static let introTitle = Color(red: 0.96, green: 0.88, blue: 1.0)
     static let introTitleHighlight = Color(red: 0.72, green: 0.94, blue: 1.0)
@@ -57,6 +45,43 @@ enum BrandTheme {
     static let introBody = Color(red: 0.68, green: 0.64, blue: 0.82)
     static let introTextHalo = Color(red: 0.45, green: 0.35, blue: 0.72).opacity(0.55)
     static let introTextShadow = Color.black.opacity(0.45)
+
+    // MARK: - Semantic text (readability-first on cosmic canvas)
+    /// Primary copy on the gradient and dark cards.
+    static let textPrimary = introTitle
+    /// Secondary labels, hints, and metadata.
+    static let textSecondary = introSubtitle
+    /// Captions and de-emphasized copy.
+    static let textTertiary = introBody
+    /// Short labels on the nebula orb — near-white for maximum contrast on colour.
+    static let textOnOrb = Color(red: 0.99, green: 0.98, blue: 1.0)
+    /// De-emphasised orb copy — still light, not grey.
+    static let textOnOrbMuted = Color(red: 0.93, green: 0.95, blue: 1.0)
+
+    // MARK: - Orb overlay typography (sized up for legibility on the nebula)
+    static func orbTitleFont(_ style: Font.TextStyle = .largeTitle) -> Font {
+        .system(style, design: .rounded, weight: .semibold)
+    }
+
+    static func orbLineFont(_ style: Font.TextStyle = .title3) -> Font {
+        .system(style, design: .rounded, weight: .medium)
+    }
+
+    static func orbHintFont(_ style: Font.TextStyle = .body) -> Font {
+        .system(style, design: .rounded, weight: .medium)
+    }
+
+    // MARK: - Logo wordmark tones (readable on cosmic canvas)
+    static let logoPink = Color(red: 0.91, green: 0.72, blue: 0.84)
+    static let logoCyan = Color(red: 0.56, green: 0.84, blue: 0.93)
+    static let logoLavenderBlue = Color(red: 0.78, green: 0.82, blue: 0.98)
+
+    // MARK: - Typography & accents (legacy aliases — prefer textPrimary / textSecondary)
+    static let brown = textPrimary
+    static let brownMuted = textSecondary
+    static let gold = logoCyan
+    static let goldSoft = logoPink.opacity(0.88)
+    static let goldDeep = Color(red: 0.62, green: 0.88, blue: 0.96)
 
     static let introPeach = introTitleHighlight
     static let introPeachSoft = introBody

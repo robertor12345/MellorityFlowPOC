@@ -13,7 +13,7 @@ struct ResidentFaceIDHomeSignInButton: View {
                 HStack(spacing: SignInPageLayout.points(12)) {
                     Image(systemName: "faceid")
                         .font(SignInPageLayout.iconFont)
-                        .foregroundStyle(Color.white.opacity(0.98))
+                        .foregroundStyle(BrandTheme.textOnOrb.opacity(0.98))
                         .accessibilityHidden(true)
 
                     Group {
@@ -24,7 +24,7 @@ struct ResidentFaceIDHomeSignInButton: View {
                         }
                     }
                     .font(SignInPageLayout.subheadFont)
-                    .foregroundStyle(Color.white.opacity(0.98))
+                    .foregroundStyle(BrandTheme.textOnOrb.opacity(0.98))
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
@@ -87,10 +87,10 @@ struct PatientFaceIDSignInPanel: View {
                 VStack(spacing: SignInPageLayout.points(6)) {
                     Text(isLinkedProfile ? "Quick resident sign-in" : patient.displayName)
                         .font(SignInPageLayout.labelFont)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                     Text(isLinkedProfile ? patient.displayName : patient.careContextLabel)
                         .font(SignInPageLayout.titleFont)
-                        .foregroundStyle(BrandTheme.brown)
+                        .foregroundStyle(BrandTheme.textPrimary)
                         .multilineTextAlignment(.center)
                 }
 
@@ -103,12 +103,12 @@ struct PatientFaceIDSignInPanel: View {
                 if let statusMessage, !statusMessage.isEmpty {
                     Text(statusMessage)
                         .font(SignInPageLayout.captionFont)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                         .multilineTextAlignment(.center)
                 } else {
                     Text("Opens \(patient.displayName)'s calm surface — floating music symbols, no staff menus.")
                         .font(SignInPageLayout.captionFont)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                         .multilineTextAlignment(.center)
                 }
 
@@ -117,7 +117,7 @@ struct PatientFaceIDSignInPanel: View {
                         onUnlink()
                     }
                     .font(SignInPageLayout.captionFont)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
                     .buttonStyle(ChimingPlainButtonStyle())
                 }
             }

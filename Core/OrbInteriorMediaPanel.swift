@@ -20,7 +20,7 @@ struct OrbInteriorMediaPanel<Media: View>: View {
         let diameter = min(orbSize.width, orbSize.height)
         let mediaDiameter = diameter * mediaFillScale
 
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+        TimelineView(.animation(minimumInterval: OrbRenderBudget.contentFrameInterval(reduceMotion: reduceMotion), paused: false)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(pulseAnchor) * flowPanelPulseSpeed
             let sample = OrbPulseSample.sample(
                 at: elapsed,

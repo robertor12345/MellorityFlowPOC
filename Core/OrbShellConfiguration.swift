@@ -83,7 +83,7 @@ struct PersistentFlowOrbShell: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.shellFramesPerSecond, paused: configuration.pulseMode == .dormant)) { timeline in
+        TimelineView(.animation(minimumInterval: OrbRenderBudget.shellFrameInterval(reduceMotion: reduceMotion), paused: configuration.pulseMode == .dormant)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(anchor) * configuration.panelPulseSpeed
             let sample = OrbPulseSample.sample(
                 at: elapsed,

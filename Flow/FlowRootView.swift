@@ -63,9 +63,9 @@ struct FlowRootView: View {
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.62), value: state.phase)
-        .animation(.easeInOut(duration: 0.62), value: launchComplete)
-        .animation(.easeInOut(duration: 0.5), value: state.residentHandoffActive)
+        .animation(CalmMotion.ethereal, value: state.phase)
+        .animation(CalmMotion.ethereal, value: launchComplete)
+        .animation(CalmMotion.softFade, value: state.residentHandoffActive)
         .contentShape(Rectangle())
         .onTapGesture {
             skipLaunchIfNeeded()
@@ -135,7 +135,8 @@ struct FlowRootView: View {
             pulseMode: style.pulseMode,
             enabled: style.floats && style.showsMenuEnvelope
         )
-        .transition(.opacity)
+        .id(state.phase)
+        .transition(.etherealAppear)
         .opacity(launchComplete ? 1 : 0)
         .allowsHitTesting(launchComplete && !state.residentHandoffActive)
     }

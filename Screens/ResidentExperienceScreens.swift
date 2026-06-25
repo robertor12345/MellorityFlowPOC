@@ -346,7 +346,7 @@ struct ResidentProfileView: View {
                     .accessibilityHint("Swipe right for the previous song, left for the next.")
             }
 
-            TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+            TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 GeometryReader { geo in
                     let hullScale = BrandLayout.hullScale(for: geo.size)

@@ -119,7 +119,7 @@ struct MellorityOrbEnvelopeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: pulseMode == .dormant)) { timeline in
+        TimelineView(.animation(minimumInterval: OrbRenderBudget.shellFrameInterval(reduceMotion: reduceMotion), paused: pulseMode == .dormant)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(anchor)
             let sample = OrbPulseSample.sample(
                 at: elapsed,
@@ -396,7 +396,7 @@ struct MellorityOrbView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: pulseMode == .dormant)) { timeline in
+        TimelineView(.animation(minimumInterval: OrbRenderBudget.shellFrameInterval(reduceMotion: reduceMotion), paused: pulseMode == .dormant)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(anchor)
             let sample = OrbPulseSample.sample(
                 at: elapsed,

@@ -1,21 +1,17 @@
 import SwiftUI
 
-extension BrandTheme {
-    /// Copy sitting directly on the nebula orb — white type with a soft grey halo.
-    static let orbOverlayText = Color.white
-}
-
 extension View {
-    /// White copy with a light faded grey shadow for legibility on the orb.
+    /// High-contrast orb copy with a dark halo for legibility on the nebula.
     func orbOverlayTextStyle(intensity: CGFloat = 1) -> some View {
-        let i = max(0.5, intensity)
-        return shadow(color: Color(white: 0.38, opacity: 0.38 * i), radius: 2 * i, x: 0, y: 1)
-            .shadow(color: Color(white: 0.48, opacity: 0.24 * i), radius: 8 * i, x: 0, y: 0)
-            .shadow(color: Color(white: 0.55, opacity: 0.14 * i), radius: 16 * i, x: 0, y: 0)
+        let i = max(0.55, intensity)
+        return shadow(color: Color.black.opacity(0.58 * i), radius: 1.5 * i, x: 0, y: 1)
+            .shadow(color: BrandTheme.nebulaDeep.opacity(0.62 * i), radius: 3 * i, x: 0, y: 2)
+            .shadow(color: Color(white: 0.18, opacity: 0.48 * i), radius: 6 * i, x: 0, y: 0)
+            .shadow(color: Color(white: 0.32, opacity: 0.30 * i), radius: 14 * i, x: 0, y: 0)
     }
 
     func orbOverlayText(muted: Bool = false, intensity: CGFloat = 1) -> some View {
-        foregroundStyle(BrandTheme.orbOverlayText.opacity(muted ? 0.88 : 1))
-            .orbOverlayTextStyle(intensity: muted ? intensity * 0.92 : intensity)
+        foregroundStyle(muted ? BrandTheme.textOnOrbMuted : BrandTheme.textOnOrb)
+            .orbOverlayTextStyle(intensity: muted ? intensity * 0.94 : intensity)
     }
 }

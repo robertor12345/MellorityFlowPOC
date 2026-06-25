@@ -15,7 +15,7 @@ struct LaunchIntroOverlay: View {
     private let wordFadeDuration: TimeInterval = 0.78
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+        TimelineView(.animation(minimumInterval: OrbRenderBudget.contentFrameInterval(reduceMotion: reduceMotion), paused: false)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(anchor)
             let sample = OrbPulseSample.sample(at: elapsed, mode: .calm, reduceMotion: reduceMotion)
             let fadeOutStart = max(0, totalDuration - 1.2)
@@ -29,9 +29,9 @@ struct LaunchIntroOverlay: View {
 
             VStack(spacing: 22) {
                 NoteStalgiaWordmark(
-                    font: .system(size: 56, weight: .medium, design: .default),
+                    font: .system(size: 60, weight: .semibold, design: .rounded),
                     tracking: 6,
-                    pointSize: 56
+                    pointSize: 60
                 )
                 .opacity(titleOpacity)
                 .offset(y: reduceMotion ? 0 : (1 - titleOpacity) * 14)
@@ -42,9 +42,9 @@ struct LaunchIntroOverlay: View {
                     startAt: reduceMotion ? 0.3 : subtitleStart,
                     wordStagger: reduceMotion ? 0 : wordStagger,
                     fadeDuration: reduceMotion ? 0.35 : wordFadeDuration,
-                    pointSize: 36,
+                    pointSize: 40,
                     weight: .semibold,
-                    legibilityIntensity: 1.0
+                    legibilityIntensity: 1.08
                 )
 
                 IntroStaggeredWords(
@@ -53,10 +53,10 @@ struct LaunchIntroOverlay: View {
                     startAt: reduceMotion ? 0.6 : thirdLineStart,
                     wordStagger: reduceMotion ? 0 : wordStagger,
                     fadeDuration: reduceMotion ? 0.35 : wordFadeDuration,
-                    pointSize: 28,
+                    pointSize: 32,
                     weight: .medium,
                     muted: true,
-                    legibilityIntensity: 0.9
+                    legibilityIntensity: 1.0
                 )
                 .padding(.horizontal, 20)
             }
@@ -95,14 +95,15 @@ private struct IntroStaggeredWords: View {
         let words = text.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
         var line = AttributedString()
         let uiWeight = weight.uiFontWeight
-        let baseAlpha: CGFloat = muted ? 0.88 : 1
+        let textColor = muted ? BrandTheme.textOnOrbMuted : BrandTheme.textOnOrb
+        let baseAlpha: CGFloat = muted ? 0.92 : 1
 
         for (index, word) in words.enumerated() {
             let progress = wordProgress(for: index)
             var chunk = AttributedString((index == 0 ? "" : " ") + word)
             var attributes = AttributeContainer()
             attributes.font = .systemFont(ofSize: pointSize, weight: uiWeight)
-            attributes.foregroundColor = UIColor.white.withAlphaComponent(baseAlpha * progress)
+            attributes.foregroundColor = UIColor(textColor).withAlphaComponent(baseAlpha * progress)
             chunk.mergeAttributes(attributes)
             line.append(chunk)
         }

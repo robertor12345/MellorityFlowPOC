@@ -29,10 +29,10 @@ struct SessionBottomConfigMenu: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Label("Home lighting", systemImage: "lightbulb.led.fill")
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.textPrimary)
                             Text("Let your lights follow the calm — Hue, HomeKit, or anything on the same bridge.")
                                 .font(.caption2)
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .foregroundStyle(BrandTheme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -48,10 +48,10 @@ struct SessionBottomConfigMenu: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Share a snapshot")
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                                 Text("Send a line about this session through the usual share sheet.")
                                     .font(.caption2)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                             }
                             Spacer(minLength: 0)
                         }

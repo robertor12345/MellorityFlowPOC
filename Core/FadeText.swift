@@ -3,7 +3,7 @@ import SwiftUI
 /// Body copy — soft fade + slight rise (on the orb).
 struct FadeInLine: View {
     let text: String
-    var font: Font = .body
+    var font: Font = BrandTheme.orbLineFont()
     var magnification: CGFloat = 1
     var muted: Bool = false
     var delay: Double = 0
@@ -32,7 +32,7 @@ struct FadeInLine: View {
 /// Title fade on the orb.
 struct FadeInTitle: View {
     let text: String
-    var size: Font.TextStyle = .title
+    var size: Font.TextStyle = .largeTitle
     var magnification: CGFloat = 1
     var delay: Double = 0
     @State private var visible = false
@@ -40,7 +40,7 @@ struct FadeInTitle: View {
     private var resolvedFont: Font {
         magnification > 1
             ? SignInPageLayout.titleFont
-            : BrandTheme.title(size)
+            : BrandTheme.orbTitleFont(size)
     }
 
     var body: some View {
@@ -67,11 +67,11 @@ struct FadeInNoteStalgiaWordmark: View {
     @State private var visible = false
 
     private var resolvedFont: Font {
-        magnification > 1 ? SignInPageLayout.titleFont : BrandTheme.title(.title)
+        magnification > 1 ? SignInPageLayout.titleFont : BrandTheme.orbTitleFont(.title)
     }
 
     private var resolvedPointSize: CGFloat {
-        magnification > 1 ? SignInPageLayout.points(28) : 28
+        magnification > 1 ? SignInPageLayout.points(28) : 32
     }
 
     var body: some View {
@@ -100,9 +100,10 @@ struct ScreenFadeIn<Content: View>: View {
     var body: some View {
         content()
             .opacity(visible ? 1 : 0)
+            .scaleEffect(visible ? 1 : 0.992)
             .offset(y: visible ? 0 : 6)
             .onAppear {
-                withAnimation(.easeOut(duration: 0.45)) {
+                withAnimation(CalmMotion.softFade) {
                     visible = true
                 }
             }

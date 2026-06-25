@@ -114,10 +114,10 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(BrandTheme.brownMuted)
+                .foregroundStyle(BrandTheme.textSecondary)
             content()
                 .font(.body)
-                .foregroundStyle(BrandTheme.brown)
+                .foregroundStyle(BrandTheme.textPrimary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
                 .background(BrandTheme.creamMid.opacity(0.95))
@@ -160,13 +160,13 @@ struct EntryModeView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Together for a little while")
                                         .font(.caption.weight(.semibold))
-                                        .foregroundStyle(BrandTheme.brown)
+                                        .foregroundStyle(BrandTheme.textPrimary)
                                     Text("\(patient.displayName) — \(patient.careContextLabel)")
                                         .font(.caption)
-                                        .foregroundStyle(BrandTheme.brownMuted)
+                                        .foregroundStyle(BrandTheme.textSecondary)
                                     Text("Their notes cover light, scent, touch, and sound — keep things soft. Mood tags are just for today.")
                                         .font(.caption2)
-                                        .foregroundStyle(BrandTheme.brownMuted.opacity(0.95))
+                                        .foregroundStyle(BrandTheme.textSecondary.opacity(0.95))
                                 }
                                 Spacer(minLength: 0)
                             }
@@ -221,7 +221,7 @@ struct MoodSelectView: View {
                             .padding(.horizontal)
                     }
 
-                    TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+                    TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
                         let t = timeline.date.timeIntervalSinceReferenceDate
                         Group {
                             if BrandLayout.isRegularWidth(horizontalSizeClass) {

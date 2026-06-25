@@ -37,14 +37,14 @@ struct CarePatientListView: View {
                     groupModeHint
 
                     if let groupLine = state.latestGroupSessionSummaryLine() {
-                        FadeInLine(text: groupLine, font: .caption2, muted: true, delay: 0.12)
+                        FadeInLine(text: groupLine, font: BrandTheme.orbHintFont(), muted: true, delay: 0.12)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
                     }
 
                     FadeInLine(
                         text: "First-time listening pass — age shapes which clips we try, then their calm surface opens.",
-                        font: .caption2,
+                        font: BrandTheme.orbHintFont(),
                         muted: true,
                         delay: 0.1
                     )
@@ -100,20 +100,20 @@ struct CarePatientListView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Care home — supervisor observations")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                         Text("Rolling averages across recent sessions with sentiment ratings.")
                             .font(.caption)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         if let line = overview.formattedAveragesLine() {
                             Text(line)
                                 .font(.body.weight(.medium))
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.textPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Text("\(overview.sessionCount) rated session\(overview.sessionCount == 1 ? "" : "s") on file")
                             .font(.caption2)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -125,7 +125,7 @@ struct CarePatientListView: View {
     private var groupModeHint: some View {
         FadeInLine(
             text: "Traditional playlist controls for a shared room — tracks are compiled from resident listening data on this home’s roster.",
-            font: .caption2,
+            font: BrandTheme.orbHintFont(),
             muted: true,
             delay: 0.08
         )
@@ -158,12 +158,12 @@ struct CareDiscoveryAgeInputView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Age")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .foregroundStyle(BrandTheme.textSecondary)
                             TextField("e.g. 82", text: $state.newResidentAgeDraft)
                                 .keyboardType(.numberPad)
                                 .focused($ageFocused)
                                 .font(.title2.weight(.medium))
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.textPrimary)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
                                 .background(BrandTheme.creamMid.opacity(0.95))
@@ -174,7 +174,7 @@ struct CareDiscoveryAgeInputView: View {
                                 )
                             Text("We use peak listening years (roughly teens through twenties) to order calm clips.")
                                 .font(.caption)
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .foregroundStyle(BrandTheme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -184,7 +184,7 @@ struct CareDiscoveryAgeInputView: View {
                     if let errorMessage, !errorMessage.isEmpty {
                         Text(errorMessage)
                             .font(.caption)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
                     }
@@ -239,7 +239,7 @@ struct CareNewResidentProfileView: View {
                     if let errorMessage, !errorMessage.isEmpty {
                         Text(errorMessage)
                             .font(.caption)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
                     }
@@ -313,11 +313,11 @@ struct CareNewResidentProfileView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(BrandTheme.brownMuted)
+                .foregroundStyle(BrandTheme.textSecondary)
             TextField(prompt, text: text)
                 .keyboardType(keyboard)
                 .font(.body)
-                .foregroundStyle(BrandTheme.brown)
+                .foregroundStyle(BrandTheme.textPrimary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
                 .background(BrandTheme.creamMid.opacity(0.95))
@@ -351,7 +351,7 @@ struct CareSessionPrepView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     FadeInLine(
                         text: "If you use smart lights, a headset, or a TV in the room, set that up here so the session matches the space. None of this is required — it’s just so Mellority knows what you have.",
-                        font: .caption,
+                        font: BrandTheme.orbHintFont(),
                         muted: true,
                         delay: 0.06
                     )
@@ -362,16 +362,16 @@ struct CareSessionPrepView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("With \(patient.displayName)")
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                                 Text("Light: \(patient.preferredLight)")
                                     .font(.caption)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text("Scent: \(patient.scentGuidance)")
                                     .font(.caption)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text("Touch: \(patient.touchComfortNotes)")
                                     .font(.caption)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -380,14 +380,14 @@ struct CareSessionPrepView: View {
 
                     Text("Smart lighting")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(BrandTheme.brown)
+                        .foregroundStyle(BrandTheme.textPrimary)
                         .padding(.horizontal, 4)
 
                     BrandCard {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("Pair a bridge if you have one — then a calm scene can drift with the session: warmer dim, slow fades, no sudden bright flashes.")
                                 .font(.caption)
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .foregroundStyle(BrandTheme.textSecondary)
                             iotToggle("Philips Hue scenes", isOn: $state.iotPhilipsHueEnabled)
                             iotToggle("Apple HomeKit rooms", isOn: $state.iotHomeKitEnabled)
                             iotToggle("Matter accessories", isOn: $state.iotMatterEnabled)
@@ -397,11 +397,11 @@ struct CareSessionPrepView: View {
                                 HStack {
                                     Text("Max scene brightness cap")
                                         .font(.caption)
-                                        .foregroundStyle(BrandTheme.brown)
+                                        .foregroundStyle(BrandTheme.textPrimary)
                                     Spacer()
                                     Text("\(Int((state.iotMaxSceneBrightness * 100).rounded()))%")
                                         .font(.caption.monospacedDigit())
-                                        .foregroundStyle(BrandTheme.brownMuted)
+                                        .foregroundStyle(BrandTheme.textSecondary)
                                 }
                                 Slider(value: $state.iotMaxSceneBrightness, in: 0.15 ... 1)
                                     .tint(BrandTheme.goldDeep)
@@ -414,7 +414,7 @@ struct CareSessionPrepView: View {
 
                     Text("Immersive & VR")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(BrandTheme.brown)
+                        .foregroundStyle(BrandTheme.textPrimary)
                         .padding(.horizontal, 4)
 
                     BrandCard {
@@ -423,7 +423,7 @@ struct CareSessionPrepView: View {
                                 "Some teams use a headset or a wall screen for nature-led calm, with you right beside the person. In a real setting, consent, policy, and infection control come first — this is just the rehearsal."
                             )
                             .font(.caption)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                             iotToggle(
                                 "VR / headset path (when your kit supports it)",
                                 isOn: $state.carePrepVRImmersiveRoute
@@ -440,7 +440,7 @@ struct CareSessionPrepView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Rough length")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(BrandTheme.brown)
+                            .foregroundStyle(BrandTheme.textPrimary)
                         Picker("Minutes", selection: $state.carePlannedDurationMinutes) {
                             ForEach(durationChoices, id: \.self) { m in
                                 Text("\(m) min").tag(m)
@@ -449,13 +449,13 @@ struct CareSessionPrepView: View {
                         .pickerStyle(.segmented)
                         Text("Only a guide — stop whenever it feels right. Lights can ease down with the closing breath.")
                             .font(.caption2)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                     }
                     .padding(.horizontal, 4)
 
                     Text("Wellness support only — not clinical advice or a medical device. Device names here are examples.")
                         .font(.caption2)
-                        .foregroundStyle(BrandTheme.brownMuted.opacity(0.9))
+                        .foregroundStyle(BrandTheme.textSecondary.opacity(0.9))
                         .padding(.horizontal, 4)
 
                     PrimaryButton(title: "Continue — photo or quick session") {
@@ -472,7 +472,7 @@ struct CareSessionPrepView: View {
         Toggle(isOn: isOn) {
             Text(title)
                 .font(.subheadline)
-                .foregroundStyle(BrandTheme.brown)
+                .foregroundStyle(BrandTheme.textPrimary)
                 .multilineTextAlignment(.leading)
         }
         .tint(BrandTheme.goldDeep)
@@ -523,11 +523,11 @@ struct CarePatientDetailView: View {
 
                         VStack(spacing: 6) {
                             Text(patient.displayName)
-                                .font(DetailTypography.name)
+                                .font(BrandTheme.orbTitleFont(.title))
                                 .orbOverlayText()
                                 .multilineTextAlignment(.center)
                             Text(patient.careContextLabel)
-                                .font(DetailTypography.context)
+                                .font(BrandTheme.orbLineFont())
                                 .orbOverlayText(muted: true)
                                 .multilineTextAlignment(.center)
                         }
@@ -541,18 +541,18 @@ struct CarePatientDetailView: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Resident session (handoff)")
                                     .font(DetailTypography.section)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Stepper(value: Binding(
                                     get: { patient.residentAgeYears },
                                     set: { state.setResidentAge(for: patient.id, age: $0) }
                                 ), in: 55 ... 105) {
                                     Text("Approx. age: \(patient.residentAgeYears)")
                                         .font(DetailTypography.body)
-                                        .foregroundStyle(BrandTheme.brown)
+                                        .foregroundStyle(BrandTheme.textPrimary)
                                 }
                                 Text("Music and playlists are chosen on the resident surface — not edited here.")
                                     .font(DetailTypography.secondary)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                                 PrimaryButton(title: "Open resident calm surface") {
                                     state.openResidentProfile()
@@ -566,10 +566,10 @@ struct CarePatientDetailView: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Listening discovery")
                                     .font(DetailTypography.section)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text("Up to six calm clips (about 30 seconds each, unless they tap sooner). Tap the traffic-light faces (red unhappy → green happy) to match each sound — each tap completes that clip and starts the next. If they listen without tapping, we move on when the slice ends using a neutral default. When the pass ends, we reshuffle playlist genres/stubs from those picks, open their calm sandbox, and surface more instrument glyphs when discovery finds gaps.")
                                     .font(DetailTypography.secondary)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                                 SecondaryButton(title: "Start discovery pass") {
                                     state.startDiscoveryCalibration(for: patient.id)
@@ -577,7 +577,7 @@ struct CarePatientDetailView: View {
                                 if let line = discoveryRunSummary(for: patient.id, state: state) {
                                     Text(line)
                                         .font(DetailTypography.body.weight(.medium))
-                                        .foregroundStyle(BrandTheme.brown)
+                                        .foregroundStyle(BrandTheme.textPrimary)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .padding(.top, 6)
                                         .accessibilityLabel(line)
@@ -591,27 +591,27 @@ struct CarePatientDetailView: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Comfort & senses")
                                     .font(DetailTypography.section)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text("Light")
                                     .font(DetailTypography.label)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text(patient.preferredLight)
                                     .font(DetailTypography.body)
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                                 Text("Scent")
                                     .font(DetailTypography.label)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                     .padding(.top, 4)
                                 Text(patient.scentGuidance)
                                     .font(DetailTypography.body)
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                                 Text("Touch")
                                     .font(DetailTypography.label)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                     .padding(.top, 4)
                                 Text(patient.touchComfortNotes)
                                     .font(DetailTypography.body)
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -621,13 +621,13 @@ struct CarePatientDetailView: View {
                             VStack(alignment: .leading, spacing: 14) {
                                 Text("For next time")
                                     .font(DetailTypography.section)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 meterRow("Tempo — gentler ↔ slightly brighter", value: patient.musicTempoBias)
                                 meterRow("Nature ↔ abstract", value: patient.natureVsAbstract)
                                 meterRow("Instrumental ↔ voice", value: patient.voiceVsInstrumental)
                                 Text("After you’re together, note how they responded — these sliders help the next visit land softly.")
                                     .font(DetailTypography.secondary)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -636,14 +636,14 @@ struct CarePatientDetailView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Previous sessions")
                                 .font(DetailTypography.section)
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.textPrimary)
                                 .padding(.horizontal, 4)
 
                             let rows = state.recordsForPatient(patient.id)
                             if rows.isEmpty {
                                 Text("Nothing here yet.")
                                     .font(DetailTypography.body)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                     .padding(.horizontal, 8)
                             } else {
                                 ForEach(rows) { rec in
@@ -652,7 +652,7 @@ struct CarePatientDetailView: View {
                                             HStack {
                                                 Text(rec.date, style: .date)
                                                     .font(DetailTypography.label)
-                                                    .foregroundStyle(BrandTheme.brownMuted)
+                                                    .foregroundStyle(BrandTheme.textSecondary)
                                                 Spacer()
                                                 Text("\(rec.calmPercent)% calm")
                                                     .font(DetailTypography.body.weight(.medium))
@@ -660,20 +660,20 @@ struct CarePatientDetailView: View {
                                             }
                                             Text("Mood tags: \(rec.moodSummary)")
                                                 .font(DetailTypography.body)
-                                                .foregroundStyle(BrandTheme.brown)
+                                                .foregroundStyle(BrandTheme.textPrimary)
                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                                 .fixedSize(horizontal: false, vertical: true)
                                             if let line = outcomeLine(rec) {
                                                 Text(line)
                                                     .font(DetailTypography.secondary)
-                                                    .foregroundStyle(BrandTheme.brownMuted)
+                                                    .foregroundStyle(BrandTheme.textSecondary)
                                                     .frame(maxWidth: .infinity, alignment: .leading)
                                                     .fixedSize(horizontal: false, vertical: true)
                                             }
                                             if let note = rec.staffNote, !note.isEmpty {
                                                 Text(note)
                                                     .font(DetailTypography.secondary)
-                                                    .foregroundStyle(BrandTheme.brownMuted)
+                                                    .foregroundStyle(BrandTheme.textSecondary)
                                                     .frame(maxWidth: .infinity, alignment: .leading)
                                                     .fixedSize(horizontal: false, vertical: true)
                                             }
@@ -716,20 +716,20 @@ struct CarePatientDetailView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Supervisor sentiment (recent sessions)")
                             .font(DetailTypography.section)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                         Text("Rolling averages from post-session 1–10 ratings — mood, alertness, emotional state, and lucidity.")
                             .font(DetailTypography.secondary)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         if let line = summary.formattedAveragesLine() {
                             Text(line)
                                 .font(DetailTypography.body.weight(.medium))
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.textPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Text("Based on \(summary.sessionCount) rated session\(summary.sessionCount == 1 ? "" : "s")")
                             .font(DetailTypography.secondary)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -748,10 +748,10 @@ struct CarePatientDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Playlists on file (by genre)")
                     .font(DetailTypography.section)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
                 Text("These appear as floating instruments for the resident — staff does not change them here.")
                     .font(DetailTypography.secondary)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
@@ -774,21 +774,21 @@ struct CarePatientDetailView: View {
                     .foregroundStyle(group.genre.accent)
                 Text(group.genre.accessibilityLabel)
                     .font(DetailTypography.section)
-                    .foregroundStyle(BrandTheme.brown)
+                    .foregroundStyle(BrandTheme.textPrimary)
                 Spacer(minLength: 0)
             }
             ForEach(group.playlists) { pl in
                 HStack(alignment: .firstTextBaseline) {
                     Image(systemName: "music.note.list")
                         .font(DetailTypography.body)
-                        .foregroundStyle(BrandTheme.brownMuted)
+                        .foregroundStyle(BrandTheme.textSecondary)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(pl.title)
                             .font(DetailTypography.body.weight(.medium))
-                            .foregroundStyle(BrandTheme.brown)
+                            .foregroundStyle(BrandTheme.textPrimary)
                         Text("\(pl.trackTitles.count) tracks in player · about \(pl.durationMinutes) min")
                             .font(DetailTypography.secondary)
-                            .foregroundStyle(BrandTheme.brownMuted)
+                            .foregroundStyle(BrandTheme.textSecondary)
                     }
                     Spacer(minLength: 0)
                 }
@@ -802,11 +802,11 @@ struct CarePatientDetailView: View {
             HStack {
                 Text(title)
                     .font(DetailTypography.body)
-                    .foregroundStyle(BrandTheme.brown)
+                    .foregroundStyle(BrandTheme.textPrimary)
                 Spacer()
                 Text("\(Int((value * 100).rounded()))%")
                     .font(DetailTypography.body.monospacedDigit())
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
             }
             GeometryReader { g in
                 ZStack(alignment: .leading) {
@@ -888,10 +888,10 @@ struct CareSessionSentimentFeedbackView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Session captured automatically")
                                         .font(.caption.weight(.semibold))
-                                        .foregroundStyle(BrandTheme.brownMuted)
+                                        .foregroundStyle(BrandTheme.textSecondary)
                                     Text(metricsLine)
                                         .font(.body)
-                                        .foregroundStyle(BrandTheme.brown)
+                                        .foregroundStyle(BrandTheme.textPrimary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -905,13 +905,13 @@ struct CareSessionSentimentFeedbackView: View {
                             VStack(alignment: .leading, spacing: 18) {
                                 Text("Step \(state.sessionSentimentStep + 1) of \(CareSessionSentimentStep.allCases.count)")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 Text(currentStep.title)
                                     .font(.title2.weight(.semibold))
-                                    .foregroundStyle(BrandTheme.brown)
+                                    .foregroundStyle(BrandTheme.textPrimary)
                                 Text(currentStep.prompt)
                                     .font(.body)
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
 
                                 SentimentScalePicker(
@@ -924,11 +924,11 @@ struct CareSessionSentimentFeedbackView: View {
                                     VStack(alignment: .leading, spacing: 8) {
                                         Text("Optional note")
                                             .font(.caption.weight(.semibold))
-                                            .foregroundStyle(BrandTheme.brownMuted)
+                                            .foregroundStyle(BrandTheme.textSecondary)
                                         TextField("Anything else to remember?", text: $state.sessionSentimentDraft.note, axis: .vertical)
                                             .lineLimit(1 ... 4)
                                             .font(.body)
-                                            .foregroundStyle(BrandTheme.brown)
+                                            .foregroundStyle(BrandTheme.textPrimary)
                                             .padding(12)
                                             .background(BrandTheme.creamMid.opacity(0.95))
                                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -941,8 +941,11 @@ struct CareSessionSentimentFeedbackView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .id(state.sessionSentimentStep)
+                            .transition(.etherealAppear)
                         }
                         .padding(.horizontal, 4)
+                        .animation(CalmMotion.gentle, value: state.sessionSentimentStep)
 
                         PrimaryButton(title: isLastStep ? "Save to profile" : "Next") {
                             if isLastStep {
@@ -954,6 +957,7 @@ struct CareSessionSentimentFeedbackView: View {
                         }
                         .disabled(currentSelection == nil)
                         .opacity(currentSelection == nil ? 0.45 : 1)
+                        .animation(CalmMotion.subtle, value: currentSelection)
                         .padding(.horizontal, 24)
 
                         SecondaryButton(title: "Skip for now") {
@@ -978,6 +982,7 @@ struct CareSessionSentimentFeedbackView: View {
             }
         }
         .padding(.horizontal, 4)
+        .animation(CalmMotion.subtle, value: state.sessionSentimentStep)
         .accessibilityLabel("Step \(state.sessionSentimentStep + 1) of \(CareSessionSentimentStep.allCases.count)")
     }
 
@@ -1005,37 +1010,41 @@ struct SentimentScalePicker: View {
         VStack(alignment: .leading, spacing: 12) {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(1 ... 10, id: \.self) { value in
+                    let isSelected = selection == value
                     Button {
                         selection = value
                         CalmExperienceFeedback.discoveryPick()
                     } label: {
                         Text("\(value)")
                             .font(.headline.weight(.semibold))
-                            .foregroundStyle(selection == value ? BrandTheme.brown : BrandTheme.brownMuted)
+                            .foregroundStyle(isSelected ? BrandTheme.textPrimary : BrandTheme.textSecondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(selection == value ? BrandTheme.goldSoft.opacity(0.55) : BrandTheme.creamMid.opacity(0.95))
+                                    .fill(isSelected ? BrandTheme.goldSoft.opacity(0.55) : BrandTheme.creamMid.opacity(0.95))
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(selection == value ? BrandTheme.gold.opacity(0.55) : BrandTheme.gold.opacity(0.2), lineWidth: 1)
+                                    .stroke(isSelected ? BrandTheme.gold.opacity(0.55) : BrandTheme.gold.opacity(0.2), lineWidth: 1)
                             )
+                            .scaleEffect(isSelected ? 1.06 : 1)
                     }
                     .buttonStyle(ChimingPlainButtonStyle())
                     .accessibilityLabel("\(value) out of 10")
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
+            .animation(CalmMotion.gentle, value: selection)
 
             HStack {
                 Text(lowCaption)
                     .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
                 Spacer(minLength: 8)
                 Text(highCaption)
                     .font(.caption2)
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
                     .multilineTextAlignment(.trailing)
             }
         }
@@ -1068,7 +1077,7 @@ struct CareSessionFeedbackView: View {
                     if let patient = targetPatient {
                         FadeInLine(
                             text: "How did \(patient.displayName) seem? This isn’t a grade for you — it nudges the sound for next time.",
-                            font: .caption,
+                            font: BrandTheme.orbHintFont(),
                             muted: true,
                             delay: 0.08
                         )
@@ -1077,7 +1086,7 @@ struct CareSessionFeedbackView: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("In the moment")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(BrandTheme.brownMuted)
+                                    .foregroundStyle(BrandTheme.textSecondary)
                                 outcomeSlider(
                                     title: "Seemed settled",
                                     caption: "Still unsettled  ←  →  More at ease",
@@ -1100,7 +1109,7 @@ struct CareSessionFeedbackView: View {
 
                         Text("Sound for next time")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(BrandTheme.brown)
+                            .foregroundStyle(BrandTheme.textPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 4)
 
@@ -1111,11 +1120,11 @@ struct CareSessionFeedbackView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Your note (optional)")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(BrandTheme.brownMuted)
+                                .foregroundStyle(BrandTheme.textSecondary)
                             TextField("What helped — light, touch, sound? What would you soften next time?", text: $staffNote, axis: .vertical)
                                 .lineLimit(1 ... 10)
                                 .font(.body)
-                                .foregroundStyle(BrandTheme.brown)
+                                .foregroundStyle(BrandTheme.textPrimary)
                                 .padding(12)
                                 .background(BrandTheme.creamMid.opacity(0.95))
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -1171,15 +1180,15 @@ struct CareSessionFeedbackView: View {
             HStack {
                 Text(title)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(BrandTheme.brown)
+                    .foregroundStyle(BrandTheme.textPrimary)
                 Spacer()
                 Text("\(Int((value.wrappedValue * 100).rounded()))%")
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
             }
             Text(caption)
                 .font(.caption2)
-                .foregroundStyle(BrandTheme.brownMuted)
+                .foregroundStyle(BrandTheme.textSecondary)
             Slider(value: value, in: 0 ... 1)
                 .tint(BrandTheme.goldDeep)
         }
@@ -1190,11 +1199,11 @@ struct CareSessionFeedbackView: View {
             HStack {
                 Text(title)
                     .font(.subheadline)
-                    .foregroundStyle(BrandTheme.brown)
+                    .foregroundStyle(BrandTheme.textPrimary)
                 Spacer()
                 Text("\(Int((value.wrappedValue * 100).rounded()))%")
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(BrandTheme.brownMuted)
+                    .foregroundStyle(BrandTheme.textSecondary)
             }
             Slider(value: value, in: 0 ... 1)
                 .tint(BrandTheme.goldDeep)

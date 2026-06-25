@@ -31,7 +31,7 @@ struct OrbRingEqualizerView: View {
     private let ringCount = 5
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+        TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
             let frac = min(1, max(0, listenProgress))
             let t = timeline.date.timeIntervalSinceReferenceDate
 

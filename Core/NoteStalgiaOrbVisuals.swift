@@ -444,10 +444,10 @@ struct NoteStalgiaNebulaOrbShell: View {
 // MARK: - Brand wordmark
 
 struct NoteStalgiaWordmark: View {
-    var font: Font = BrandTheme.title(.largeTitle)
+    var font: Font = BrandTheme.orbTitleFont(.largeTitle)
     var tracking: CGFloat = 4
     /// Main wordmark point size — scales the ™ mark proportionally.
-    var pointSize: CGFloat = 28
+    var pointSize: CGFloat = 32
 
     private var trademarkSize: CGFloat { max(8, pointSize * 0.30) }
     private var trademarkBaselineOffset: CGFloat { pointSize * 0.42 }
@@ -459,7 +459,7 @@ struct NoteStalgiaWordmark: View {
          + Text("™")
             .font(.system(size: trademarkSize, weight: .medium, design: .default))
             .baselineOffset(trademarkBaselineOffset))
-            .foregroundStyle(.white)
+            .foregroundStyle(BrandTheme.textOnOrb)
             .orbOverlayTextStyle()
             .accessibilityLabel("NoteStalgia")
     }
