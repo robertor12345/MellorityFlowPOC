@@ -6,11 +6,19 @@ final class SessionPOCState: ObservableObject {
     @Published private(set) var phaseContentVisible = true
     private var phaseTransitionTask: Task<Void, Never>?
 
-    @Published var supervisorUsername = ""
+    @Published var supervisorEmail = ""
     @Published var supervisorPIN = ""
     @Published var isSignedIn = false
     @Published private(set) var pendingCareRosterAfterSignIn = false
     @Published var supervisorSignInError: String?
+    @Published private(set) var signedInSupervisorId: UUID?
+    @Published var currentHomeId: UUID?
+    @Published var rosterSearchQuery = ""
+    @Published var rosterSelectedWingId: String?
+    @Published var rosterBrowsingAllResidents = false
+    @Published var rosterDisplayMode: CareRosterDisplayMode = .cards
+    @Published private(set) var rosterPinnedResidentIds: Set<UUID> = []
+    @Published private(set) var rosterRecentlyViewedIds: [UUID] = []
 
     /// Custom portraits keyed by patient id (captured during profile setup).
     @Published var carePatientPortraitImages: [UUID: UIImage] = [:]
@@ -31,8 +39,8 @@ final class SessionPOCState: ObservableObject {
 
     // MARK: - Care staff (sample data)
 
-    @Published var carePatients: [CarePatientProfile] = CareStaffMockData.initialPatients
-    @Published var careSessionRecords: [CareSessionRecord] = CareStaffMockData.initialRecords
+    @Published var carePatients: [CarePatientProfile] = CareTenancyMockData.allPatients()
+    @Published var careSessionRecords: [CareSessionRecord] = CareStaffMockData.initialRecords + CareTenancyMockData.supplementalRecords()
     @Published var selectedCarePatientId: UUID?
     @Published var activeCarePatientId: UUID?
     @Published var isCareStaffSession: Bool = false
@@ -312,25 +320,166 @@ final class SessionPOCState: ObservableObject {
     }
 
     func completeSupervisorSignIn() -> String? {
-        if let error = SupervisorAuth.validate(username: supervisorUsername, pin: supervisorPIN) {
+        let result = SupervisorAuth.validate(email: supervisorEmail, pin: supervisorPIN)
+        if let error = result.error {
             supervisorSignInError = error
             return error
         }
+        guard let account = result.account else {
+            supervisorSignInError = "Sign-in failed."
+            return supervisorSignInError
+        }
         supervisorSignInError = nil
         isSignedIn = true
+        signedInSupervisorId = account.id
         pendingCareRosterAfterSignIn = false
+        loadRosterPrefs(for: account.id)
+        rosterSearchQuery = ""
+        rosterSelectedWingId = nil
+        rosterBrowsingAllResidents = false
         phaseTransitionTask?.cancel()
-        phase = .supervisorWelcome
+
+        if account.homeIds.count == 1, let homeId = account.homeIds.first {
+            currentHomeId = homeId
+            phase = .supervisorWelcome
+        } else {
+            currentHomeId = nil
+            phase = .careHomePicker
+        }
         withAnimation(CalmMotion.softFade) {
             phaseContentVisible = true
         }
         return nil
     }
 
+    func currentSupervisorAccount() -> SupervisorAccount? {
+        guard let signedInSupervisorId else { return nil }
+        return CareTenancyMockData.supervisor(id: signedInSupervisorId)
+    }
+
+    func currentHome() -> CareHome? {
+        guard let currentHomeId else { return nil }
+        return CareTenancyMockData.home(id: currentHomeId)
+    }
+
+    func assignedHomes() -> [CareHome] {
+        guard let account = currentSupervisorAccount() else { return [] }
+        return account.homeIds.compactMap { CareTenancyMockData.home(id: $0) }
+    }
+
+    func selectHome(_ homeId: UUID) {
+        guard assignedHomes().contains(where: { $0.id == homeId }) else { return }
+        currentHomeId = homeId
+        rosterSearchQuery = ""
+        rosterSelectedWingId = nil
+        rosterBrowsingAllResidents = false
+        transitionToPhase(.supervisorWelcome)
+    }
+
+    func switchHome() {
+        guard let account = currentSupervisorAccount(), account.homeIds.count > 1 else { return }
+        rosterSearchQuery = ""
+        rosterSelectedWingId = nil
+        rosterBrowsingAllResidents = false
+        transitionToPhase(.careHomePicker)
+    }
+
+    func signOutSupervisor() {
+        phaseTransitionTask?.cancel()
+        isSignedIn = false
+        signedInSupervisorId = nil
+        currentHomeId = nil
+        supervisorEmail = ""
+        supervisorPIN = ""
+        supervisorSignInError = nil
+        rosterSearchQuery = ""
+        rosterSelectedWingId = nil
+        rosterBrowsingAllResidents = false
+        rosterPinnedResidentIds = []
+        rosterRecentlyViewedIds = []
+        selectedCarePatientId = nil
+        phase = .home
+        withAnimation(CalmMotion.softFade) {
+            phaseContentVisible = true
+        }
+    }
+
+    func residentsInCurrentHome() -> [CarePatientProfile] {
+        guard let homeId = currentHomeId else { return [] }
+        return CareRosterEngine.activeResidents(in: homeId, from: carePatients)
+    }
+
+    func rosterPresentation() -> CareRosterPresentation {
+        guard let home = currentHome() else {
+            return CareRosterPresentation(
+                homeName: "Care home",
+                totalActiveResidents: 0,
+                sections: [],
+                isSearching: false,
+                isBrowsingAll: false
+            )
+        }
+        return CareRosterEngine.buildPresentation(
+            home: home,
+            allResidents: carePatients,
+            records: careSessionRecords,
+            pinnedIds: rosterPinnedResidentIds,
+            recentlyViewedIds: rosterRecentlyViewedIds,
+            preferredWingId: rosterSelectedWingId,
+            searchQuery: rosterSearchQuery,
+            browsingAll: rosterBrowsingAllResidents
+        )
+    }
+
+    func recordResidentRosterView(_ patientId: UUID) {
+        rosterRecentlyViewedIds.removeAll { $0 == patientId }
+        rosterRecentlyViewedIds.insert(patientId, at: 0)
+        if rosterRecentlyViewedIds.count > 30 {
+            rosterRecentlyViewedIds = Array(rosterRecentlyViewedIds.prefix(30))
+        }
+        saveRosterPrefs()
+    }
+
+    func toggleRosterPin(_ patientId: UUID) {
+        if rosterPinnedResidentIds.contains(patientId) {
+            rosterPinnedResidentIds.remove(patientId)
+        } else {
+            rosterPinnedResidentIds.insert(patientId)
+        }
+        saveRosterPrefs()
+    }
+
+    private func loadRosterPrefs(for supervisorId: UUID) {
+        let key = "care.roster.\(supervisorId.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: "\(key).pins"),
+           let ids = try? JSONDecoder().decode([UUID].self, from: data) {
+            rosterPinnedResidentIds = Set(ids)
+        } else {
+            rosterPinnedResidentIds = []
+        }
+        if let data = UserDefaults.standard.data(forKey: "\(key).recent"),
+           let ids = try? JSONDecoder().decode([UUID].self, from: data) {
+            rosterRecentlyViewedIds = ids
+        } else {
+            rosterRecentlyViewedIds = []
+        }
+    }
+
+    private func saveRosterPrefs() {
+        guard let signedInSupervisorId else { return }
+        let key = "care.roster.\(signedInSupervisorId.uuidString)"
+        if let data = try? JSONEncoder().encode(Array(rosterPinnedResidentIds)) {
+            UserDefaults.standard.set(data, forKey: "\(key).pins")
+        }
+        if let data = try? JSONEncoder().encode(rosterRecentlyViewedIds) {
+            UserDefaults.standard.set(data, forKey: "\(key).recent")
+        }
+    }
+
     func abandonSupervisorSignIn() {
         supervisorSignInError = nil
         if !isSignedIn {
-            supervisorUsername = ""
+            supervisorEmail = ""
             supervisorPIN = ""
         }
     }
@@ -359,6 +508,7 @@ final class SessionPOCState: ObservableObject {
             return "Enter an age between 55 and 105."
         }
         let patientId = UUID()
+        let homeId = currentHomeId ?? CareTenancyMockData.mapleLodgeId
         let provisional = CarePatientProfile(
             id: patientId,
             displayName: "New resident",
@@ -377,7 +527,11 @@ final class SessionPOCState: ObservableObject {
             favouriteMusicGenre: .classical,
             stockPortraitAssetName: "StockPortraitSam",
             isProvisional: true,
-            genrePlaylistGroups: []
+            genrePlaylistGroups: [],
+            homeId: homeId,
+            wingId: CareTenancyMockData.wingResidential,
+            roomLabel: "Discovery in progress",
+            isActive: true
         )
         carePatients.append(provisional)
         newResidentDiscoveryPatientId = patientId
@@ -699,7 +853,7 @@ final class SessionPOCState: ObservableObject {
     }
 
     func careHomeSentimentOverview() -> CareSessionSentimentSummary {
-        let roster = carePatients.filter { !$0.isProvisional }
+        let roster = residentsInCurrentHome()
         return CareSessionSentimentAnalytics.homeOverview(for: roster, records: careSessionRecords)
     }
 
@@ -711,7 +865,7 @@ final class SessionPOCState: ObservableObject {
             return
         }
         groupSessionTracks = GroupSessionPlaylistCompiler.compile(
-            patients: carePatients,
+            patients: residentsInCurrentHome(),
             sessionRecords: careSessionRecords
         )
         groupSessionTrackIndex = 0
@@ -1001,11 +1155,19 @@ final class SessionPOCState: ObservableObject {
         phaseTransitionTask?.cancel()
         phaseContentVisible = true
         phase = .home
-        supervisorUsername = ""
+        supervisorEmail = ""
         supervisorPIN = ""
         supervisorSignInError = nil
         isSignedIn = false
+        signedInSupervisorId = nil
+        currentHomeId = nil
         pendingCareRosterAfterSignIn = false
+        rosterSearchQuery = ""
+        rosterSelectedWingId = nil
+        rosterBrowsingAllResidents = false
+        rosterDisplayMode = .cards
+        rosterPinnedResidentIds = []
+        rosterRecentlyViewedIds = []
         carePatientPortraitImages = [:]
         capturedImage = nil
         selectedMoods = []
@@ -1019,8 +1181,8 @@ final class SessionPOCState: ObservableObject {
         replaySessionPhotoAnchored = false
         immersiveMediaSessionID = UUID()
         sessionAnchoredWithPhoto = false
-        carePatients = CareStaffMockData.initialPatients
-        careSessionRecords = CareStaffMockData.initialRecords
+        carePatients = CareTenancyMockData.allPatients()
+        careSessionRecords = CareStaffMockData.initialRecords + CareTenancyMockData.supplementalRecords()
         selectedCarePatientId = nil
         resetCareSessionFlags()
         clearResidentSessionSurfaceState()
@@ -1137,6 +1299,8 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case supervisorWelcome = 22
     /// Auto-generated session summary, handover export, and next-step hints.
     case careSessionInsight = 23
+    /// Multi-home supervisors pick which care home to open today.
+    case careHomePicker = 24
 
     var id: Int { rawValue }
 }

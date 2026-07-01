@@ -6,9 +6,18 @@ import PhotosUI
 
 struct CarePatientListView: View {
     @ObservedObject var state: SessionPOCState
+    @FocusState private var searchFocused: Bool
 
-    private var rosterPatients: [CarePatientProfile] {
-        state.carePatients.filter { !$0.isProvisional }
+    private var presentation: CareRosterPresentation {
+        state.rosterPresentation()
+    }
+
+    private var currentHome: CareHome? {
+        state.currentHome()
+    }
+
+    private var canSwitchHome: Bool {
+        (state.currentSupervisorAccount()?.homeIds.count ?? 0) > 1
     }
 
     var body: some View {
@@ -21,7 +30,14 @@ struct CarePatientListView: View {
                 }
             ) {
                 VStack(spacing: 22) {
-                    FadeInTitle(text: "One-to-one calm", delay: 0)
+                    rosterHeader
+
+                    searchField
+
+                    if !presentation.isSearching, let home = currentHome {
+                        wingFilterRow(home: home)
+                        displayModePicker
+                    }
 
                     careHomeSentimentCard
 
@@ -43,37 +59,28 @@ struct CarePatientListView: View {
                             .padding(.horizontal, 12)
                     }
 
-                    FadeInLine(
-                        text: "First-time listening pass — age shapes which clips we try, then their calm surface opens.",
-                        font: BrandTheme.orbHintFont(),
-                        muted: true,
-                        delay: 0.1
-                    )
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
+                    rosterSections
 
-                    ForEach(rosterPatients) { patient in
-                        let subtitle: String = {
-                            var parts = [patient.careContextLabel]
-                            if let sentiment = state.sentimentSummary(for: patient.id).formattedAveragesLine() {
-                                parts.append(sentiment)
-                            }
-                            if let last = state.recordsForPatient(patient.id).first {
-                                parts.append(lastSessionSummary(last))
-                            }
-                            return parts.joined(separator: " · ")
-                        }()
-                        OrbPortraitNavButton(
-                            portraitAssetName: patient.stockPortraitAssetName,
-                            customPortraitImage: state.portraitImage(for: patient.id),
-                            title: patient.displayName,
-                            subtitle: subtitle
-                        ) {
-                            state.selectedCarePatientId = patient.id
-                            state.transitionToPhase(.carePatientDetail)
+                    if !presentation.isSearching, !presentation.isBrowsingAll {
+                        SecondaryButton(title: "Browse all \(presentation.totalActiveResidents) residents") {
+                            state.rosterBrowsingAllResidents = true
                         }
+                        .padding(.horizontal, 24)
                     }
-                    .padding(.horizontal, 4)
+
+                    if presentation.isBrowsingAll {
+                        SecondaryButton(title: "Back to today’s roster") {
+                            state.rosterBrowsingAllResidents = false
+                        }
+                        .padding(.horizontal, 24)
+                    }
+
+                    if canSwitchHome {
+                        SecondaryButton(title: "Switch care home") {
+                            state.switchHome()
+                        }
+                        .padding(.horizontal, 24)
+                    }
                 }
                 .padding(.vertical, 28)
             }
@@ -82,8 +89,216 @@ struct CarePatientListView: View {
             StreamAudioCache.prefetchWarmCatalog()
             if !state.isSignedIn {
                 state.phase = .home
+            } else if state.currentHomeId == nil {
+                state.phase = .careHomePicker
             }
         }
+    }
+
+    private var rosterHeader: some View {
+        VStack(spacing: 8) {
+            FadeInTitle(text: presentation.homeName, delay: 0)
+            FadeInLine(
+                text: "\(presentation.totalActiveResidents) residents · curated for today",
+                font: BrandTheme.orbHintFont(),
+                muted: true,
+                delay: 0.04
+            )
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 12)
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(BrandTheme.textSecondary)
+            TextField("Search name, room, or wing", text: $state.rosterSearchQuery)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .focused($searchFocused)
+            if !state.rosterSearchQuery.isEmpty {
+                Button {
+                    state.rosterSearchQuery = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(BrandTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .font(.body)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(BrandTheme.creamMid.opacity(0.95))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+        )
+        .padding(.horizontal, 4)
+    }
+
+    private func wingFilterRow(home: CareHome) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                wingChip(title: "All wings", wingId: nil)
+                ForEach(home.wings) { wing in
+                    wingChip(title: wing.name, wingId: wing.id)
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private func wingChip(title: String, wingId: String?) -> some View {
+        let selected = state.rosterSelectedWingId == wingId || (wingId == nil && state.rosterSelectedWingId == nil)
+        return Button {
+            if wingId == nil {
+                state.rosterSelectedWingId = nil
+            } else if state.rosterSelectedWingId == wingId {
+                state.rosterSelectedWingId = nil
+            } else {
+                state.rosterSelectedWingId = wingId
+            }
+        } label: {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(selected ? BrandTheme.textPrimary : BrandTheme.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(selected ? BrandTheme.gold.opacity(0.22) : BrandTheme.cream.opacity(0.85))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(BrandTheme.gold.opacity(selected ? 0.5 : 0.22), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var displayModePicker: some View {
+        Picker("Display", selection: $state.rosterDisplayMode) {
+            ForEach(CareRosterDisplayMode.allCases) { mode in
+                Text(mode.label).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 4)
+    }
+
+    @ViewBuilder
+    private var rosterSections: some View {
+        ForEach(presentation.sections) { section in
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(section.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(BrandTheme.textPrimary)
+                    if let subtitle = section.subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(BrandTheme.textSecondary)
+                    }
+                }
+                .padding(.horizontal, 8)
+
+                ForEach(section.patientIds, id: \.self) { patientId in
+                    if let patient = state.carePatient(id: patientId) {
+                        rosterRow(for: patient)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func rosterRow(for patient: CarePatientProfile) -> some View {
+        let subtitle = rosterSubtitle(for: patient)
+        let isPinned = state.rosterPinnedResidentIds.contains(patient.id)
+
+        if state.rosterDisplayMode == .compact {
+            HStack(spacing: 12) {
+                Button {
+                    openPatient(patient)
+                } label: {
+                    HStack(spacing: 12) {
+                        CarePatientPortraitView(
+                            assetName: patient.stockPortraitAssetName,
+                            customImage: state.portraitImage(for: patient.id),
+                            size: 44
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(patient.displayName)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(BrandTheme.textPrimary)
+                            Text(subtitle)
+                                .font(.caption2)
+                                .foregroundStyle(BrandTheme.textSecondary)
+                                .lineLimit(2)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(BrandTheme.gold.opacity(0.8))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(BrandTheme.cream.opacity(0.9))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(ChimingPlainButtonStyle())
+
+                Button {
+                    state.toggleRosterPin(patient.id)
+                } label: {
+                    Image(systemName: isPinned ? "star.fill" : "star")
+                        .foregroundStyle(isPinned ? BrandTheme.gold : BrandTheme.textSecondary)
+                        .frame(width: 36, height: 36)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isPinned ? "Unpin \(patient.displayName)" : "Pin \(patient.displayName)")
+            }
+            .padding(.horizontal, 4)
+        } else {
+            ZStack(alignment: .topTrailing) {
+                OrbPortraitNavButton(
+                    portraitAssetName: patient.stockPortraitAssetName,
+                    customPortraitImage: state.portraitImage(for: patient.id),
+                    title: patient.displayName,
+                    subtitle: subtitle
+                ) {
+                    openPatient(patient)
+                }
+
+                Button {
+                    state.toggleRosterPin(patient.id)
+                } label: {
+                    Image(systemName: isPinned ? "star.fill" : "star")
+                        .font(.body)
+                        .foregroundStyle(isPinned ? BrandTheme.gold : BrandTheme.textSecondary)
+                        .padding(10)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isPinned ? "Unpin \(patient.displayName)" : "Pin \(patient.displayName)")
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private func openPatient(_ patient: CarePatientProfile) {
+        state.recordResidentRosterView(patient.id)
+        state.selectedCarePatientId = patient.id
+        state.transitionToPhase(.carePatientDetail)
+    }
+
+    private func rosterSubtitle(for patient: CarePatientProfile) -> String {
+        var parts = [patient.careContextLabel]
+        if let sentiment = state.sentimentSummary(for: patient.id).formattedAveragesLine() {
+            parts.append(sentiment)
+        }
+        if let last = state.recordsForPatient(patient.id).first {
+            parts.append(lastSessionSummary(last))
+        }
+        return parts.joined(separator: " · ")
     }
 
     private func lastSessionSummary(_ last: CareSessionRecord) -> String {

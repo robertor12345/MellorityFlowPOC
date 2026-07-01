@@ -6,7 +6,7 @@ struct HomeView: View {
     @ObservedObject var state: SessionPOCState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @FocusState private var focusedField: Field?
-    private enum Field: Hashable { case username, pin }
+    private enum Field: Hashable { case email, pin }
 
     var body: some View {
         ScreenFadeIn {
@@ -51,9 +51,7 @@ struct HomeView: View {
             .padding(.horizontal, 24)
 
             SecondaryButton(title: "Sign out") {
-                state.isSignedIn = false
-                state.supervisorUsername = ""
-                state.supervisorPIN = ""
+                state.signOutSupervisor()
             }
             .padding(.horizontal, 24)
         }
@@ -71,13 +69,14 @@ struct HomeView: View {
             BrandCard {
                 VStack(alignment: .leading, spacing: 18) {
                     labeledField(
-                        title: "Username",
+                        title: "Work email",
                         content: {
-                            TextField("Username", text: $state.supervisorUsername)
-                                .textContentType(.username)
+                            TextField("name@sunrise-care.co.uk", text: $state.supervisorEmail)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
-                                .focused($focusedField, equals: .username)
+                                .focused($focusedField, equals: .email)
                                 .submitLabel(.next)
                                 .onSubmit { focusedField = .pin }
                         }
@@ -136,6 +135,77 @@ struct HomeView: View {
     }
 }
 
+// MARK: - Care home picker (multi-home supervisors)
+
+struct CareHomePickerView: View {
+    @ObservedObject var state: SessionPOCState
+
+    var body: some View {
+        ScreenFadeIn {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Sign out",
+                onBack: { state.signOutSupervisor() }
+            ) {
+                VStack(spacing: 22) {
+                    FadeInTitle(text: "Which home today?", delay: 0)
+
+                    if let account = state.currentSupervisorAccount() {
+                        FadeInLine(
+                            text: "Signed in as \(account.displayName). Choose the home you’re working at.",
+                            muted: true,
+                            delay: 0.06
+                        )
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 12)
+                    }
+
+                    ForEach(state.assignedHomes()) { home in
+                        let count = CareRosterEngine.activeResidents(in: home.id, from: state.carePatients).count
+                        Button {
+                            state.selectHome(home.id)
+                        } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: "building.2.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(BrandTheme.gold)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(home.name)
+                                        .font(BrandTheme.title(.headline))
+                                        .foregroundStyle(BrandTheme.textPrimary)
+                                    Text("\(count) active residents · \(home.wings.count) wings")
+                                        .font(.caption)
+                                        .foregroundStyle(BrandTheme.textSecondary)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(BrandTheme.gold.opacity(0.8))
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background {
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .fill(BrandTheme.cream.opacity(0.94))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                            .stroke(BrandTheme.gold.opacity(0.28), lineWidth: 1)
+                                    }
+                            }
+                        }
+                        .buttonStyle(ChimingPlainButtonStyle())
+                    }
+                    .padding(.horizontal, 4)
+                }
+                .padding(.vertical, 28)
+            }
+        }
+        .onAppear {
+            if !state.isSignedIn {
+                state.phase = .home
+            }
+        }
+    }
+}
+
 // MARK: - Supervisor welcome (post sign-in, before roster)
 
 struct SupervisorWelcomeView: View {
@@ -145,9 +215,11 @@ struct SupervisorWelcomeView: View {
     @State private var didScheduleExit = false
 
     private var displayName: String {
-        let trimmed = state.supervisorUsername.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return "Supervisor" }
-        return trimmed.prefix(1).uppercased() + trimmed.dropFirst().lowercased()
+        state.currentSupervisorAccount()?.displayName ?? "Supervisor"
+    }
+
+    private var homeName: String? {
+        state.currentHome()?.name
     }
 
     var body: some View {
@@ -157,7 +229,7 @@ struct SupervisorWelcomeView: View {
                     .opacity(loaderVisible ? 1 : 0)
                     .scaleEffect(loaderVisible ? 1 : 0.92)
 
-                Text("Welcome \(displayName)")
+                Text(welcomeLine)
                     .font(BrandTheme.orbTitleFont(.largeTitle))
                     .tracking(2)
                     .orbOverlayText()
@@ -170,7 +242,7 @@ struct SupervisorWelcomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Welcome \(displayName). Loading roster.")
+        .accessibilityLabel(welcomeAccessibilityLabel)
         .onAppear {
             StreamAudioCache.prefetchWarmCatalog()
             withAnimation(CalmMotion.softFade.delay(0.12)) {
@@ -187,6 +259,20 @@ struct SupervisorWelcomeView: View {
                 state.transitionToPhase(.carePatientList)
             }
         }
+    }
+
+    private var welcomeLine: String {
+        if let homeName {
+            return "Welcome \(displayName)\n\(homeName)"
+        }
+        return "Welcome \(displayName)"
+    }
+
+    private var welcomeAccessibilityLabel: String {
+        if let homeName {
+            return "Welcome \(displayName) at \(homeName). Loading roster."
+        }
+        return "Welcome \(displayName). Loading roster."
     }
 }
 

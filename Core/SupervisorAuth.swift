@@ -1,19 +1,29 @@
 import Foundation
 
-/// POC gate for care-home supervisor access — username + PIN before roster.
+/// POC gate for care-home supervisor access — work email + PIN, scoped to organisation & homes.
 enum SupervisorAuth {
-    /// Demo credentials; replace with secure backend validation before production.
-    static let demoUsername = "max"
-    static let demoPIN = "1234"
-
-    static func validate(username: String, pin: String) -> String? {
-        let user = username.trimmingCharacters(in: .whitespacesAndNewlines)
+    static func validate(email: String, pin: String) -> (account: SupervisorAccount?, error: String?) {
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let code = pin.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !user.isEmpty else { return "Enter your username." }
-        guard code.count >= 4 else { return "PIN must be at least four digits." }
-        guard user.caseInsensitiveCompare(demoUsername) == .orderedSame,
-              code == demoPIN
-        else { return "Username or PIN didn’t match. Try again." }
-        return nil
+
+        guard !normalizedEmail.isEmpty else { return (nil, "Enter your work email.") }
+        guard normalizedEmail.contains("@") else { return (nil, "Enter a valid work email address.") }
+        guard code.count >= 4 else { return (nil, "PIN must be at least four digits.") }
+
+        guard let domain = normalizedEmail.split(separator: "@").last.map(String.init)?.lowercased() else {
+            return (nil, "Enter a valid work email address.")
+        }
+        guard CareTenancyMockData.organisation.emailDomains.contains(where: { $0.lowercased() == domain }) else {
+            let allowed = CareTenancyMockData.organisation.emailDomains.map { "@\($0)" }.joined(separator: ", ")
+            return (nil, "Use your organisation email (\(allowed)).")
+        }
+
+        guard let account = CareTenancyMockData.supervisors.first(where: {
+            $0.email.lowercased() == normalizedEmail && $0.pin == code
+        }) else {
+            return (nil, "Email or PIN didn’t match. Try max@sunrise-care.co.uk or alex@sunrise-care.co.uk with PIN 1234.")
+        }
+
+        return (account, nil)
     }
 }

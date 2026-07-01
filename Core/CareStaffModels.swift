@@ -36,6 +36,10 @@ struct CarePatientProfile: Identifiable, Equatable {
     var isProvisional: Bool
     /// Curated playlists keyed by genre — shown when staff opens this profile (e.g. from face-linked photo).
     var genrePlaylistGroups: [CareGenrePlaylistGroup]
+    var homeId: UUID = CareTenancyMockData.mapleLodgeId
+    var wingId: String = CareTenancyMockData.wingResidential
+    var roomLabel: String = ""
+    var isActive: Bool = true
 }
 
 /// Saved playlist linked to a genre for resident calm sessions (POC stubs).

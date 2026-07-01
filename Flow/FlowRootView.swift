@@ -130,6 +130,8 @@ struct FlowRootView: View {
                 GroupSessionFeedbackView(state: state)
             case .supervisorWelcome:
                 SupervisorWelcomeView(state: state)
+            case .careHomePicker:
+                CareHomePickerView(state: state)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

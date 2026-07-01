@@ -190,6 +190,12 @@ enum SignInPageLayout {
 
 enum BrandLayout {
     static let menuColumnMaxWidth: CGFloat = 560
+    /// Height of the tight dissolve band at scroll clip edges.
+    static let scrollEdgeFadeHeight: CGFloat = 48
+    /// Max fraction of viewport used by the dissolve (keeps fade hugging the edge).
+    static let scrollEdgeFadeMaxFraction: CGFloat = 0.075
+    /// Extra scroll padding so the last card clears the dissolve when fully scrolled.
+    static let scrollEdgeFadeComfortPadding: CGFloat = 12
 
     static func contentGutter(for horizontalSizeClass: UserInterfaceSizeClass?) -> CGFloat {
         horizontalSizeClass == .regular ? 32 : BrandTheme.contentGutter

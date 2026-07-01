@@ -8,18 +8,21 @@ struct CenteredScrollScreen<Content: View>: View {
     var onBack: (() -> Void)?
     @ViewBuilder var content: () -> Content
 
+    private let scrollSpace = "centeredScroll"
+
     var body: some View {
         GeometryReader { geo in
-            ScrollView {
+            ScrollViewportEdgeFade(coordinateSpace: scrollSpace) {
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
                     content()
                         .frame(maxWidth: BrandLayout.menuColumnMaxWidth)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
+                        .padding(.bottom, BrandLayout.scrollEdgeFadeComfortPadding)
                     Spacer(minLength: 0)
                 }
-                .frame(minWidth: geo.size.width, minHeight: geo.size.height)
+                .frame(maxWidth: .infinity, minHeight: geo.size.height)
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 if let onBack {

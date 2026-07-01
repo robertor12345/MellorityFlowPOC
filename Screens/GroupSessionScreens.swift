@@ -19,7 +19,7 @@ struct GroupSessionView: View {
         VStack(spacing: 0) {
             topBar
 
-            ScrollView {
+            ScrollViewportWithEdgeFade(coordinateSpace: "groupSessionScroll") {
                 VStack(spacing: 22) {
                     if let track = currentTrack {
                         nowPlayingCard(track)
@@ -31,6 +31,7 @@ struct GroupSessionView: View {
                     }
                 }
                 .padding(.vertical, 20)
+                .padding(.bottom, BrandLayout.scrollEdgeFadeComfortPadding)
                 .animation(CalmMotion.gentle, value: currentIndex)
                 .animation(CalmMotion.subtle, value: isPlaying)
             }
