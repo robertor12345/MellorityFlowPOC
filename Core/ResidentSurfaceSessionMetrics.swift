@@ -6,6 +6,9 @@ struct ResidentSurfaceSessionMetrics: Equatable {
     var genrePlayCounts: [String: Int] = [:]
     var trackChangeCount: Int = 0
     var immersiveEntryCount: Int = 0
+    var comfortFeelsGoodCount: Int = 0
+    var comfortTryElseCount: Int = 0
+    var comfortImplicitNeutralCount: Int = 0
 
     mutating func recordGenrePlay(_ genre: ResidentMusicGenre) {
         let key = genre.accessibilityLabel
@@ -18,6 +21,14 @@ struct ResidentSurfaceSessionMetrics: Equatable {
 
     mutating func recordImmersiveEntry() {
         immersiveEntryCount += 1
+    }
+
+    mutating func recordComfortChoice(_ choice: ResidentPlaylistComfortChoice) {
+        switch choice {
+        case .feelsGood: comfortFeelsGoodCount += 1
+        case .trySomethingElse: comfortTryElseCount += 1
+        case .implicitNeutral: comfortImplicitNeutralCount += 1
+        }
     }
 
     var durationSeconds: Int? {
@@ -63,6 +74,10 @@ struct ResidentSurfaceSessionMetrics: Equatable {
         }
         if immersiveEntryCount > 0 {
             parts.append("\(immersiveEntryCount) calm room visit\(immersiveEntryCount == 1 ? "" : "s")")
+        }
+        let comfortTotal = comfortFeelsGoodCount + comfortTryElseCount + comfortImplicitNeutralCount
+        if comfortTotal > 0 {
+            parts.append("\(comfortFeelsGoodCount) comfort · \(comfortTryElseCount) change cue")
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }

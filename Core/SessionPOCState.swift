@@ -191,6 +191,10 @@ final class SessionPOCState: ObservableObject {
         residentSurfaceMetrics.recordImmersiveEntry()
     }
 
+    func recordResidentPlaylistComfort(_ choice: ResidentPlaylistComfortChoice) {
+        residentSurfaceMetrics.recordComfortChoice(choice)
+    }
+
     private func resetResidentSurfaceMetrics() {
         residentSurfaceMetrics = ResidentSurfaceSessionMetrics()
         residentSurfaceFeedbackPending = false

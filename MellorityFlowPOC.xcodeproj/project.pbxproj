@@ -66,6 +66,7 @@
 		F2AA8574F87529ED6715A27C /* ExperienceScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */; };
 		F928B0BBAA7D59E6611A42B3 /* NoteStalgiaOrbVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 274808F05DACF15E46E05A75 /* NoteStalgiaOrbVisuals.swift */; };
 		FF2FD441DD46D24F35DCFD13 /* ResidentSurfaceSessionMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521F124970F852119DF58EEB /* ResidentSurfaceSessionMetrics.swift */; };
+		AA44EE55FF6677AA88CC00DD /* ResidentPlaylistComfort.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB55EE66FF7788AA99CC00EE /* ResidentPlaylistComfort.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -85,6 +86,7 @@
 		4C4443F8F896BE776BC2D899 /* ResidentExperienceScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentExperienceScreens.swift; sourceTree = "<group>"; };
 		51C01D52A4AC015460BBDB27 /* PatientFaceIDLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientFaceIDLinkStore.swift; sourceTree = "<group>"; };
 		521F124970F852119DF58EEB /* ResidentSurfaceSessionMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentSurfaceSessionMetrics.swift; sourceTree = "<group>"; };
+		BB55EE66FF7788AA99CC00EE /* ResidentPlaylistComfort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentPlaylistComfort.swift; sourceTree = "<group>"; };
 		581245CE63F69A24FE34574B /* FadeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FadeText.swift; sourceTree = "<group>"; };
 		5F28363CDD8ACCE234843157 /* BrandTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandTheme.swift; sourceTree = "<group>"; };
 		664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryScreens.swift; sourceTree = "<group>"; };
@@ -214,6 +216,7 @@
 				83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */,
 				68CD019E95A8AC72545862DB /* ResidentPlaylistVisuals.swift */,
 				521F124970F852119DF58EEB /* ResidentSurfaceSessionMetrics.swift */,
+				BB55EE66FF7788AA99CC00EE /* ResidentPlaylistComfort.swift */,
 				9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */,
 				BB22CC33DD44EE55FF6677AA /* StreamAudioCache.swift */,
 				861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */,
@@ -364,6 +367,7 @@
 				E733A9AC472F8DD38835045B /* ResidentMusicModel.swift in Sources */,
 				401BD5A9941B9E3EEF21CD0B /* ResidentPlaylistVisuals.swift in Sources */,
 				FF2FD441DD46D24F35DCFD13 /* ResidentSurfaceSessionMetrics.swift in Sources */,
+				AA44EE55FF6677AA88CC00DD /* ResidentPlaylistComfort.swift in Sources */,
 				60FFCA6CAA1511E381DF3C7E /* SessionBottomConfigMenu.swift in Sources */,
 				EA6F7464DCB01DE2FE788E42 /* SessionPOCState.swift in Sources */,
 				0D5F61F88E976BB8433C98AB /* SimplifiedFlowScreens.swift in Sources */,

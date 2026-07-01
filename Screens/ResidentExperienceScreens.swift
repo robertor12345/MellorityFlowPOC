@@ -304,6 +304,15 @@ struct ResidentProfileView: View {
     @State private var selectedPlayingGenre: ResidentMusicGenre?
     @State private var activePlaylist: CarePlaylistEntry?
     @State private var activeTrackIndex: Int = 0
+    @State private var comfortInvitePhase: PlaylistComfortInvitePhase = .hidden
+    @State private var playbackAnchor: Date?
+    @State private var lastPromptedPlaybackKey: String?
+    @State private var comfortPromptCount = 0
+    @State private var comfortDismissGeneration = 0
+    @State private var comfortAffirmationChoice: ResidentPlaylistComfortChoice?
+    @State private var comfortAffirmationTick: UInt = 0
+
+    private var comfortInviteActive: Bool { comfortInvitePhase == .visible }
 
     private var patient: CarePatientProfile? {
         state.carePatient(id: state.selectedCarePatientId)
@@ -350,6 +359,14 @@ struct ResidentProfileView: View {
         .overlay {
             residentGlyphCanvas
         }
+        .overlay {
+            if comfortInviteActive {
+                Color.black.opacity(0.07)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+        }
         .overlay(alignment: .top) {
             HStack {
                 Spacer()
@@ -370,26 +387,53 @@ struct ResidentProfileView: View {
             .padding(.top, 10)
         }
         .overlay(alignment: .bottom) {
-            if let sg = selectedPlayingGenre {
-                Button {
-                    residentAudio.stop()
-                    state.prepareResidentImmersiveFromPlaylist(genre: sg)
-                    stopPlayback()
-                } label: {
-                    ResidentLuminousFloatingButton(
-                        systemImage: "leaf.fill",
-                        accent: BrandTheme.logoPink,
-                        diameter: 56
+            VStack(spacing: 14) {
+                if comfortInviteActive, selectedPlayingGenre != nil {
+                    PlaylistComfortDock(
+                        affirmationChoice: comfortAffirmationChoice,
+                        affirmationTick: comfortAffirmationTick,
+                        onFeelsGood: { handleComfortChoice(.feelsGood) },
+                        onTryElse: { handleComfortChoice(.trySomethingElse) }
                     )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .buttonStyle(SoftPressButtonStyle())
-                .accessibilityLabel("Calm room visuals")
-                .padding(.bottom, 42)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+
+                if let sg = selectedPlayingGenre {
+                    Button {
+                        residentAudio.stop()
+                        state.prepareResidentImmersiveFromPlaylist(genre: sg)
+                        stopPlayback()
+                    } label: {
+                        ResidentLuminousFloatingButton(
+                            systemImage: "leaf.fill",
+                            accent: BrandTheme.logoPink,
+                            diameter: 56
+                        )
+                    }
+                    .buttonStyle(SoftPressButtonStyle())
+                    .accessibilityLabel("Calm room visuals")
+                }
             }
+            .padding(.bottom, 42)
+            .animation(CalmMotion.gentle, value: comfortInvitePhase)
+        }
+        .onReceive(Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()) { _ in
+            evaluateComfortInviteSchedule()
         }
         .onChange(of: state.selectedCarePatientId) { _, _ in
             stopPlayback()
+        }
+        .onChange(of: selectedPlayingGenre) { _, genre in
+            if genre == nil {
+                resetComfortInvite()
+            } else {
+                markPlaybackAnchor()
+            }
+        }
+        .onChange(of: activeTrackIndex) { _, _ in
+            if selectedPlayingGenre != nil {
+                markPlaybackAnchor()
+            }
         }
         .onAppear {
             state.reaffirmPhaseContentVisible()
@@ -397,6 +441,7 @@ struct ResidentProfileView: View {
         }
         .onDisappear {
             residentAudio.stop()
+            resetComfortInvite()
         }
     }
 
@@ -446,6 +491,7 @@ struct ResidentProfileView: View {
                             diskDiameter: disk,
                             iconSize: icon,
                             emphasis: emphasis,
+                            showComfortBreathingRing: emphasis == .hero && comfortInviteActive,
                             action: { playGenreImmediately(genre) }
                         )
                         .zIndex(emphasis == .hero ? 50 : CGFloat(index))
@@ -458,7 +504,7 @@ struct ResidentProfileView: View {
         .transaction { transaction in
             transaction.disablesAnimations = true
         }
-        .allowsHitTesting(true)
+        .allowsHitTesting(!comfortInviteActive)
     }
 
     private var playlistSwipeGesture: some Gesture {
@@ -471,11 +517,13 @@ struct ResidentProfileView: View {
                         activeTrackIndex = (activeTrackIndex + 1) % count
                     }
                     state.recordResidentTrackChange()
+                    resetComfortInviteForNewPlayback()
                 } else if value.translation.width >= 50 {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         activeTrackIndex = (activeTrackIndex - 1 + count) % count
                     }
                     state.recordResidentTrackChange()
+                    resetComfortInviteForNewPlayback()
                 }
             }
     }
@@ -491,6 +539,104 @@ struct ResidentProfileView: View {
         selectedPlayingGenre = nil
         activePlaylist = nil
         activeTrackIndex = 0
+        resetComfortInvite()
+    }
+
+    private func playbackKey() -> String? {
+        guard let genre = selectedPlayingGenre else { return nil }
+        return "\(genre.rawValue)-\(activeTrackIndex)"
+    }
+
+    private func markPlaybackAnchor() {
+        playbackAnchor = Date()
+        comfortDismissGeneration += 1
+        withAnimation(CalmMotion.gentle) {
+            comfortInvitePhase = .hidden
+        }
+        comfortAffirmationChoice = nil
+    }
+
+    private func resetComfortInviteForNewPlayback() {
+        playbackAnchor = Date()
+        comfortDismissGeneration += 1
+        withAnimation(CalmMotion.gentle) {
+            comfortInvitePhase = .hidden
+        }
+        comfortAffirmationChoice = nil
+    }
+
+    private func resetComfortInvite() {
+        playbackAnchor = nil
+        lastPromptedPlaybackKey = nil
+        comfortPromptCount = 0
+        comfortDismissGeneration += 1
+        comfortInvitePhase = .hidden
+        comfortAffirmationChoice = nil
+    }
+
+    private func evaluateComfortInviteSchedule() {
+        guard comfortInvitePhase == .hidden else { return }
+        guard selectedPlayingGenre != nil, activePlaylist != nil else { return }
+        guard comfortPromptCount < PlaylistComfortTiming.maxPromptsPerSession else { return }
+        guard let anchor = playbackAnchor else { return }
+        guard Date().timeIntervalSince(anchor) >= PlaylistComfortTiming.settleSeconds else { return }
+        guard let key = playbackKey(), key != lastPromptedPlaybackKey else { return }
+        presentComfortInvite(for: key)
+    }
+
+    private func presentComfortInvite(for key: String) {
+        lastPromptedPlaybackKey = key
+        comfortDismissGeneration += 1
+        let generation = comfortDismissGeneration
+        withAnimation(CalmMotion.gentle) {
+            comfortInvitePhase = .visible
+        }
+        CalmExperienceFeedback.sessionSettle()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + PlaylistComfortTiming.inviteVisibleSeconds) {
+            guard generation == comfortDismissGeneration, comfortInvitePhase == .visible else { return }
+            dismissComfortInvite(recording: .implicitNeutral)
+        }
+    }
+
+    private func handleComfortChoice(_ choice: ResidentPlaylistComfortChoice) {
+        guard comfortInvitePhase == .visible else { return }
+        comfortDismissGeneration += 1
+        comfortAffirmationChoice = choice
+        comfortAffirmationTick &+= 1
+        state.recordResidentPlaylistComfort(choice)
+        comfortPromptCount += 1
+        CalmExperienceFeedback.discoveryPick()
+
+        if choice == .trySomethingElse, let current = selectedPlayingGenre {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                playAdjacentGenre(from: current)
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+            withAnimation(CalmMotion.gentle) {
+                comfortInvitePhase = .hidden
+            }
+            comfortAffirmationChoice = nil
+        }
+    }
+
+    private func dismissComfortInvite(recording choice: ResidentPlaylistComfortChoice) {
+        comfortDismissGeneration += 1
+        state.recordResidentPlaylistComfort(choice)
+        comfortPromptCount += 1
+        withAnimation(CalmMotion.gentle) {
+            comfortInvitePhase = .hidden
+        }
+        comfortAffirmationChoice = nil
+    }
+
+    private func playAdjacentGenre(from current: ResidentMusicGenre) {
+        let ordered = genresOnFile
+        guard ordered.count > 1, let idx = ordered.firstIndex(of: current) else { return }
+        let next = ordered[(idx + 1) % ordered.count]
+        playGenreImmediately(next)
     }
 
     private func glyphRole(for genre: ResidentMusicGenre) -> ResidentGlyphEmphasis {
@@ -557,6 +703,7 @@ struct ResidentProfileView: View {
         state.recordResidentGenrePlay(genre)
         residentAudio.stop()
         residentAudio.startFresh(photoAnchored: false)
+        markPlaybackAnchor()
     }
 
     private func floatingGlyphButton(
@@ -569,6 +716,7 @@ struct ResidentProfileView: View {
         diskDiameter: CGFloat,
         iconSize: CGFloat,
         emphasis: ResidentGlyphEmphasis,
+        showComfortBreathingRing: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         let rawΔ = GlyphFloatLayout.animatedDelta(
@@ -595,6 +743,10 @@ struct ResidentProfileView: View {
 
         return Button(action: action) {
             ZStack {
+                if showComfortBreathingRing {
+                    PlaylistComfortBreathingRing(diameter: diskDiameter, phase: phase)
+                }
+
                 Circle()
                     .fill(genre.accent.opacity(emphasis == .hero ? 0.38 : 0.24))
                     .blur(radius: emphasis == .hero ? 22 : 12)
@@ -759,6 +911,154 @@ private struct ResidentLuminousFloatingButton: View {
         }
         .shadow(color: accent.opacity(0.45), radius: 14)
         .shadow(color: BrandTheme.logoCyan.opacity(0.28), radius: 22)
+    }
+}
+
+// MARK: - Playlist comfort dock (binary sentiment — advanced dementia friendly)
+
+private struct PlaylistComfortDock: View {
+    let affirmationChoice: ResidentPlaylistComfortChoice?
+    let affirmationTick: UInt
+    var onFeelsGood: () -> Void
+    var onTryElse: () -> Void
+
+    var body: some View {
+        HStack(spacing: 28) {
+            PlaylistComfortChoiceButton(
+                choice: .feelsGood,
+                systemImage: "sun.max.fill",
+                accent: BrandTheme.goldDeep,
+                secondary: BrandTheme.goldSoft,
+                affirmationChoice: affirmationChoice,
+                affirmationTick: affirmationTick,
+                action: onFeelsGood
+            )
+            PlaylistComfortChoiceButton(
+                choice: .trySomethingElse,
+                systemImage: "cloud.fill",
+                accent: BrandTheme.logoCyan,
+                secondary: BrandTheme.creamMid,
+                affirmationChoice: affirmationChoice,
+                affirmationTick: affirmationTick,
+                action: onTryElse
+            )
+        }
+        .padding(.horizontal, 24)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+private struct PlaylistComfortChoiceButton: View {
+    let choice: ResidentPlaylistComfortChoice
+    let systemImage: String
+    let accent: Color
+    let secondary: Color
+    let affirmationChoice: ResidentPlaylistComfortChoice?
+    let affirmationTick: UInt
+    var action: () -> Void
+
+    private let diameter: CGFloat = 92
+
+    @State private var pressPopScale: CGFloat = 1
+    @State private var glowBurst: CGFloat = 0
+
+    private var luminousLevel: CGFloat {
+        glowBurst > 0.01 ? glowBurst : 0.38
+    }
+
+    var body: some View {
+        Button {
+            action()
+            triggerPressFlash()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                accent.opacity(0.34 * luminousLevel + 0.1),
+                                secondary.opacity(0.22 * luminousLevel),
+                                .clear,
+                            ],
+                            center: .center,
+                            startRadius: 2,
+                            endRadius: diameter * 0.62
+                        )
+                    )
+                    .frame(width: diameter * (1.1 + luminousLevel * 0.14), height: diameter * (1.1 + luminousLevel * 0.14))
+                    .blur(radius: 5 + luminousLevel * 14)
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                .white.opacity(0.94),
+                                secondary.opacity(0.88),
+                                accent.opacity(0.72),
+                            ],
+                            center: .center,
+                            startRadius: 4,
+                            endRadius: diameter * 0.52
+                        )
+                    )
+                    .frame(width: diameter * 0.88, height: diameter * 0.88)
+                    .overlay(
+                        Circle()
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        .white.opacity(0.9),
+                                        accent.opacity(0.65 + luminousLevel * 0.25),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 2 + luminousLevel * 2
+                            )
+                    )
+                    .shadow(color: accent.opacity(0.35 + luminousLevel * 0.45), radius: 10 + luminousLevel * 18)
+
+                Image(systemName: systemImage)
+                    .font(.system(size: diameter * 0.34, weight: .medium))
+                    .foregroundStyle(accent.opacity(0.92))
+                    .shadow(color: .white.opacity(0.6), radius: 1, y: -1)
+            }
+            .frame(width: diameter, height: diameter)
+            .scaleEffect(pressPopScale)
+        }
+        .buttonStyle(ChimingPlainButtonStyle())
+        .accessibilityLabel(choice.accessibilityLabel)
+        .onChange(of: affirmationTick) { _, _ in
+            guard affirmationChoice == choice else { return }
+            playAffirmationGlow()
+        }
+    }
+
+    private func triggerPressFlash() {
+        guard !UIAccessibility.isReduceMotionEnabled else { return }
+        withAnimation(.easeOut(duration: 0.12)) { pressPopScale = 1.08 }
+        withAnimation(.easeOut(duration: 0.28).delay(0.1)) { pressPopScale = 1 }
+    }
+
+    private func playAffirmationGlow() {
+        guard !UIAccessibility.isReduceMotionEnabled else { return }
+        glowBurst = 1
+        withAnimation(.easeOut(duration: 0.55)) { glowBurst = 0 }
+    }
+}
+
+private struct PlaylistComfortBreathingRing: View {
+    let diameter: CGFloat
+    let phase: TimeInterval
+
+    var body: some View {
+        let pulse = 0.5 + 0.5 * sin(phase * 1.15)
+        Circle()
+            .strokeBorder(BrandTheme.gold.opacity(0.28 + pulse * 0.32), lineWidth: 2 + pulse * 3)
+            .frame(width: diameter * (1.18 + pulse * 0.06), height: diameter * (1.18 + pulse * 0.06))
+            .blur(radius: 0.5 + pulse * 1.5)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 
