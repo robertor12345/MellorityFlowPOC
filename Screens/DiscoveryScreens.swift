@@ -224,7 +224,7 @@ struct DiscoveryCalibrationView: View {
     }
 }
 
-// MARK: - Era listening panel (archival media + ring equalizer + centered mood faces)
+// MARK: - Era listening panel (archival media + radial bar equalizer + centered mood faces)
 
 private struct DiscoveryEraListeningOrb: View {
     let snippetIndex: Int
@@ -256,7 +256,7 @@ private struct DiscoveryEraListeningOrb: View {
 
     var body: some View {
         let coreDiameter = min(orbSize.width, orbSize.height)
-        let canvasDiameter = OrbRingEqualizerView.canvasDiameter(for: coreDiameter)
+        let barCanvas = OrbRadialBarEqualizerView.canvasDiameter(for: coreDiameter)
         TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(pulseAnchor) * flowPanelPulseSpeed
             let sample = OrbPulseSample.sample(
@@ -265,7 +265,7 @@ private struct DiscoveryEraListeningOrb: View {
                 reduceMotion: reduceMotion
             )
             let contentScale = sample.shellScale
-            let orbEdgeRadius = OrbRingEqualizerView.orbEdgeRadius(for: coreDiameter, shellScale: contentScale)
+            let barOrbRadius = OrbRadialBarEqualizerView.orbRadius(for: coreDiameter) * contentScale
             let musicActive = MusicReactiveBus.shared.snapshot.isActive
             let listenProgress: CGFloat = {
                 if musicActive {
@@ -319,11 +319,13 @@ private struct DiscoveryEraListeningOrb: View {
             .scaleEffect(contentScale)
             .frame(width: coreDiameter, height: coreDiameter)
             .background {
-                OrbRingEqualizerView(
-                    canvasDiameter: canvasDiameter,
-                    orbEdgeRadius: orbEdgeRadius,
+                OrbRadialBarEqualizerView(
+                    canvasDiameter: barCanvas,
+                    orbRadius: barOrbRadius,
+                    visibleBarCount: OrbRadialBarEqualizerMotion.defaultBarCount,
                     listenProgress: listenProgress,
-                    reactsToMusic: true
+                    reactsToMusic: true,
+                    liveAudioGain: 1.85
                 )
                 .allowsHitTesting(false)
                 .accessibilityElement(children: .ignore)

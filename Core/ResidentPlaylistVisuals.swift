@@ -170,9 +170,10 @@ struct ResidentPlaylistPanelBackdropView: View {
     let trackTitle: String
     let trackIndex: Int
     let orbSize: CGSize
+    var mediaFillScale: CGFloat = 0.90
 
     var body: some View {
-        OrbInteriorMediaPanel(orbSize: orbSize, showArcFrame: false) {
+        OrbInteriorMediaPanel(orbSize: orbSize, mediaFillScale: mediaFillScale, showArcFrame: false) {
             ResidentPlaylistBackdropView(
                 genre: genre,
                 trackTitle: trackTitle,

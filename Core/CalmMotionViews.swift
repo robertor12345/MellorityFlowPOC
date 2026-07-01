@@ -8,6 +8,8 @@ enum CalmMotion {
     static let ethereal: Animation = .easeInOut(duration: 0.8)
     /// In-place content changes (cards, step swaps) — soft settle, no bounce.
     static let gentle: Animation = .spring(response: 0.66, dampingFraction: 0.92, blendDuration: 0.2)
+    /// Resident playlist orb — slow ease so genre swaps feel like one continuous breath.
+    static let playlistOrbMorph: Animation = .easeInOut(duration: 0.88)
     /// Screen content fading in after a transition.
     static let softFade: Animation = .easeOut(duration: 0.6)
     /// Small state tweaks (button enable, progress fill) — quick but smooth.

@@ -311,8 +311,41 @@ struct ResidentProfileView: View {
     @State private var comfortDismissGeneration = 0
     @State private var comfortAffirmationChoice: ResidentPlaylistComfortChoice?
     @State private var comfortAffirmationTick: UInt = 0
+    @State private var mediaExpansion: CGFloat = 0
+    @State private var genreMediaCycleToken = 0
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var comfortInviteActive: Bool { comfortInvitePhase == .visible }
+
+    /// Diameter when playlist retro visuals fill the screen (slight bleed past edges).
+    private func expandedMediaSize(in container: CGSize) -> CGSize {
+        let d = max(container.width, container.height) * 1.14
+        return CGSize(width: d, height: d)
+    }
+
+    private func displayMediaSize(in container: CGSize) -> CGSize {
+        let compact = orbSize
+        let expanded = expandedMediaSize(in: container)
+        let t = mediaExpansion
+        return CGSize(
+            width: compact.width + (expanded.width - compact.width) * t,
+            height: compact.height + (expanded.height - compact.height) * t
+        )
+    }
+
+    private func displayMediaFillScale() -> CGFloat {
+        0.90 + mediaExpansion * 0.10
+    }
+
+    private func mediaCenter(hub: CGPoint, in container: CGSize) -> CGPoint {
+        let screenCenter = CGPoint(x: container.width * 0.5, y: container.height * 0.5)
+        let t = mediaExpansion
+        return CGPoint(
+            x: hub.x + (screenCenter.x - hub.x) * t,
+            y: hub.y + (screenCenter.y - hub.y) * t
+        )
+    }
 
     private var patient: CarePatientProfile? {
         state.carePatient(id: state.selectedCarePatientId)
@@ -332,101 +365,116 @@ struct ResidentProfileView: View {
     }
 
     var body: some View {
-        ZStack {
-            if let genre = selectedPlayingGenre,
-               let playlist = activePlaylist,
-               let trackTitle = currentTrackTitle(in: playlist) {
-                ResidentPlaylistPanelBackdropView(
-                    genre: genre,
-                    trackTitle: trackTitle,
-                    trackIndex: activeTrackIndex,
-                    orbSize: orbSize
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .transition(.opacity.animation(.easeInOut(duration: 0.45)))
-            }
+        GeometryReader { geo in
+            let playbackHub = GlyphFloatLayout.musicGlyphHub(in: geo.size)
+            let mediaSize = displayMediaSize(in: geo.size)
+            let mediaAnchor = mediaCenter(hub: playbackHub, in: geo.size)
 
-            if activePlaylist != nil {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .ignoresSafeArea()
-                    .gesture(playlistSwipeGesture)
-                    .accessibilityLabel("Swipe for previous or next track")
-                    .accessibilityHint("Swipe right for the previous song, left for the next.")
+            ZStack {
+                if let genre = selectedPlayingGenre,
+                   let playlist = activePlaylist,
+                   let trackTitle = currentTrackTitle(in: playlist) {
+                    ResidentPlaylistPanelBackdropView(
+                        genre: genre,
+                        trackTitle: trackTitle,
+                        trackIndex: activeTrackIndex,
+                        orbSize: mediaSize,
+                        mediaFillScale: displayMediaFillScale()
+                    )
+                    .position(x: mediaAnchor.x, y: mediaAnchor.y)
+                    .transition(.opacity.animation(.easeInOut(duration: 0.45)))
+                    .allowsHitTesting(false)
+                }
+
+                if activePlaylist != nil {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .ignoresSafeArea()
+                        .gesture(playlistSwipeGesture)
+                        .accessibilityLabel("Swipe for previous or next track")
+                        .accessibilityHint("Swipe right for the previous song, left for the next.")
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .animation(CalmMotion.playlistOrbMorph, value: mediaExpansion)
+            .overlay {
+                residentGlyphCanvas
+            }
+            .overlay {
+                if comfortInviteActive {
+                    Color.black.opacity(0.07)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
+            }
+            .overlay(alignment: .top) {
+                HStack {
+                    Spacer()
+                    Button {
+                        stopPlayback()
+                        state.leaveResidentProfileToStaff()
+                    } label: {
+                        ResidentLuminousFloatingButton(
+                            systemImage: "person.badge.key",
+                            accent: BrandTheme.logoCyan,
+                            diameter: 48
+                        )
+                    }
+                    .buttonStyle(ChimingPlainButtonStyle())
+                    .accessibilityLabel("Return to roster and record session")
+                }
+                .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
+                .padding(.top, 10)
+            }
+            .overlay(alignment: .bottom) {
+                VStack(spacing: 14) {
+                    if comfortInviteActive, selectedPlayingGenre != nil {
+                        PlaylistComfortDock(
+                            affirmationChoice: comfortAffirmationChoice,
+                            affirmationTick: comfortAffirmationTick,
+                            onFeelsGood: { handleComfortChoice(.feelsGood) },
+                            onTryElse: { handleComfortChoice(.trySomethingElse) }
+                        )
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+
+                    if let sg = selectedPlayingGenre {
+                        Button {
+                            residentAudio.stop()
+                            state.prepareResidentImmersiveFromPlaylist(genre: sg)
+                            stopPlayback()
+                        } label: {
+                            ResidentLuminousFloatingButton(
+                                systemImage: "leaf.fill",
+                                accent: BrandTheme.logoPink,
+                                diameter: 56
+                            )
+                        }
+                        .buttonStyle(SoftPressButtonStyle())
+                        .accessibilityLabel("Calm room visuals")
+                    }
+                }
+                .padding(.bottom, 42)
+                .animation(CalmMotion.gentle, value: comfortInvitePhase)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay {
-            residentGlyphCanvas
-        }
-        .overlay {
-            if comfortInviteActive {
-                Color.black.opacity(0.07)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-                    .transition(.opacity)
-            }
-        }
-        .overlay(alignment: .top) {
-            HStack {
-                Spacer()
-                Button {
-                    stopPlayback()
-                    state.leaveResidentProfileToStaff()
-                } label: {
-                    ResidentLuminousFloatingButton(
-                        systemImage: "person.badge.key",
-                        accent: BrandTheme.logoCyan,
-                        diameter: 48
-                    )
-                }
-                .buttonStyle(ChimingPlainButtonStyle())
-                .accessibilityLabel("Return to roster and record session")
-            }
-            .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
-            .padding(.top, 10)
-        }
-        .overlay(alignment: .bottom) {
-            VStack(spacing: 14) {
-                if comfortInviteActive, selectedPlayingGenre != nil {
-                    PlaylistComfortDock(
-                        affirmationChoice: comfortAffirmationChoice,
-                        affirmationTick: comfortAffirmationTick,
-                        onFeelsGood: { handleComfortChoice(.feelsGood) },
-                        onTryElse: { handleComfortChoice(.trySomethingElse) }
-                    )
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-
-                if let sg = selectedPlayingGenre {
-                    Button {
-                        residentAudio.stop()
-                        state.prepareResidentImmersiveFromPlaylist(genre: sg)
-                        stopPlayback()
-                    } label: {
-                        ResidentLuminousFloatingButton(
-                            systemImage: "leaf.fill",
-                            accent: BrandTheme.logoPink,
-                            diameter: 56
-                        )
-                    }
-                    .buttonStyle(SoftPressButtonStyle())
-                    .accessibilityLabel("Calm room visuals")
-                }
-            }
-            .padding(.bottom, 42)
-            .animation(CalmMotion.gentle, value: comfortInvitePhase)
-        }
         .onReceive(Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()) { _ in
             evaluateComfortInviteSchedule()
         }
         .onChange(of: state.selectedCarePatientId) { _, _ in
             stopPlayback()
         }
-        .onChange(of: selectedPlayingGenre) { _, genre in
-            if genre == nil {
+        .onChange(of: selectedPlayingGenre) { old, new in
+            if new == nil {
+                collapsePlaybackMedia()
                 resetComfortInvite()
+            } else if let old, old != new {
+                cyclePlaybackMediaForGenreChange()
+                markPlaybackAnchor()
             } else {
+                expandPlaybackMedia(afterBriefPause: true)
                 markPlaybackAnchor()
             }
         }
@@ -441,6 +489,7 @@ struct ResidentProfileView: View {
         }
         .onDisappear {
             residentAudio.stop()
+            collapsePlaybackMedia()
             resetComfortInvite()
         }
     }
@@ -501,10 +550,8 @@ struct ResidentProfileView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .transaction { transaction in
-            transaction.disablesAnimations = true
-        }
         .allowsHitTesting(!comfortInviteActive)
+        .animation(CalmMotion.playlistOrbMorph, value: mediaExpansion)
     }
 
     private var playlistSwipeGesture: some Gesture {
@@ -539,7 +586,58 @@ struct ResidentProfileView: View {
         selectedPlayingGenre = nil
         activePlaylist = nil
         activeTrackIndex = 0
+        collapsePlaybackMedia()
         resetComfortInvite()
+    }
+
+    private func expandPlaybackMedia(afterBriefPause: Bool = false) {
+        genreMediaCycleToken += 1
+        let apply = {
+            if reduceMotion {
+                mediaExpansion = 1
+            } else {
+                withAnimation(CalmMotion.playlistOrbMorph) {
+                    mediaExpansion = 1
+                }
+            }
+        }
+        if afterBriefPause {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: apply)
+        } else {
+            apply()
+        }
+    }
+
+    private func collapsePlaybackMedia() {
+        genreMediaCycleToken += 1
+        if reduceMotion {
+            mediaExpansion = 0
+        } else {
+            withAnimation(CalmMotion.playlistOrbMorph) {
+                mediaExpansion = 0
+            }
+        }
+    }
+
+    /// Soft partial dip while the new clip loads — avoids a full shrink that felt abrupt between genres.
+    private func cyclePlaybackMediaForGenreChange() {
+        genreMediaCycleToken += 1
+        let token = genreMediaCycleToken
+        let dip: CGFloat = 0.91
+
+        if reduceMotion {
+            return
+        }
+
+        withAnimation(.easeIn(duration: 0.52)) {
+            mediaExpansion = dip
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
+            guard token == genreMediaCycleToken, selectedPlayingGenre != nil else { return }
+            withAnimation(.easeOut(duration: 0.78)) {
+                mediaExpansion = 1
+            }
+        }
     }
 
     private func playbackKey() -> String? {
@@ -736,10 +834,10 @@ struct ResidentProfileView: View {
         let roleScale: CGFloat =
             emphasis == .hero ? 1.02 : emphasis == .sideStrip ? 0.98 : 1
         let endR = diskDiameter * 0.62
-        let eqRibbon = emphasis == .hero ? OrbRingEqualizerView.glyphRingOutwardPad(for: diskDiameter) : 0
+        let eqRibbon = emphasis == .hero ? OrbRadialBarEqualizerView.outwardPad(for: diskDiameter) : 0
         let glyphStackSquare = diskDiameter + eqRibbon * 2
-        let ringCanvas = OrbRingEqualizerView.canvasDiameter(for: diskDiameter)
-        let ringOrbEdge = OrbRingEqualizerView.glyphOrbEdgeRadius(for: diskDiameter)
+        let barCanvas = OrbRadialBarEqualizerView.canvasDiameter(for: diskDiameter)
+        let barOrbRadius = OrbRadialBarEqualizerView.orbRadius(for: diskDiameter)
 
         return Button(action: action) {
             ZStack {
@@ -796,11 +894,12 @@ struct ResidentProfileView: View {
             .frame(width: diskDiameter, height: diskDiameter)
             .background {
                 if emphasis == .hero {
-                    OrbRingEqualizerView(
-                        canvasDiameter: ringCanvas,
-                        orbEdgeRadius: ringOrbEdge,
-                        listenProgress: 1,
-                        reactsToMusic: true
+                    OrbRadialBarEqualizerView(
+                        canvasDiameter: barCanvas,
+                        orbRadius: barOrbRadius,
+                        visibleBarCount: OrbRadialBarEqualizerMotion.defaultBarCount,
+                        reactsToMusic: true,
+                        liveAudioGain: 1.85
                     )
                     .accessibilityHidden(true)
                 }
@@ -824,8 +923,8 @@ struct ResidentProfileView: View {
         .position(x: pos.x, y: pos.y)
         .rotationEffect(.degrees(rot))
         .scaleEffect(driftScale * roleScale, anchor: .center)
-        .opacity(emphasis == .sideStrip ? 0.88 : 1)
-        .saturation(emphasis == .sideStrip ? 0.94 : 1.04)
+        .opacity(emphasis == .sideStrip ? max(0.42, 0.88 - mediaExpansion * 0.46) : 1)
+        .saturation(emphasis == .sideStrip ? max(0.72, 0.94 - mediaExpansion * 0.22) : 1.04)
     }
 }
 
