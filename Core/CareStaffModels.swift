@@ -79,6 +79,18 @@ struct CareSessionRecord: Identifiable, Equatable {
     var residentTrackChangeCount: Int?
     var residentImmersiveEntryCount: Int?
     var residentGenresPlayedSummary: String?
+    /// Session context tags (time of day, prior state, environment).
+    var sessionTimeOfDay: String? = nil
+    var preSessionState: String? = nil
+    var sessionContextSummary: String? = nil
+    var residentLedSession: Bool? = nil
+    var distressOrPRNNearby: Bool? = nil
+    /// Generated at save time for handover / care-plan use.
+    var insightNarrative: String? = nil
+    var insightSuggestedNextStep: String? = nil
+    var insightHandoverText: String? = nil
+    var insightFamilyText: String? = nil
+    var lightsDimmed: Bool? = nil
 }
 
 enum CareStaffMockData {
@@ -257,7 +269,17 @@ enum CareStaffMockData {
             residentGenrePlayCount: 4,
             residentTrackChangeCount: 2,
             residentImmersiveEntryCount: 1,
-            residentGenresPlayedSummary: "Classical ×2, Gospel ×2"
+            residentGenresPlayedSummary: "Classical ×2, Gospel ×2",
+            sessionTimeOfDay: "Afternoon",
+            preSessionState: "Withdrawn / low engagement",
+            sessionContextSummary: "Afternoon · Before: withdrawn / low engagement · Lights dimmed · Resident-led",
+            residentLedSession: true,
+            distressOrPRNNearby: false,
+            insightNarrative: "Elena M. spent 12m 0s · Classical ×2, Gospel ×2 · 1 therapeutic visual access during a reminiscence music session.",
+            insightSuggestedNextStep: "Repeat a similar session starting with classical in the afternoon with soft lighting and offer the calm-room visuals again.",
+            insightHandoverText: nil,
+            insightFamilyText: nil,
+            lightsDimmed: true
         ),
         CareSessionRecord(
             id: UUID(uuidString: "bbbbbbbb-bbbb-4ccc-8ddd-222222222202")!,

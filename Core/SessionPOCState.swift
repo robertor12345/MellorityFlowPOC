@@ -58,6 +58,8 @@ final class SessionPOCState: ObservableObject {
     /// Sequential post-session sentiment capture (existing residents).
     @Published var sessionSentimentStep: Int = 0
     @Published var sessionSentimentDraft = SessionSentimentDraft()
+    @Published var sessionContextDraft = SessionContextDraft()
+    @Published private(set) var pendingSessionInsight: CareSessionInsightPack?
 
     /// Telemetry while the resident uses the instrument surface (until supervisor handoff).
     @Published private(set) var residentSurfaceMetrics = ResidentSurfaceSessionMetrics()
@@ -491,6 +493,7 @@ final class SessionPOCState: ObservableObject {
         phase = .entryMode
     }
 
+    @discardableResult
     private func appendCareSessionRecord(
         patientId: UUID,
         staffNote: String?,
@@ -501,10 +504,12 @@ final class SessionPOCState: ObservableObject {
         alertnessRating: Int? = nil,
         emotionalStateRating: Int? = nil,
         lucidityRating: Int? = nil,
-        surfaceMetrics: ResidentSurfaceSessionMetrics? = nil
-    ) {
+        surfaceMetrics: ResidentSurfaceSessionMetrics? = nil,
+        context: SessionContextDraft? = nil
+    ) -> CareSessionRecord {
         let metrics = surfaceMetrics ?? (residentSurfaceFeedbackPending ? residentSurfaceMetrics : nil)
-        let rec = CareSessionRecord(
+        let ctx = context ?? sessionContextDraft
+        var rec = CareSessionRecord(
             id: UUID(),
             patientId: patientId,
             date: Date(),
@@ -522,9 +527,30 @@ final class SessionPOCState: ObservableObject {
             residentGenrePlayCount: metrics.map(\.totalGenrePlays).flatMap { $0 > 0 ? $0 : nil },
             residentTrackChangeCount: metrics.map(\.trackChangeCount).flatMap { $0 > 0 ? $0 : nil },
             residentImmersiveEntryCount: metrics.map(\.immersiveEntryCount).flatMap { $0 > 0 ? $0 : nil },
-            residentGenresPlayedSummary: metrics?.genresPlayedSummary()
+            residentGenresPlayedSummary: metrics?.genresPlayedSummary(),
+            sessionTimeOfDay: ctx.timeOfDay.label,
+            preSessionState: ctx.priorState?.label,
+            sessionContextSummary: ctx.formattedContextLine(),
+            residentLedSession: ctx.residentLedSession,
+            distressOrPRNNearby: ctx.distressOrPRNNearby,
+            insightNarrative: nil,
+            insightSuggestedNextStep: nil,
+            insightHandoverText: nil,
+            insightFamilyText: nil,
+            lightsDimmed: ctx.environmentTags.contains(.lightsDimmed)
         )
+
+        if let patient = carePatient(id: patientId) {
+            let prior = recordsForPatient(patientId)
+            let pack = CareSessionInsightBuilder.build(patient: patient, record: rec, priorRecords: prior)
+            rec.insightNarrative = pack.narrative
+            rec.insightSuggestedNextStep = pack.suggestedNextStep
+            rec.insightHandoverText = pack.handoverText
+            rec.insightFamilyText = pack.familyText
+        }
+
         careSessionRecords.insert(rec, at: 0)
+        return rec
     }
 
     func shouldOfferSessionSentimentFeedback() -> Bool {
@@ -539,6 +565,7 @@ final class SessionPOCState: ObservableObject {
     func beginSessionSentimentFeedback() {
         sessionSentimentStep = 0
         sessionSentimentDraft = SessionSentimentDraft()
+        sessionContextDraft = SessionContextDraft()
         phase = .careSessionSentimentFeedback
     }
 
@@ -584,32 +611,77 @@ final class SessionPOCState: ObservableObject {
         else { return }
 
         let note = sessionSentimentDraft.note.trimmingCharacters(in: .whitespacesAndNewlines)
-        appendCareSessionRecord(
+        let metricsSnapshot = residentSurfaceMetrics
+        let rec = appendCareSessionRecord(
             patientId: pid,
             staffNote: note.isEmpty ? nil : note,
             moodRating: mood,
             alertnessRating: alertness,
             emotionalStateRating: emotional,
-            lucidityRating: lucidity
+            lucidityRating: lucidity,
+            surfaceMetrics: metricsSnapshot,
+            context: sessionContextDraft
         )
-        finishAfterSessionFeedback(patientId: pid)
+        sessionSentimentStep = 0
+        sessionSentimentDraft = SessionSentimentDraft()
+        presentSessionInsight(for: pid, record: rec)
     }
 
     func skipSessionSentimentFeedback() {
         let pid = activeCarePatientId ?? selectedCarePatientId
         if let pid {
-            appendCareSessionRecord(patientId: pid, staffNote: nil)
-        }
-        if let pid {
-            finishAfterSessionFeedback(patientId: pid)
+            let metricsSnapshot = residentSurfaceMetrics
+            let rec = appendCareSessionRecord(
+                patientId: pid,
+                staffNote: nil,
+                surfaceMetrics: metricsSnapshot,
+                context: sessionContextDraft
+            )
+            if shouldPresentInsight(for: rec) {
+                presentSessionInsight(for: pid, record: rec)
+            } else {
+                finishAfterSessionFeedback(patientId: pid)
+            }
         } else {
             phase = .carePatientList
         }
     }
 
+    func completeSessionInsightReview() {
+        guard let pid = activeCarePatientId ?? selectedCarePatientId else {
+            pendingSessionInsight = nil
+            phase = .carePatientList
+            return
+        }
+        pendingSessionInsight = nil
+        finishAfterSessionFeedback(patientId: pid)
+    }
+
+    private func shouldPresentInsight(for record: CareSessionRecord) -> Bool {
+        record.insightNarrative != nil
+            || record.residentInteractionSummaryLine() != nil
+            || record.moodRating != nil
+    }
+
+    private func presentSessionInsight(for patientId: UUID, record: CareSessionRecord) {
+        guard let patient = carePatient(id: patientId) else {
+            finishAfterSessionFeedback(patientId: patientId)
+            return
+        }
+        let prior = recordsForPatient(patientId).filter { $0.id != record.id }
+        pendingSessionInsight = CareSessionInsightBuilder.build(
+            patient: patient,
+            record: record,
+            priorRecords: prior
+        )
+        phase = .careSessionInsight
+    }
+
     private func finishAfterSessionFeedback(patientId: UUID) {
         sessionSentimentStep = 0
         sessionSentimentDraft = SessionSentimentDraft()
+        sessionContextDraft = SessionContextDraft()
+        pendingSessionInsight = nil
         isCareStaffSession = false
         activeCarePatientId = nil
         selectedCarePatientId = patientId
@@ -786,7 +858,7 @@ final class SessionPOCState: ObservableObject {
               let lucidity = last.lucidityRating,
               let engagement = last.engagementRating
         else { return nil }
-        return String(format: "Last group: morale %d · alert %d · lucidity %d · engaged %d", morale, alertness, lucidity, engagement)
+        return String(format: "Last group: morale/affect %d · alertness %d · orientation %d · engagement %d", morale, alertness, lucidity, engagement)
     }
 
     func saveCareFeedback(
@@ -1059,6 +1131,8 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case careGroupSessionFeedback = 21
     /// Brief welcome after supervisor sign-in before the resident roster.
     case supervisorWelcome = 22
+    /// Auto-generated session summary, handover export, and next-step hints.
+    case careSessionInsight = 23
 
     var id: Int { rawValue }
 }

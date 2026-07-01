@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import PhotosUI
 
 // MARK: - Patient roster
@@ -671,6 +672,27 @@ struct CarePatientDetailView: View {
                                                     .frame(maxWidth: .infinity, alignment: .leading)
                                                     .fixedSize(horizontal: false, vertical: true)
                                             }
+                                            if let insight = rec.insightPreviewLine() {
+                                                Text(insight)
+                                                    .font(DetailTypography.body)
+                                                    .foregroundStyle(BrandTheme.textPrimary)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                            if let next = rec.insightSuggestedNextStep {
+                                                Text("Next: \(next)")
+                                                    .font(DetailTypography.secondary)
+                                                    .foregroundStyle(BrandTheme.goldDeep)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                            if let context = rec.sessionContextSummary, !context.isEmpty {
+                                                Text(context)
+                                                    .font(DetailTypography.secondary)
+                                                    .foregroundStyle(BrandTheme.textSecondary)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
                                             if let note = rec.staffNote, !note.isEmpty {
                                                 Text(note)
                                                     .font(DetailTypography.secondary)
@@ -718,7 +740,7 @@ struct CarePatientDetailView: View {
                         Text("Supervisor sentiment (recent sessions)")
                             .font(DetailTypography.section)
                             .foregroundStyle(BrandTheme.textSecondary)
-                        Text("Rolling averages from post-session 1–10 ratings — mood, alertness, emotional state, and lucidity.")
+                        Text("Rolling averages from post-session carer observations (1–10) — mood/affect, alertness, emotional presentation, and orientation.")
                             .font(DetailTypography.secondary)
                             .foregroundStyle(BrandTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -836,10 +858,10 @@ struct CarePatientDetailView: View {
 
     private func sentimentLine(_ rec: CareSessionRecord) -> String? {
         var parts: [String] = []
-        if let v = rec.moodRating { parts.append("Mood \(v)/10") }
-        if let v = rec.alertnessRating { parts.append("Alert \(v)/10") }
-        if let v = rec.emotionalStateRating { parts.append("Emotion \(v)/10") }
-        if let v = rec.lucidityRating { parts.append("Lucidity \(v)/10") }
+        if let v = rec.moodRating { parts.append("Mood/affect \(v)/10") }
+        if let v = rec.alertnessRating { parts.append("Alertness \(v)/10") }
+        if let v = rec.emotionalStateRating { parts.append("Emotional presentation \(v)/10") }
+        if let v = rec.lucidityRating { parts.append("Orientation \(v)/10") }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }
@@ -848,6 +870,9 @@ struct CarePatientDetailView: View {
 
 struct CareSessionSentimentFeedbackView: View {
     @ObservedObject var state: SessionPOCState
+    @State private var autoAdvanceToken = 0
+
+    private static let autoAdvanceDelay: TimeInterval = 0.42
 
     private var patient: CarePatientProfile? {
         state.carePatient(id: state.activeCarePatientId ?? state.selectedCarePatientId)
@@ -878,9 +903,9 @@ struct CareSessionSentimentFeedbackView: View {
             ) {
                 VStack(spacing: 24) {
                     if let patient {
-                        FadeInTitle(text: "Quick check-in", delay: 0)
+                        FadeInTitle(text: "Post-session observation", delay: 0)
                         FadeInLine(
-                            text: "How did \(patient.displayName) seem after this session?",
+                            text: "Structured carer observations after \(patient.displayName)'s reminiscence music session — not a clinical assessment.",
                             delay: 0.06
                         )
 
@@ -900,6 +925,9 @@ struct CareSessionSentimentFeedbackView: View {
                             .padding(.horizontal, 4)
                         }
 
+                        SessionContextCaptureCard(context: $state.sessionContextDraft)
+                            .padding(.horizontal, 4)
+
                         stepProgress
 
                         BrandCard {
@@ -918,7 +946,10 @@ struct CareSessionSentimentFeedbackView: View {
                                 SentimentScalePicker(
                                     selection: state.sessionSentimentBinding(for: currentStep),
                                     lowCaption: currentStep.lowCaption,
-                                    highCaption: currentStep.highCaption
+                                    highCaption: currentStep.highCaption,
+                                    onValueSelected: { _ in
+                                        scheduleAutoAdvanceIfNeeded()
+                                    }
                                 )
 
                                 if isLastStep {
@@ -947,6 +978,9 @@ struct CareSessionSentimentFeedbackView: View {
                         }
                         .padding(.horizontal, 4)
                         .animation(CalmMotion.gentle, value: state.sessionSentimentStep)
+                        .onChange(of: state.sessionSentimentStep) { _, _ in
+                            autoAdvanceToken += 1
+                        }
 
                         PrimaryButton(title: isLastStep ? "Save to profile" : "Next") {
                             if isLastStep {
@@ -992,10 +1026,22 @@ struct CareSessionSentimentFeedbackView: View {
     }
 
     private func handleBack() {
+        autoAdvanceToken += 1
         if state.sessionSentimentStep > 0 {
             state.retreatSessionSentimentStep()
         } else {
             state.skipSessionSentimentFeedback()
+        }
+    }
+
+    private func scheduleAutoAdvanceIfNeeded() {
+        let step = state.sessionSentimentStep
+        guard step < CareSessionSentimentStep.allCases.count - 1 else { return }
+        autoAdvanceToken += 1
+        let token = autoAdvanceToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.autoAdvanceDelay) {
+            guard token == autoAdvanceToken, state.sessionSentimentStep == step else { return }
+            state.advanceSessionSentimentStep()
         }
     }
 }
@@ -1004,6 +1050,7 @@ struct SentimentScalePicker: View {
     @Binding var selection: Int?
     let lowCaption: String
     let highCaption: String
+    var onValueSelected: ((Int) -> Void)? = nil
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
 
@@ -1015,6 +1062,7 @@ struct SentimentScalePicker: View {
                     Button {
                         selection = value
                         CalmExperienceFeedback.discoveryPick()
+                        onValueSelected?(value)
                     } label: {
                         Text("\(value)")
                             .font(.headline.weight(.semibold))
@@ -1210,5 +1258,251 @@ struct CareSessionFeedbackView: View {
                 .tint(BrandTheme.goldDeep)
         }
         .padding(.horizontal, 4)
+    }
+}
+
+// MARK: - Session context capture (UK care-floor tags)
+
+private struct SessionContextCaptureCard: View {
+    @Binding var context: SessionContextDraft
+
+    var body: some View {
+        BrandCard {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Session context")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(BrandTheme.textSecondary)
+                Text("Quick tags for nursing handover and care plan documentation — optional but valuable.")
+                    .font(.caption)
+                    .foregroundStyle(BrandTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                contextChipRow(title: "Time of day", items: SessionTimeOfDay.allCases) { item in
+                    context.timeOfDay = item
+                } selection: { context.timeOfDay == $0 }
+
+                contextChipRow(title: "Pre-session presentation", items: SessionPriorState.allCases) { item in
+                    context.priorState = context.priorState == item ? nil : item
+                } selection: { context.priorState == $0 }
+
+                environmentTagsRow
+
+                Toggle(isOn: $context.residentLedSession) {
+                    Text("Resident chose the music")
+                        .font(.subheadline)
+                        .foregroundStyle(BrandTheme.textPrimary)
+                }
+                .tint(BrandTheme.goldDeep)
+
+                Toggle(isOn: $context.distressOrPRNNearby) {
+                    Text("Acute distress or PRN (as-required) medication nearby")
+                        .font(.subheadline)
+                        .foregroundStyle(BrandTheme.textPrimary)
+                }
+                .tint(BrandTheme.goldDeep)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var environmentTagsRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Environment")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(BrandTheme.textSecondary)
+            FlowLayoutChipWrap {
+                ForEach(SessionEnvironmentTag.allCases) { tag in
+                    let selected = context.environmentTags.contains(tag)
+                    Button {
+                        if selected {
+                            context.environmentTags.remove(tag)
+                        } else {
+                            context.environmentTags.insert(tag)
+                        }
+                    } label: {
+                        Text(tag.label)
+                            .font(.caption.weight(.medium))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(selected ? BrandTheme.goldDeep.opacity(0.22) : BrandTheme.creamMid.opacity(0.9))
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(selected ? BrandTheme.goldDeep.opacity(0.55) : BrandTheme.gold.opacity(0.22), lineWidth: 1)
+                            )
+                            .foregroundStyle(BrandTheme.textPrimary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func contextChipRow<T: Identifiable & Equatable>(
+        title: String,
+        items: [T],
+        onSelect: @escaping (T) -> Void,
+        selection: @escaping (T) -> Bool
+    ) -> some View where T: Hashable {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(BrandTheme.textSecondary)
+            FlowLayoutChipWrap {
+                ForEach(items) { item in
+                    let selected = selection(item)
+                    Button {
+                        onSelect(item)
+                    } label: {
+                        Text(chipLabel(for: item))
+                            .font(.caption.weight(.medium))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(selected ? BrandTheme.logoCyan.opacity(0.22) : BrandTheme.creamMid.opacity(0.9))
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(selected ? BrandTheme.logoCyan.opacity(0.55) : BrandTheme.gold.opacity(0.22), lineWidth: 1)
+                            )
+                            .foregroundStyle(BrandTheme.textPrimary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func chipLabel<T>(for item: T) -> String {
+        if let time = item as? SessionTimeOfDay { return time.label }
+        if let state = item as? SessionPriorState { return state.label }
+        return "—"
+    }
+}
+
+/// Simple wrapping chip row for context pickers.
+private struct FlowLayoutChipWrap<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 108), spacing: 8)],
+            alignment: .leading,
+            spacing: 8
+        ) {
+            content()
+        }
+    }
+}
+
+// MARK: - Post-session insight pack (handover + family export)
+
+struct CareSessionInsightView: View {
+    @ObservedObject var state: SessionPOCState
+    @State private var copiedBanner: String?
+
+    private var patient: CarePatientProfile? {
+        state.carePatient(id: state.activeCarePatientId ?? state.selectedCarePatientId)
+    }
+
+    private var pack: CareSessionInsightPack? {
+        state.pendingSessionInsight
+    }
+
+    var body: some View {
+        ScreenFadeIn {
+            CenteredScrollScreen {
+                VStack(spacing: 22) {
+                    if let patient, let pack {
+                        FadeInTitle(text: "Session insight", delay: 0)
+                        FadeInLine(
+                            text: "Structured for nursing handover, care plan review, or family communication — generated from this session and \(patient.displayName)'s history. Carer-observed data only.",
+                            delay: 0.06
+                        )
+
+                        insightCard(title: "Clinical narrative", body: pack.narrative)
+
+                        if !pack.deltaLines.isEmpty {
+                            insightCard(
+                                title: "Compared to recent sessions",
+                                body: pack.deltaLines.joined(separator: "\n")
+                            )
+                        }
+
+                        insightCard(title: "Suggested care plan action", body: pack.suggestedNextStep, accent: true)
+
+                        insightCard(title: "Care plan entry", body: pack.carePlanBullet)
+
+                        insightCard(title: "Nursing handover record", body: pack.handoverText, monospaced: true)
+
+                        insightCard(title: "Family communication", body: pack.familyText)
+
+                        VStack(spacing: 12) {
+                            PrimaryButton(title: "Copy nursing handover") {
+                                copy(pack.handoverText, label: "Handover copied")
+                            }
+                            SecondaryButton(title: "Copy family update") {
+                                copy(pack.familyText, label: "Family update copied")
+                            }
+                            SecondaryButton(title: "Copy care plan entry") {
+                                copy(pack.carePlanBullet, label: "Care plan entry copied")
+                            }
+                        }
+                        .padding(.horizontal, 24)
+
+                        PrimaryButton(title: "Done — back to roster") {
+                            state.completeSessionInsightReview()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 4)
+
+                        if let copiedBanner {
+                            Text(copiedBanner)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(BrandTheme.goldDeep)
+                                .transition(.opacity)
+                        }
+                    } else {
+                        FadeInLine(text: "No insight available for this session.", delay: 0)
+                        PrimaryButton(title: "Back to roster") {
+                            state.completeSessionInsightReview()
+                        }
+                        .padding(.horizontal, 24)
+                    }
+                }
+                .padding(.vertical, 28)
+            }
+        }
+    }
+
+    private func insightCard(
+        title: String,
+        body: String,
+        accent: Bool = false,
+        monospaced: Bool = false
+    ) -> some View {
+        BrandCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(BrandTheme.textSecondary)
+                Text(body)
+                    .font(monospaced ? .caption.monospaced() : .body)
+                    .foregroundStyle(accent ? BrandTheme.goldDeep : BrandTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private func copy(_ text: String, label: String) {
+        UIPasteboard.general.string = text
+        withAnimation(CalmMotion.subtle) {
+            copiedBanner = label
+        }
     }
 }

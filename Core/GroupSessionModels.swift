@@ -40,37 +40,37 @@ enum GroupSessionFeedbackStep: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .morale: return "Group morale"
-        case .alertness: return "Alertness"
-        case .lucidity: return "Lucidity"
-        case .engagement: return "Engagement"
+        case .morale: return "Group morale / affect"
+        case .alertness: return "Group alertness"
+        case .lucidity: return "Group orientation & responsiveness"
+        case .engagement: return "Social engagement"
         }
     }
 
     var prompt: String {
         switch self {
-        case .morale: return "How would you rate the overall mood in the room?"
-        case .alertness: return "How alert did the group seem?"
-        case .lucidity: return "How clear and present was the group?"
-        case .engagement: return "How engaged were residents with the music?"
+        case .morale: return "How would you rate the overall mood and affect in the room?"
+        case .alertness: return "How alert did the group appear (arousal level)?"
+        case .lucidity: return "How orientated and responsive was the group collectively?"
+        case .engagement: return "How socially engaged were residents with the music intervention?"
         }
     }
 
     var lowCaption: String {
         switch self {
-        case .morale: return "1 · Low / flat"
-        case .alertness: return "1 · Very drowsy"
-        case .lucidity: return "1 · Confused / distant"
-        case .engagement: return "1 · Withdrawn"
+        case .morale: return "1 · Low morale / flat affect"
+        case .alertness: return "1 · Very drowsy / reduced arousal"
+        case .lucidity: return "1 · Disorientated / minimally responsive"
+        case .engagement: return "1 · Withdrawn / passive"
         }
     }
 
     var highCaption: String {
         switch self {
-        case .morale: return "10 · Uplifted / together"
-        case .alertness: return "10 · Very alert"
-        case .lucidity: return "10 · Clear / present"
-        case .engagement: return "10 · Fully engaged"
+        case .morale: return "10 · Uplifted / positive group affect"
+        case .alertness: return "10 · Fully alert"
+        case .lucidity: return "10 · Orientated / responsive"
+        case .engagement: return "10 · Actively engaged"
         }
     }
 }

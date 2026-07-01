@@ -122,6 +122,8 @@ struct FlowRootView: View {
                 CareNewResidentProfileView(state: state)
             case .careSessionSentimentFeedback:
                 CareSessionSentimentFeedbackView(state: state)
+            case .careSessionInsight:
+                CareSessionInsightView(state: state)
             case .careGroupSession:
                 GroupSessionView(state: state)
             case .careGroupSessionFeedback:

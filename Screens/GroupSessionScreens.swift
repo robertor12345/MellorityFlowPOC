@@ -248,6 +248,9 @@ private struct GroupTransportButton: View {
 
 struct GroupSessionFeedbackView: View {
     @ObservedObject var state: SessionPOCState
+    @State private var autoAdvanceToken = 0
+
+    private static let autoAdvanceDelay: TimeInterval = 0.42
 
     private var currentStep: GroupSessionFeedbackStep {
         GroupSessionFeedbackStep(rawValue: state.groupSessionFeedbackStep) ?? .morale
@@ -313,7 +316,10 @@ struct GroupSessionFeedbackView: View {
                             SentimentScalePicker(
                                 selection: state.groupSessionFeedbackBinding(for: currentStep),
                                 lowCaption: currentStep.lowCaption,
-                                highCaption: currentStep.highCaption
+                                highCaption: currentStep.highCaption,
+                                onValueSelected: { _ in
+                                    scheduleAutoAdvanceIfNeeded()
+                                }
                             )
 
                             if isLastStep {
@@ -342,6 +348,9 @@ struct GroupSessionFeedbackView: View {
                     }
                     .padding(.horizontal, 4)
                     .animation(CalmMotion.gentle, value: state.groupSessionFeedbackStep)
+                    .onChange(of: state.groupSessionFeedbackStep) { _, _ in
+                        autoAdvanceToken += 1
+                    }
 
                     PrimaryButton(title: isLastStep ? "Save & return to roster" : "Next") {
                         if isLastStep {
@@ -383,10 +392,22 @@ struct GroupSessionFeedbackView: View {
     }
 
     private func handleBack() {
+        autoAdvanceToken += 1
         if state.groupSessionFeedbackStep > 0 {
             state.retreatGroupSessionFeedbackStep()
         } else {
             state.skipGroupSessionFeedback()
+        }
+    }
+
+    private func scheduleAutoAdvanceIfNeeded() {
+        let step = state.groupSessionFeedbackStep
+        guard step < GroupSessionFeedbackStep.allCases.count - 1 else { return }
+        autoAdvanceToken += 1
+        let token = autoAdvanceToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.autoAdvanceDelay) {
+            guard token == autoAdvanceToken, state.groupSessionFeedbackStep == step else { return }
+            state.advanceGroupSessionFeedbackStep()
         }
     }
 }

@@ -19,37 +19,37 @@ enum CareSessionSentimentStep: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .mood: return "Mood"
+        case .mood: return "Mood / affect"
         case .alertness: return "Alertness"
-        case .emotionalState: return "Emotional state"
-        case .lucidity: return "Lucidity"
+        case .emotionalState: return "Emotional presentation"
+        case .lucidity: return "Orientation & responsiveness"
         }
     }
 
     var prompt: String {
         switch self {
-        case .mood: return "How did their mood seem right now?"
-        case .alertness: return "How alert did they appear?"
-        case .emotionalState: return "How would you describe their emotional state?"
-        case .lucidity: return "How clear or present did they seem?"
+        case .mood: return "How did their mood and affect appear after the session?"
+        case .alertness: return "How alert did they appear (arousal level)?"
+        case .emotionalState: return "How would you describe their emotional presentation?"
+        case .lucidity: return "How orientated and responsive were they (person, place, interaction)?"
         }
     }
 
     var lowCaption: String {
         switch self {
-        case .mood: return "1 · Very low / unsettled"
-        case .alertness: return "1 · Very drowsy"
-        case .emotionalState: return "1 · Distressed / flat"
-        case .lucidity: return "1 · Confused / unclear"
+        case .mood: return "1 · Low mood / distressed presentation"
+        case .alertness: return "1 · Very drowsy / reduced arousal"
+        case .emotionalState: return "1 · Distressed / blunted affect"
+        case .lucidity: return "1 · Disorientated / minimally responsive"
         }
     }
 
     var highCaption: String {
         switch self {
-        case .mood: return "10 · Bright / settled"
-        case .alertness: return "10 · Very alert"
-        case .emotionalState: return "10 · Calm / positive"
-        case .lucidity: return "10 · Clear / present"
+        case .mood: return "10 · Settled / positive affect"
+        case .alertness: return "10 · Fully alert"
+        case .emotionalState: return "10 · Calm / regulated presentation"
+        case .lucidity: return "10 · Orientated / appropriately responsive"
         }
     }
 }
@@ -68,10 +68,10 @@ struct CareSessionSentimentSummary: Equatable {
     func formattedAveragesLine() -> String? {
         guard hasData else { return nil }
         var parts: [String] = []
-        if let v = averageMood { parts.append(String(format: "Mood %.1f", v)) }
-        if let v = averageAlertness { parts.append(String(format: "Alert %.1f", v)) }
-        if let v = averageEmotionalState { parts.append(String(format: "Emotion %.1f", v)) }
-        if let v = averageLucidity { parts.append(String(format: "Lucidity %.1f", v)) }
+        if let v = averageMood { parts.append(String(format: "Mood/affect %.1f", v)) }
+        if let v = averageAlertness { parts.append(String(format: "Alertness %.1f", v)) }
+        if let v = averageEmotionalState { parts.append(String(format: "Emotional presentation %.1f", v)) }
+        if let v = averageLucidity { parts.append(String(format: "Orientation %.1f", v)) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }
@@ -99,5 +99,398 @@ enum CareSessionSentimentAnalytics {
     private static func average(_ values: [Int]) -> Double? {
         guard !values.isEmpty else { return nil }
         return Double(values.reduce(0, +)) / Double(values.count)
+    }
+}
+
+// MARK: - Session context (UK care-floor tags)
+
+enum SessionTimeOfDay: String, CaseIterable, Identifiable, Equatable {
+    case morning
+    case afternoon
+    case evening
+    case night
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .morning: return "Morning"
+        case .afternoon: return "Afternoon"
+        case .evening: return "Evening"
+        case .night: return "Night"
+        }
+    }
+
+    static func inferred(from date: Date = Date()) -> SessionTimeOfDay {
+        let hour = Calendar.current.component(.hour, from: date)
+        switch hour {
+        case 5 ..< 12: return .morning
+        case 12 ..< 17: return .afternoon
+        case 17 ..< 21: return .evening
+        default: return .night
+        }
+    }
+}
+
+enum SessionPriorState: String, CaseIterable, Identifiable, Equatable {
+    case agitated
+    case withdrawn
+    case neutral
+    case tired
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .agitated: return "Agitated / behaviourally unsettled"
+        case .withdrawn: return "Withdrawn / low engagement"
+        case .neutral: return "Settled at baseline"
+        case .tired: return "Somnolent / fatigued"
+        }
+    }
+}
+
+enum SessionEnvironmentTag: String, CaseIterable, Identifiable, Equatable {
+    case lightsDimmed
+    case visitorsPresent
+    case postMedication
+    case postMeal
+    case postPersonalCare
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .lightsDimmed: return "Lights dimmed"
+        case .visitorsPresent: return "Visitors present"
+        case .postMedication: return "Following medicines round"
+        case .postMeal: return "Following meal"
+        case .postPersonalCare: return "Following personal care"
+        }
+    }
+}
+
+/// Quick context captured before or during post-session feedback.
+struct SessionContextDraft: Equatable {
+    var timeOfDay: SessionTimeOfDay = SessionTimeOfDay.inferred()
+    var priorState: SessionPriorState?
+    var environmentTags: Set<SessionEnvironmentTag> = []
+    var residentLedSession: Bool = true
+    var distressOrPRNNearby: Bool = false
+
+    func formattedContextLine() -> String? {
+        var parts: [String] = [timeOfDay.label]
+        if let priorState { parts.append("Pre-session: \(priorState.label.lowercased())") }
+        let tags = environmentTags.sorted { $0.rawValue < $1.rawValue }.map(\.label)
+        if !tags.isEmpty { parts.append(tags.joined(separator: ", ")) }
+        parts.append(residentLedSession ? "Resident-led" : "Staff-led")
+        if distressOrPRNNearby { parts.append("Acute distress or PRN (as-required) medication nearby") }
+        return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - Generated insight pack
+
+struct CareSessionInsightPack: Equatable {
+    let narrative: String
+    let deltaLines: [String]
+    let suggestedNextStep: String
+    let carePlanBullet: String
+    let handoverText: String
+    let familyText: String
+}
+
+enum CareSessionInsightBuilder {
+    private static let ukLocale = Locale(identifier: "en_GB")
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = ukLocale
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f
+    }()
+
+    static func build(
+        patient: CarePatientProfile,
+        record: CareSessionRecord,
+        priorRecords: [CareSessionRecord]
+    ) -> CareSessionInsightPack {
+        let narrative = buildNarrative(patient: patient, record: record)
+        let deltas = buildDeltas(record: record, priorRecords: priorRecords)
+        let nextStep = buildNextStep(patient: patient, record: record, priorRecords: priorRecords)
+        let carePlan = buildCarePlanBullet(patient: patient, record: record, nextStep: nextStep)
+        let handover = buildHandover(
+            patient: patient,
+            record: record,
+            narrative: narrative,
+            deltas: deltas,
+            nextStep: nextStep
+        )
+        let family = buildFamilyText(patient: patient, record: record, narrative: narrative)
+        return CareSessionInsightPack(
+            narrative: narrative,
+            deltaLines: deltas,
+            suggestedNextStep: nextStep,
+            carePlanBullet: carePlan,
+            handoverText: handover,
+            familyText: family
+        )
+    }
+
+    static func wellbeingScore(for record: CareSessionRecord) -> Double? {
+        let values = [
+            record.moodRating,
+            record.alertnessRating,
+            record.emotionalStateRating,
+            record.lucidityRating,
+        ].compactMap { $0 }
+        guard values.count >= 2 else { return nil }
+        return Double(values.reduce(0, +)) / Double(values.count)
+    }
+
+    private static func buildNarrative(patient: CarePatientProfile, record: CareSessionRecord) -> String {
+        var sentences: [String] = []
+        let name = patient.displayName
+
+        if let interaction = record.residentInteractionSummaryLine() {
+            sentences.append("\(name) spent \(interaction.lowercased()) during a reminiscence music session.")
+        } else if let seconds = record.sessionDurationSeconds, seconds > 0 {
+            sentences.append("\(name) participated in a reminiscence music session for \(formatDuration(seconds)).")
+        } else {
+            sentences.append("\(name) completed a non-pharmacological reminiscence music session.")
+        }
+
+        if let genres = record.residentGenresPlayedSummary, !genres.isEmpty {
+            sentences.append("Musical stimuli explored: \(genres).")
+        }
+
+        if let visits = record.residentImmersiveEntryCount, visits > 0 {
+            sentences.append("They accessed therapeutic nature visuals \(visits) time\(visits == 1 ? "" : "s").")
+        }
+
+        if let ratings = staffObservedPhrase(record) {
+            sentences.append("Carer observations (1–10): \(ratings).")
+        }
+
+        if let context = record.sessionContextSummary, !context.isEmpty {
+            sentences.append("Context: \(context).")
+        }
+
+        if let note = record.staffNote?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty {
+            sentences.append("Note: \(note)")
+        }
+
+        return sentences.joined(separator: " ")
+    }
+
+    private static func buildDeltas(record: CareSessionRecord, priorRecords: [CareSessionRecord]) -> [String] {
+        guard let current = wellbeingScore(for: record) else {
+            return priorRecords.isEmpty
+                ? ["First rated session — future visits will show trends."]
+                : []
+        }
+
+        let priorRated = priorRecords.compactMap { rec -> (CareSessionRecord, Double)? in
+            guard let score = wellbeingScore(for: rec) else { return nil }
+            return (rec, score)
+        }
+        guard !priorRated.isEmpty else {
+            return ["First rated session — baseline established for future comparison."]
+        }
+
+        let recent = priorRated.prefix(5)
+        let average = recent.map(\.1).reduce(0, +) / Double(recent.count)
+        let delta = current - average
+        var lines: [String] = []
+
+        if abs(delta) < 0.4 {
+            lines.append("Composite observed wellbeing in line with their last \(recent.count) session\(recent.count == 1 ? "" : "s") (avg \(formatScore(average))/10).")
+        } else if delta > 0 {
+            lines.append("Composite observed wellbeing ↑ vs recent sessions (now \(formatScore(current))/10; usual avg \(formatScore(average))/10).")
+        } else {
+            lines.append("Composite observed wellbeing ↓ vs recent sessions (now \(formatScore(current))/10; usual avg \(formatScore(average))/10).")
+        }
+
+        if let mood = record.moodRating {
+            let priorMoods = priorRecords.compactMap(\.moodRating).prefix(5)
+            if !priorMoods.isEmpty {
+                let moodAvg = Double(priorMoods.reduce(0, +)) / Double(priorMoods.count)
+                lines.append(moodTrendLabel(name: "Mood/affect", current: Double(mood), average: moodAvg))
+            }
+        }
+
+        if let seconds = record.sessionDurationSeconds {
+            let priorDurations = priorRecords.compactMap(\.sessionDurationSeconds).prefix(5)
+            if !priorDurations.isEmpty {
+                let durAvg = Double(priorDurations.reduce(0, +)) / Double(priorDurations.count)
+                if Double(seconds) > durAvg * 1.15 {
+                    lines.append("Session duration longer than recent average.")
+                } else if Double(seconds) < durAvg * 0.85 {
+                    lines.append("Session duration shorter than recent average — consider a briefer intervention next time.")
+                }
+            }
+        }
+
+        return lines
+    }
+
+    private static func buildNextStep(
+        patient: CarePatientProfile,
+        record: CareSessionRecord,
+        priorRecords: [CareSessionRecord]
+    ) -> String {
+        let score = wellbeingScore(for: record)
+        let topGenre = record.residentGenresPlayedSummary?
+            .split(separator: ",")
+            .first?
+            .trimmingCharacters(in: .whitespaces)
+            .components(separatedBy: " ×")
+            .first
+
+        if let score, score >= 7.5 {
+            var parts = ["Repeat a similar reminiscence music intervention"]
+            if let topGenre, !topGenre.isEmpty { parts.append("starting with \(topGenre.lowercased())") }
+            if let tod = record.sessionTimeOfDay { parts.append("in the \(tod.lowercased())") }
+            if record.lightsDimmed == true { parts.append("with low-stimulus lighting") }
+            if let visits = record.residentImmersiveEntryCount, visits > 0 {
+                parts.append("and offer therapeutic nature visuals again")
+            }
+            return parts.joined(separator: " ") + "."
+        }
+
+        if let score, score < 5 {
+            var parts = ["Offer a shorter intervention (10–12 min)"]
+            if patient.prefersGentleSoundOnsets { parts.append("with gradual auditory onsets") }
+            if let favourite = favouriteGenreLabel(patient) {
+                parts.append("using gentle \(favourite) from their care profile")
+            }
+            parts.append("and low-stimulus environmental conditions.")
+            return parts.joined(separator: ", ") + "."
+        }
+
+        if let topGenre, !topGenre.isEmpty {
+            return "Offer \(topGenre.lowercased()) again at a similar time of day; titrate duration to observed engagement."
+        }
+
+        if let favourite = favouriteGenreLabel(patient) {
+            return "Try their preferred \(favourite) genre next time, maintaining a low-stimulus care environment."
+        }
+
+        return "Continue person-centred reminiscence music; record which genres they initiate or respond to first."
+    }
+
+    private static func buildCarePlanBullet(
+        patient: CarePatientProfile,
+        record: CareSessionRecord,
+        nextStep: String
+    ) -> String {
+        var parts: [String] = ["Reminiscence/music intervention:"]
+        if let genres = record.residentGenresPlayedSummary, !genres.isEmpty {
+            parts.append("responded to \(genres)")
+        } else {
+            parts.append("session recorded")
+        }
+        if let score = wellbeingScore(for: record) {
+            parts.append("(carer-observed composite score \(formatScore(score))/10 — not a clinical assessment)")
+        }
+        parts.append("— \(nextStep)")
+        return parts.joined(separator: " ")
+    }
+
+    private static func buildHandover(
+        patient: CarePatientProfile,
+        record: CareSessionRecord,
+        narrative: String,
+        deltas: [String],
+        nextStep: String
+    ) -> String {
+        var lines: [String] = []
+        lines.append("NURSING HANDOVER RECORD — \(patient.displayName)")
+        lines.append(dateFormatter.string(from: record.date))
+        lines.append("")
+        if let interaction = record.residentInteractionSummaryLine() {
+            lines.append("Intervention: reminiscence music — \(interaction)")
+        }
+        if let context = record.sessionContextSummary, !context.isEmpty {
+            lines.append("Clinical context: \(context)")
+        }
+        if let observed = staffObservedPhrase(record) {
+            lines.append("Carer observations (1–10): \(observed)")
+        }
+        if !deltas.isEmpty {
+            lines.append("Trend vs recent sessions: \(deltas.joined(separator: " "))")
+        }
+        lines.append("")
+        lines.append("Narrative: \(narrative)")
+        lines.append("")
+        lines.append("Care plan action: \(nextStep)")
+        if let note = record.staffNote?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty {
+            lines.append("")
+            lines.append("Carer note: \(note)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func buildFamilyText(
+        patient: CarePatientProfile,
+        record: CareSessionRecord,
+        narrative: String
+    ) -> String {
+        let firstName = patient.displayName.split(separator: " ").first.map(String.init) ?? patient.displayName
+        var line = "Today \(firstName) took part in a reminiscence music session"
+        if let seconds = record.sessionDurationSeconds, seconds >= 60 {
+            line += " for about \(max(1, seconds / 60)) minute\(seconds >= 120 ? "s" : "")"
+        }
+        if let genres = record.residentGenresPlayedSummary?.split(separator: ",").first {
+            let genre = String(genres).components(separatedBy: " ×").first ?? String(genres)
+            line += ", listening to \(genre.trimmingCharacters(in: .whitespaces).lowercased())"
+        }
+        if let mood = record.moodRating, mood >= 7 {
+            line += ". They appeared settled and content"
+        } else if let mood = record.moodRating, mood <= 4 {
+            line += ". They appeared more distressed and harder to settle today"
+        }
+        line += "."
+        if let note = record.staffNote?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty {
+            line += " Carer note: \(note)"
+        }
+        return line
+    }
+
+    private static func staffObservedPhrase(_ record: CareSessionRecord) -> String? {
+        var parts: [String] = []
+        if let v = record.moodRating { parts.append("mood/affect \(v)/10") }
+        if let v = record.emotionalStateRating { parts.append("emotional presentation \(v)/10") }
+        if let v = record.alertnessRating { parts.append("alertness \(v)/10") }
+        if let v = record.lucidityRating { parts.append("orientation-responsiveness \(v)/10") }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
+
+    private static func moodTrendLabel(name: String, current: Double, average: Double) -> String {
+        let delta = current - average
+        if abs(delta) < 0.4 { return "\(name) similar to recent sessions." }
+        if delta > 0 { return "\(name) higher than recent average." }
+        return "\(name) lower than recent average."
+    }
+
+    private static func formatScore(_ value: Double) -> String {
+        String(format: "%.1f", value)
+    }
+
+    private static func formatDuration(_ seconds: Int) -> String {
+        let mins = seconds / 60
+        let secs = seconds % 60
+        if mins > 0 { return "\(mins)m \(secs)s" }
+        return "\(secs)s"
+    }
+
+    private static func favouriteGenreLabel(_ patient: CarePatientProfile) -> String? {
+        patient.favouriteMusicGenre.accessibilityLabel.lowercased()
+    }
+}
+
+extension CareSessionRecord {
+    func insightPreviewLine() -> String? {
+        insightNarrative ?? insightSuggestedNextStep
     }
 }
