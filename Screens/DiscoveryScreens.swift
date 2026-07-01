@@ -18,6 +18,7 @@ struct DiscoveryCalibrationView: View {
     /// Bumps snippet after tap: 2s listen + affirmation glow (~0.4s) → commit.
     @State private var postPickAdvanceTask: Task<Void, Never>?
     @State private var discoveryCompletionExitTask: Task<Void, Never>?
+    @State private var isClipPlaybackActive = false
 
     private let clipFadeOut: TimeInterval = 0.20
     private let clipFadeIn: TimeInterval = 0.24
@@ -35,10 +36,10 @@ struct DiscoveryCalibrationView: View {
                 ZStack {
                     DiscoveryEraListeningOrb(
                         snippetIndex: state.discoveryPhysicalSnippetIndex(logicalIndex: state.discoverySnippetIndex),
-                        sliceAnchor: sliceStartedAt,
                         orbSize: orbSize,
                         pendingPick: state.discoveryPendingPick,
                         affirmationGlowTick: affirmationGlowTick,
+                        isClipPlaybackActive: isClipPlaybackActive,
                         onSelectMood: { mood in
                             advanceToNextDiscoveryClip(selected: mood)
                         }
@@ -52,6 +53,7 @@ struct DiscoveryCalibrationView: View {
             VStack {
                 FlowTopBackBar(
                     accessibilityLabel: state.newResidentDiscoveryPatientId != nil ? "Back to roster" : "Back to profile",
+                    onLogout: { state.signOutSupervisor() },
                     action: { state.abandonDiscoveryCalibration() }
                 )
                 Spacer(minLength: 0)
@@ -61,6 +63,7 @@ struct DiscoveryCalibrationView: View {
         }
         .onAppear {
             audio.volumeMultiplier = 1.12
+            audio.musicReactiveProfile = .discovery
             clipFadeNonce = 0
             clipContentOpacity = 0
             StreamAudioCache.prefetchDiscoveryUpcoming(
@@ -82,6 +85,8 @@ struct DiscoveryCalibrationView: View {
         }
         .onChange(of: state.phase) { _, phase in
             if phase != .careDiscoveryCalibration {
+                isClipPlaybackActive = false
+                audio.musicReactiveProfile = .standard
                 cancelPostPickAdvance()
                 discoveryCompletionExitTask?.cancel()
                 discoveryCompletionExitTask = nil
@@ -91,12 +96,14 @@ struct DiscoveryCalibrationView: View {
             }
         }
         .onDisappear {
+            isClipPlaybackActive = false
             cancelPostPickAdvance()
             discoveryCompletionExitTask?.cancel()
             discoveryCompletionExitTask = nil
             sliceDeadlineTask?.cancel()
             sliceDeadlineTask = nil
             audio.volumeMultiplier = 1
+            audio.musicReactiveProfile = .standard
             audio.stop()
         }
     }
@@ -143,6 +150,7 @@ struct DiscoveryCalibrationView: View {
             sliceDeadlineTask?.cancel()
             sliceDeadlineTask = nil
             cancelPostPickAdvance()
+            isClipPlaybackActive = false
             audio.stop()
 
             let contentFade = prefersReducedMotion ? 0.20 : 0.26
@@ -173,6 +181,7 @@ struct DiscoveryCalibrationView: View {
         }
 
         if !skipFadeOut {
+            isClipPlaybackActive = false
             withAnimation(.easeOut(duration: clipFadeOut)) {
                 clipContentOpacity = 0
             }
@@ -211,6 +220,7 @@ struct DiscoveryCalibrationView: View {
             snippetIndex: idxCapt,
             order: state.discoverySnippetOrder.isEmpty ? nil : state.discoverySnippetOrder
         ))
+        isClipPlaybackActive = true
 
         sliceDeadlineTask = Task { @MainActor in
             let ns = UInt64(DiscoveryFlowPOC.snippetDurationSeconds * 1_000_000_000)
@@ -218,6 +228,7 @@ struct DiscoveryCalibrationView: View {
             guard !Task.isCancelled else { return }
             guard state.phase == .careDiscoveryCalibration else { return }
             guard state.discoverySnippetIndex == idxCapt else { return }
+            isClipPlaybackActive = false
             audio.stop()
             state.commitDiscoverySnippetSlice()
         }
@@ -228,13 +239,14 @@ struct DiscoveryCalibrationView: View {
 
 private struct DiscoveryEraListeningOrb: View {
     let snippetIndex: Int
-    let sliceAnchor: Date
     let orbSize: CGSize
     let pendingPick: DiscoveryTrafficSentiment?
     let affirmationGlowTick: UInt
+    var isClipPlaybackActive: Bool
     var onSelectMood: (DiscoveryTrafficSentiment) -> Void
 
     @StateObject private var videoLooper = DiscoverySnippetVideoLooper()
+    @ObservedObject private var reactiveBus = MusicReactiveBus.shared
     @State private var eraMediaReady = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.flowOrbPulseAnchor) private var flowOrbPulseAnchor
@@ -254,6 +266,16 @@ private struct DiscoveryEraListeningOrb: View {
         min(min(orbSize.width, orbSize.height) * 0.18, BrandLayout.discoveryFaceDiameterCap(for: horizontalSizeClass) * 0.92)
     }
 
+    private var visualsArePlaying: Bool {
+        guard eraMediaReady else { return false }
+        guard visual.videoURL != nil else { return true }
+        return videoLooper.player.rate > 0
+    }
+
+    private var showEqualizer: Bool {
+        isClipPlaybackActive && visualsArePlaying && reactiveBus.snapshot.isActive
+    }
+
     var body: some View {
         let coreDiameter = min(orbSize.width, orbSize.height)
         let barCanvas = OrbRadialBarEqualizerView.canvasDiameter(for: coreDiameter)
@@ -266,13 +288,6 @@ private struct DiscoveryEraListeningOrb: View {
             )
             let contentScale = sample.shellScale
             let barOrbRadius = OrbRadialBarEqualizerView.orbRadius(for: coreDiameter) * contentScale
-            let musicActive = MusicReactiveBus.shared.snapshot.isActive
-            let listenProgress: CGFloat = {
-                if musicActive {
-                    return 1
-                }
-                return CGFloat(min(1, max(0, timeline.date.timeIntervalSince(sliceAnchor) / DiscoveryFlowPOC.snippetDurationSeconds)))
-            }()
 
             ZStack {
                 ZStack {
@@ -319,25 +334,35 @@ private struct DiscoveryEraListeningOrb: View {
             .scaleEffect(contentScale)
             .frame(width: coreDiameter, height: coreDiameter)
             .background {
-                OrbRadialBarEqualizerView(
-                    canvasDiameter: barCanvas,
-                    orbRadius: barOrbRadius,
-                    visibleBarCount: OrbRadialBarEqualizerMotion.defaultBarCount,
-                    listenProgress: listenProgress,
-                    reactsToMusic: true,
-                    liveAudioGain: 1.85
-                )
-                .allowsHitTesting(false)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Listen progress")
-                .accessibilityValue("\(Int((listenProgress * 100).rounded())) percent through this clip")
+                if showEqualizer {
+                    OrbRadialBarEqualizerView(
+                        canvasDiameter: barCanvas,
+                        orbRadius: barOrbRadius,
+                        visibleBarCount: OrbRadialBarEqualizerMotion.defaultBarCount,
+                        listenProgress: 1,
+                        reactsToMusic: true,
+                        liveAudioOnly: true,
+                        bandLevels: reactiveBus.snapshot.bands,
+                        liveAudioGain: OrbRadialBarEqualizerView.LiveMusicTuning.liveAudioGain,
+                        liveLevelExponent: OrbRadialBarEqualizerView.LiveMusicTuning.liveLevelExponent,
+                        barAmplitudeFloor: OrbRadialBarEqualizerView.LiveMusicTuning.barAmplitudeFloor,
+                        barReach: OrbRadialBarEqualizerView.LiveMusicTuning.barReach,
+                        neighbourMix: OrbRadialBarEqualizerView.LiveMusicTuning.neighbourMix
+                    )
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Music equalizer")
+                }
             }
+            .animation(CalmMotion.subtle, value: showEqualizer)
         }
         .frame(width: coreDiameter, height: coreDiameter)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Listening clip from \(visual.eraYear)")
         .accessibilityValue(visual.eraEvent)
         .onAppear {
+            eraMediaReady = false
             restartEraVideo()
         }
         .onChange(of: snippetIndex) { _, _ in

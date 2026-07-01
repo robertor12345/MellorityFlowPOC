@@ -16,6 +16,11 @@ final class AmbientAudioSession: ObservableObject {
 
     var volumeMultiplier: Float = 1
 
+    /// Spectrum analysis tuning — discovery uses a faster, hotter profile.
+    var musicReactiveProfile: MusicReactiveProfile = .standard {
+        didSet { reactiveAnalyzer.profile = musicReactiveProfile }
+    }
+
     private var sourceRemoteURL = AmbientAudioSession.quickStartStreamURL
     private var playbackFallbackURL: URL?
     private var triedStreamFallback = false
@@ -148,12 +153,14 @@ final class AmbientAudioSession: ObservableObject {
 
         switch item.status {
         case .readyToPlay:
-            // Tracks are available now — attach the reactive tap so the orb + rings follow the music.
-            // The tap passes audio through, so this does not affect playback.
-            if item.audioMix == nil {
-                reactiveAnalyzer.applyMixIfPossible(to: item)
+            Task { @MainActor in
+                guard generation == playbackGeneration else { return }
+                if item.audioMix == nil {
+                    _ = await reactiveAnalyzer.applyMixWhenReady(to: item)
+                }
+                guard generation == playbackGeneration else { return }
+                player?.play()
             }
-            player?.play()
         case .failed:
             tearDownObservers()
             if playedURL.isFileURL, !triedCacheBypass {

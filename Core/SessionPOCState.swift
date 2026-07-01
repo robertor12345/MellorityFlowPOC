@@ -16,6 +16,9 @@ final class SessionPOCState: ObservableObject {
     @Published var rosterSearchQuery = ""
     @Published var rosterSelectedWingId: String?
     @Published var rosterBrowsingAllResidents = false
+
+    /// When true, admin welcome shows a manual continue control instead of auto-advancing.
+    @Published var careHomeAdminWelcomeIsManual = false
     @Published var rosterDisplayMode: CareRosterDisplayMode = .cards
     @Published private(set) var rosterPinnedResidentIds: Set<UUID> = []
     @Published private(set) var rosterRecentlyViewedIds: [UUID] = []
@@ -337,11 +340,12 @@ final class SessionPOCState: ObservableObject {
         rosterSearchQuery = ""
         rosterSelectedWingId = nil
         rosterBrowsingAllResidents = false
+        careHomeAdminWelcomeIsManual = false
         phaseTransitionTask?.cancel()
 
         if account.homeIds.count == 1, let homeId = account.homeIds.first {
             currentHomeId = homeId
-            phase = .supervisorWelcome
+            phase = account.role.isHomeAdmin ? .careHomeAdminWelcome : .supervisorWelcome
         } else {
             currentHomeId = nil
             phase = .careHomePicker
@@ -373,7 +377,31 @@ final class SessionPOCState: ObservableObject {
         rosterSearchQuery = ""
         rosterSelectedWingId = nil
         rosterBrowsingAllResidents = false
-        transitionToPhase(.supervisorWelcome)
+        careHomeAdminWelcomeIsManual = false
+        let isAdmin = currentSupervisorAccount()?.role.isHomeAdmin == true
+        transitionToPhase(isAdmin ? .careHomeAdminWelcome : .supervisorWelcome)
+    }
+
+    func returnFromAdminDashboard() {
+        careHomeAdminWelcomeIsManual = false
+        transitionToPhase(.careHomePicker)
+    }
+
+    func openAdminDashboardFromWelcome() {
+        careHomeAdminWelcomeIsManual = false
+        transitionToPhase(.careHomeAdminDashboard)
+    }
+
+    var isCareHomeAdmin: Bool {
+        currentSupervisorAccount()?.role.isHomeAdmin == true
+    }
+
+    func careHomeDashboardPresentation() -> CareHomeDashboardPresentation {
+        CareHomeAnalytics.buildDashboard(
+            home: currentHome(),
+            residents: residentsInCurrentHome(),
+            records: careSessionRecords
+        )
     }
 
     func switchHome() {
@@ -397,6 +425,7 @@ final class SessionPOCState: ObservableObject {
         rosterBrowsingAllResidents = false
         rosterPinnedResidentIds = []
         rosterRecentlyViewedIds = []
+        careHomeAdminWelcomeIsManual = false
         selectedCarePatientId = nil
         phase = .home
         withAnimation(CalmMotion.softFade) {
@@ -1301,6 +1330,10 @@ enum FlowPhase: Int, CaseIterable, Identifiable {
     case careSessionInsight = 23
     /// Multi-home supervisors pick which care home to open today.
     case careHomePicker = 24
+    /// Brief welcome before home admin insights dashboard.
+    case careHomeAdminWelcome = 25
+    /// Home admin analytics — session impact across the home.
+    case careHomeAdminDashboard = 26
 
     var id: Int { rawValue }
 }

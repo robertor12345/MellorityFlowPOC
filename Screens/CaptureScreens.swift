@@ -15,7 +15,7 @@ struct CapturePhotoView: View {
                     state.capturedImage = nil
                     photoItem = nil
                     state.phase = .entryMode
-                }) {
+                }, onLogout: state.isSignedIn ? { state.signOutSupervisor() } : nil) {
                     if state.capturedImage != nil {
                         photoConfirmationContent(viewportHeight: geo.size.height)
                     } else {

@@ -132,6 +132,10 @@ struct FlowRootView: View {
                 SupervisorWelcomeView(state: state)
             case .careHomePicker:
                 CareHomePickerView(state: state)
+            case .careHomeAdminWelcome:
+                CareHomeAdminWelcomeView(state: state)
+            case .careHomeAdminDashboard:
+                CareHomeAdminDashboardView(state: state)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

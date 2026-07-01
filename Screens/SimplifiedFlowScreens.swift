@@ -81,16 +81,12 @@ struct HomeView: View {
                                 .onSubmit { focusedField = .pin }
                         }
                     )
-                    labeledField(
-                        title: "PIN",
-                        content: {
-                            SecureField("PIN", text: $state.supervisorPIN)
-                                .textContentType(.oneTimeCode)
-                                .keyboardType(.numberPad)
-                                .focused($focusedField, equals: .pin)
-                                .submitLabel(.go)
-                                .onSubmit(attemptSignIn)
-                        }
+                    SixDigitPinInput(
+                        pin: $state.supervisorPIN,
+                        isError: supervisorPinShowsError,
+                        focus: $focusedField,
+                        focusValue: Field.pin,
+                        onComplete: attemptSignIn
                     )
                 }
             }
@@ -99,14 +95,21 @@ struct HomeView: View {
             if let error = state.supervisorSignInError, !error.isEmpty {
                 Text(error)
                     .font(SignInPageLayout.captionFont)
-                    .orbOverlayText(muted: true)
+                    .foregroundStyle(BrandTheme.nebulaSalmon)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
+                    .accessibilityLabel("Sign-in error")
+                    .accessibilityValue(error)
             }
 
             PrimaryButton(title: "Continue", action: attemptSignIn)
                 .padding(.horizontal, 24)
         }
+    }
+
+    private var supervisorPinShowsError: Bool {
+        guard let error = state.supervisorSignInError, !error.isEmpty else { return false }
+        return error.localizedCaseInsensitiveContains("pin")
     }
 
     private func labeledField(title: String, @ViewBuilder content: () -> some View) -> some View {
@@ -143,15 +146,18 @@ struct CareHomePickerView: View {
     var body: some View {
         ScreenFadeIn {
             CenteredScrollScreen(
-                backAccessibilityLabel: "Sign out",
-                onBack: { state.signOutSupervisor() }
+                backAccessibilityLabel: "Back",
+                onBack: { state.navigateStaffToHome() },
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "Which home today?", delay: 0)
 
                     if let account = state.currentSupervisorAccount() {
                         FadeInLine(
-                            text: "Signed in as \(account.displayName). Choose the home you’re working at.",
+                            text: account.role.isHomeAdmin
+                                ? "Signed in as \(account.displayName). Choose the home you’re reviewing."
+                                : "Signed in as \(account.displayName). Choose the home you’re working at.",
                             muted: true,
                             delay: 0.06
                         )
@@ -254,7 +260,7 @@ struct SupervisorWelcomeView: View {
             guard !didScheduleExit else { return }
             didScheduleExit = true
             Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 3_200_000_000)
+                try? await Task.sleep(nanoseconds: 2_200_000_000)
                 guard state.phase == .supervisorWelcome else { return }
                 state.transitionToPhase(.carePatientList)
             }
@@ -283,7 +289,10 @@ struct EntryModeView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen(onBack: { state.goBackFromEntryMode() }) {
+            CenteredScrollScreen(
+                onBack: { state.goBackFromEntryMode() },
+                onLogout: state.isSignedIn ? { state.signOutSupervisor() } : nil
+            ) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "How would you like to begin?", delay: 0)
                     FadeInLine(
@@ -347,9 +356,12 @@ struct MoodSelectView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen(onBack: {
-                state.phase = state.capturedImage != nil ? .captureMoment : .entryMode
-            }) {
+            CenteredScrollScreen(
+                onBack: {
+                    state.phase = state.capturedImage != nil ? .captureMoment : .entryMode
+                },
+                onLogout: state.isSignedIn ? { state.signOutSupervisor() } : nil
+            ) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "How are you feeling?", delay: 0)
 
@@ -441,7 +453,8 @@ struct InsightView: View {
             ScreenFadeIn {
                 CenteredScrollScreen(
                     backAccessibilityLabel: "Back to profile",
-                    onBack: { state.skipCareFeedback() }
+                    onBack: { state.skipCareFeedback() },
+                    onLogout: { state.signOutSupervisor() }
                 ) {
                     VStack(spacing: 24) {
                         FadeInTitle(text: "How that felt", delay: 0)

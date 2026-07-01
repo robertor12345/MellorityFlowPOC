@@ -300,6 +300,7 @@ struct ResidentProfileView: View {
     @Environment(\.flowContainerSize) private var flowContainerSize
     @Environment(\.flowOrbShellSize) private var flowOrbShellSize
     @StateObject private var residentAudio = AmbientAudioSession()
+    @ObservedObject private var reactiveBus = MusicReactiveBus.shared
     /// Highlights the glyph whose playlist is sounding; reshapes the floating layout around it.
     @State private var selectedPlayingGenre: ResidentMusicGenre?
     @State private var activePlaylist: CarePlaylistEntry?
@@ -441,7 +442,7 @@ struct ResidentProfileView: View {
 
                     if let sg = selectedPlayingGenre {
                         Button {
-                            residentAudio.stop()
+                            stopResidentAudio()
                             state.prepareResidentImmersiveFromPlaylist(genre: sg)
                             stopPlayback()
                         } label: {
@@ -488,7 +489,7 @@ struct ResidentProfileView: View {
             StreamAudioCache.prefetch(StreamAudioCache.ambientPlaybackURLs)
         }
         .onDisappear {
-            residentAudio.stop()
+            stopResidentAudio()
             collapsePlaybackMedia()
             resetComfortInvite()
         }
@@ -581,8 +582,13 @@ struct ResidentProfileView: View {
         return playlist.trackTitles[idx]
     }
 
-    private func stopPlayback() {
+    private func stopResidentAudio() {
+        residentAudio.musicReactiveProfile = .standard
         residentAudio.stop()
+    }
+
+    private func stopPlayback() {
+        stopResidentAudio()
         selectedPlayingGenre = nil
         activePlaylist = nil
         activeTrackIndex = 0
@@ -799,7 +805,8 @@ struct ResidentProfileView: View {
         }
         CalmExperienceFeedback.playlistStart()
         state.recordResidentGenrePlay(genre)
-        residentAudio.stop()
+        stopResidentAudio()
+        residentAudio.musicReactiveProfile = .discovery
         residentAudio.startFresh(photoAnchored: false)
         markPlaybackAnchor()
     }
@@ -899,7 +906,13 @@ struct ResidentProfileView: View {
                         orbRadius: barOrbRadius,
                         visibleBarCount: OrbRadialBarEqualizerMotion.defaultBarCount,
                         reactsToMusic: true,
-                        liveAudioGain: 1.85
+                        liveAudioOnly: true,
+                        bandLevels: reactiveBus.snapshot.bands,
+                        liveAudioGain: OrbRadialBarEqualizerView.LiveMusicTuning.liveAudioGain,
+                        liveLevelExponent: OrbRadialBarEqualizerView.LiveMusicTuning.liveLevelExponent,
+                        barAmplitudeFloor: OrbRadialBarEqualizerView.LiveMusicTuning.barAmplitudeFloor,
+                        barReach: OrbRadialBarEqualizerView.LiveMusicTuning.barReach,
+                        neighbourMix: OrbRadialBarEqualizerView.LiveMusicTuning.neighbourMix
                     )
                     .accessibilityHidden(true)
                 }

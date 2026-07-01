@@ -49,7 +49,7 @@ struct GroupSessionView: View {
     }
 
     private var topBar: some View {
-        HStack {
+        HStack(spacing: 8) {
             Button {
                 audio.stop()
                 state.endGroupSession()
@@ -60,6 +60,7 @@ struct GroupSessionView: View {
                         .font(.subheadline.weight(.semibold))
                 }
                 .foregroundStyle(BrandTheme.textPrimary)
+                .frame(minWidth: FlowStaffNavChrome.buttonMinWidth)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(BrandTheme.cream.opacity(0.94))
@@ -67,6 +68,11 @@ struct GroupSessionView: View {
                 .overlay(Capsule().stroke(BrandTheme.gold.opacity(0.35), lineWidth: 1))
             }
             .buttonStyle(ChimingPlainButtonStyle())
+
+            FlowSmallLogoutButton {
+                audio.stop()
+                state.signOutSupervisor()
+            }
 
             Spacer()
 
@@ -274,7 +280,8 @@ struct GroupSessionFeedbackView: View {
         ScreenFadeIn {
             CenteredScrollScreen(
                 backAccessibilityLabel: backLabel,
-                onBack: handleBack
+                onBack: handleBack,
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 24) {
                     FadeInTitle(text: "Group check-in", delay: 0)

@@ -27,7 +27,8 @@ struct CarePatientListView: View {
                 onBack: {
                     state.selectedCarePatientId = nil
                     state.navigateStaffToHome()
-                }
+                },
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 22) {
                     rosterHeader
@@ -362,7 +363,8 @@ struct CareDiscoveryAgeInputView: View {
         ScreenFadeIn {
             CenteredScrollScreen(
                 backAccessibilityLabel: "Back to roster",
-                onBack: { state.abandonNewResidentAgeInput() }
+                onBack: { state.abandonNewResidentAgeInput() },
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 24) {
                     FadeInTitle(text: "About this resident", delay: 0)
@@ -432,7 +434,8 @@ struct CareNewResidentProfileView: View {
         ScreenFadeIn {
             CenteredScrollScreen(
                 backAccessibilityLabel: "Back to roster",
-                onBack: { state.cancelNewResidentProfileSave() }
+                onBack: { state.cancelNewResidentProfileSave() },
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 22) {
                     FadeInTitle(text: "Save this resident", delay: 0)
@@ -563,7 +566,8 @@ struct CareSessionPrepView: View {
         ScreenFadeIn {
             CenteredScrollScreen(
                 backAccessibilityLabel: "Back to profile",
-                onBack: { state.phase = .carePatientDetail }
+                onBack: { state.phase = .carePatientDetail },
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(alignment: .leading, spacing: 20) {
                     FadeInLine(
@@ -727,7 +731,8 @@ struct CarePatientDetailView: View {
                 onBack: {
                     state.selectedCarePatientId = nil
                     state.phase = .carePatientList
-                }
+                },
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 26) {
                     if let patient {
@@ -1114,7 +1119,8 @@ struct CareSessionSentimentFeedbackView: View {
         ScreenFadeIn {
             CenteredScrollScreen(
                 backAccessibilityLabel: backLabel,
-                onBack: handleBack
+                onBack: handleBack,
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 24) {
                     if let patient {
@@ -1335,7 +1341,8 @@ struct CareSessionFeedbackView: View {
         ScreenFadeIn {
             CenteredScrollScreen(
                 backAccessibilityLabel: "Back to session summary",
-                onBack: { state.phase = .insight }
+                onBack: { state.phase = .insight },
+                onLogout: { state.signOutSupervisor() }
             ) {
                 VStack(spacing: 22) {
                     if let patient = targetPatient {
@@ -1629,7 +1636,11 @@ struct CareSessionInsightView: View {
 
     var body: some View {
         ScreenFadeIn {
-            CenteredScrollScreen {
+            CenteredScrollScreen(
+                backAccessibilityLabel: "Back to roster",
+                onBack: { state.completeSessionInsightReview() },
+                onLogout: { state.signOutSupervisor() }
+            ) {
                 VStack(spacing: 22) {
                     if let patient, let pack {
                         FadeInTitle(text: "Session insight", delay: 0)

@@ -106,15 +106,28 @@ struct CalmCircularLoader: View {
         .accessibilityLabel("Loading")
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.linear(duration: 1.35).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: 0.95).repeatForever(autoreverses: false)) {
                 rotation = 360
             }
         }
     }
 }
 
+enum CalmLoaderPace {
+    case standard
+    case brisk
+
+    var breathDuration: TimeInterval {
+        switch self {
+        case .standard: return 2.6
+        case .brisk: return 1.45
+        }
+    }
+}
+
 struct BreathingCalmProgressView: View {
     var diameter: CGFloat = 56
+    var pace: CalmLoaderPace = .standard
     @State private var inhale = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -148,7 +161,7 @@ struct BreathingCalmProgressView: View {
         .accessibilityLabel("Preparing your calm space")
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: pace.breathDuration).repeatForever(autoreverses: true)) {
                 inhale = true
             }
         }
@@ -172,7 +185,7 @@ struct ResidentStaffHandoffOverlay: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 14) {
-                BreathingCalmProgressView(diameter: 72)
+                BreathingCalmProgressView(diameter: 72, pace: .brisk)
                     .scaleEffect(1 + orbGlow * 0.08)
                 if let patientName {
                     Text(patientName)
@@ -193,11 +206,11 @@ struct ResidentStaffHandoffOverlay: View {
                 veilOpacity = 1
                 copyOpacity = 1
             }
-            withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
                 orbGlow = 1
             }
             Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 1_850_000_000)
+                try? await Task.sleep(nanoseconds: 1_150_000_000)
                 withAnimation(.easeInOut(duration: 0.5)) {
                     copyOpacity = 0
                     veilOpacity = 0

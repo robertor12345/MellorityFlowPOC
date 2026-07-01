@@ -130,6 +130,10 @@ struct SecondaryButton: View {
 
 // MARK: - Compact top-leading back control
 
+enum FlowStaffNavChrome {
+    static let buttonMinWidth: CGFloat = 76
+}
+
 struct FlowSmallBackButton: View {
     var title: String = "Back"
     var accessibilityLabel: String?
@@ -144,6 +148,7 @@ struct FlowSmallBackButton: View {
                     .font(.caption.weight(.medium))
             }
             .foregroundStyle(BrandTheme.textPrimary.opacity(0.9))
+            .frame(minWidth: FlowStaffNavChrome.buttonMinWidth)
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
             .background {
@@ -160,20 +165,80 @@ struct FlowSmallBackButton: View {
     }
 }
 
-struct FlowTopBackBar: View {
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    var title: String = "Back"
-    var accessibilityLabel: String?
+struct FlowSmallLogoutButton: View {
+    var title: String = "Log out"
     var action: () -> Void
 
+    private var logoutRed: Color {
+        Color(red: 0.94, green: 0.36, blue: 0.34)
+    }
+
     var body: some View {
-        HStack {
-            FlowSmallBackButton(title: title, accessibilityLabel: accessibilityLabel, action: action)
+        Button(action: action) {
+            HStack(spacing: 3) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.caption2.weight(.bold))
+                Text(title)
+                    .font(.caption.weight(.medium))
+            }
+            .foregroundStyle(logoutRed)
+            .frame(minWidth: FlowStaffNavChrome.buttonMinWidth)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(BrandTheme.cream.opacity(0.94))
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .stroke(logoutRed.opacity(0.42), lineWidth: 1)
+                    }
+            }
+        }
+        .buttonStyle(SoftPressButtonStyle(pressedScale: 0.97))
+        .accessibilityLabel(title)
+    }
+}
+
+struct FlowTopStaffNavBar: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    var backTitle: String = "Back"
+    var backAccessibilityLabel: String?
+    var onBack: (() -> Void)?
+    var onLogout: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let onBack {
+                FlowSmallBackButton(
+                    title: backTitle,
+                    accessibilityLabel: backAccessibilityLabel,
+                    action: onBack
+                )
+            }
+            if let onLogout {
+                FlowSmallLogoutButton(action: onLogout)
+            }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, BrandLayout.contentGutter(for: horizontalSizeClass))
         .padding(.top, 2)
         .padding(.bottom, 6)
+    }
+}
+
+struct FlowTopBackBar: View {
+    var title: String = "Back"
+    var accessibilityLabel: String?
+    var onLogout: (() -> Void)?
+    var action: () -> Void
+
+    var body: some View {
+        FlowTopStaffNavBar(
+            backTitle: title,
+            backAccessibilityLabel: accessibilityLabel,
+            onBack: action,
+            onLogout: onLogout
+        )
     }
 }
 

@@ -171,7 +171,10 @@ enum OrbRadialBarEqualizerMotion {
         barCount: Int,
         levels: [CGFloat],
         phase: Double,
-        liveAudioGain: CGFloat
+        liveAudioGain: CGFloat,
+        applyMotionRipple: Bool = true,
+        levelExponent: CGFloat = 0.68,
+        neighbourMix: CGFloat = 0.32
     ) -> CGFloat {
         let bandCount = levels.count
         guard bandCount > 1 else { return 0.2 }
@@ -185,10 +188,12 @@ enum OrbRadialBarEqualizerMotion {
         let prevIdx = max(0, lo - 1)
         let nextIdx = min(bandCount - 1, hi + 1)
         let neighbour = (levels[prevIdx] + levels[nextIdx]) * 0.5
-        let woven = blended * 0.68 + neighbour * 0.32
-        let ripple = CGFloat(sin(phase * 5.4 + Double(barIndex) * 0.37) * 0.14 + 1.0)
+        let woven = blended * (1 - neighbourMix) + neighbour * neighbourMix
+        let ripple = applyMotionRipple
+            ? CGFloat(sin(phase * 5.4 + Double(barIndex) * 0.37) * 0.14 + 1.0)
+            : 1
 
-        return min(1, pow(max(0, woven), 0.68) * liveAudioGain * ripple)
+        return min(1, pow(max(0, woven), levelExponent) * liveAudioGain * ripple)
     }
 
     /// Position around the ring (0…1), 0 at top, clockwise.
@@ -259,86 +264,134 @@ struct OrbRadialBarEqualizerView: View {
     /// 0…1 openness — discovery ramps while a clip plays; playlist uses 1.
     var listenProgress: CGFloat = 1
     var reactsToMusic: Bool = true
+    /// When true, bars stay flat until live PCM levels arrive (no synthetic wiggle).
+    var liveAudioOnly: Bool = false
+    /// Optional injected spectrum — preferred for discovery so redraws track the audio bus.
+    var bandLevels: [CGFloat]? = nil
     var liveAudioGain: CGFloat = 1.85
+    /// Lower = more sensitive bar extension (discovery uses ~0.48).
+    var liveLevelExponent: CGFloat = 0.68
+    var barAmplitudeFloor: CGFloat = 0.08
+    /// Outward reach as a fraction of orb radius.
+    var barReach: CGFloat = 0.46
+    /// Lower = sharper per-bar variation (less cross-band smoothing).
+    var neighbourMix: CGFloat = 0.32
+
+    @ObservedObject private var reactiveBus = MusicReactiveBus.shared
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let frac = min(1, max(0, listenProgress))
-            let liveSnapshot = reactsToMusic ? MusicReactiveBus.shared.snapshot : nil
-            let audioBandLevels: [CGFloat]? = (liveSnapshot?.isActive == true) ? liveSnapshot?.bands : nil
-            let usesLiveAudio = (audioBandLevels?.count ?? 0) >= OrbEqualizerMotion.barCount
-            let bars = max(48, visibleBarCount)
+        let liveBands = resolvedBandLevels
+        let usesLiveAudio = (liveBands?.count ?? 0) >= OrbEqualizerMotion.barCount
 
-            Canvas { context, size in
-                let center = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
-                let innerRadius = orbRadius * 1.008
-                let minOutset = orbRadius * 0.025
-                let maxOutset = orbRadius * 0.46
-                let circumference = 2 * .pi * innerRadius
-                let barWidth = max(1.1, circumference / CGFloat(bars) * 0.46)
-
-                for i in 0 ..< bars {
-                    let angle = (Double(i) / Double(bars)) * .pi * 2 - .pi / 2
-                    let cosA = cos(angle)
-                    let sinA = sin(angle)
-
-                    let amp: CGFloat
-                    if usesLiveAudio, let levels = audioBandLevels {
-                        amp = max(
-                            0.08,
-                            OrbRadialBarEqualizerMotion.interpolatedLevel(
-                                barIndex: i,
-                                barCount: bars,
-                                levels: levels,
-                                phase: t,
-                                liveAudioGain: liveAudioGain
-                            )
-                        ) * frac
-                    } else {
-                        let spectrumIndex = (i * OrbEqualizerMotion.barCount) / bars
-                        amp = OrbEqualizerMotion.barAmplified(
-                            index: spectrumIndex,
-                            phase: t + Double(i) * 0.04,
-                            listenProgress: frac
-                        )
-                    }
-
-                    let barLength = minOutset + (maxOutset - minOutset) * amp
-                    let start = CGPoint(
-                        x: center.x + CGFloat(cosA * innerRadius),
-                        y: center.y + CGFloat(sinA * innerRadius)
-                    )
-                    let end = CGPoint(
-                        x: center.x + CGFloat(cosA * (innerRadius + barLength)),
-                        y: center.y + CGFloat(sinA * (innerRadius + barLength))
-                    )
-
-                    var barPath = Path()
-                    barPath.move(to: start)
-                    barPath.addLine(to: end)
-
-                    let barColor = OrbRadialBarEqualizerMotion.spectrumColor(angle: angle, amplitude: amp)
-                    let barOpacity = 0.22 + Double(amp) * 0.28
-                    context.stroke(
-                        barPath,
-                        with: .color(barColor.opacity(barOpacity)),
-                        style: StrokeStyle(lineWidth: barWidth + 1.4, lineCap: .butt)
-                    )
-                    context.stroke(
-                        barPath,
-                        with: .color(barColor.opacity(0.72 + Double(frac) * 0.28)),
-                        style: StrokeStyle(lineWidth: barWidth, lineCap: .butt)
+        Group {
+            if usesLiveAudio || liveAudioOnly {
+                spectrumCanvas(phase: 0, liveBands: liveBands, usesLiveAudio: usesLiveAudio)
+            } else {
+                TimelineView(.animation(minimumInterval: 1 / OrbRenderBudget.contentFramesPerSecond, paused: false)) { timeline in
+                    spectrumCanvas(
+                        phase: timeline.date.timeIntervalSinceReferenceDate,
+                        liveBands: nil,
+                        usesLiveAudio: false
                     )
                 }
             }
-            .allowsHitTesting(false)
         }
         .frame(width: canvasDiameter, height: canvasDiameter)
+    }
+
+    private func spectrumCanvas(phase: Double, liveBands: [CGFloat]?, usesLiveAudio: Bool) -> some View {
+        let frac = min(1, max(0, listenProgress))
+        let bars = max(48, visibleBarCount)
+
+        return Canvas { context, size in
+            let center = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
+            let innerRadius = orbRadius * 1.008
+            let minOutset = orbRadius * 0.025
+            let maxOutset = orbRadius * barReach
+            let circumference = 2 * .pi * innerRadius
+            let barWidth = max(1.1, circumference / CGFloat(bars) * 0.46)
+
+            for i in 0 ..< bars {
+                let angle = (Double(i) / Double(bars)) * .pi * 2 - .pi / 2
+                let cosA = cos(angle)
+                let sinA = sin(angle)
+
+                let amp: CGFloat
+                if usesLiveAudio, let levels = liveBands {
+                    amp = max(
+                        barAmplitudeFloor,
+                        OrbRadialBarEqualizerMotion.interpolatedLevel(
+                            barIndex: i,
+                            barCount: bars,
+                            levels: levels,
+                            phase: phase,
+                            liveAudioGain: liveAudioGain,
+                            applyMotionRipple: false,
+                            levelExponent: liveLevelExponent,
+                            neighbourMix: neighbourMix
+                        )
+                    ) * frac
+                } else if liveAudioOnly {
+                    amp = 0.06 * frac
+                } else {
+                    let spectrumIndex = (i * OrbEqualizerMotion.barCount) / bars
+                    amp = OrbEqualizerMotion.barAmplified(
+                        index: spectrumIndex,
+                        phase: phase + Double(i) * 0.04,
+                        listenProgress: frac
+                    )
+                }
+
+                let barLength = minOutset + (maxOutset - minOutset) * amp
+                let start = CGPoint(
+                    x: center.x + CGFloat(cosA * innerRadius),
+                    y: center.y + CGFloat(sinA * innerRadius)
+                )
+                let end = CGPoint(
+                    x: center.x + CGFloat(cosA * (innerRadius + barLength)),
+                    y: center.y + CGFloat(sinA * (innerRadius + barLength))
+                )
+
+                var barPath = Path()
+                barPath.move(to: start)
+                barPath.addLine(to: end)
+
+                let barColor = OrbRadialBarEqualizerMotion.spectrumColor(angle: angle, amplitude: amp)
+                let barOpacity = 0.22 + Double(amp) * 0.28
+                context.stroke(
+                    barPath,
+                    with: .color(barColor.opacity(barOpacity)),
+                    style: StrokeStyle(lineWidth: barWidth + 1.4, lineCap: .butt)
+                )
+                context.stroke(
+                    barPath,
+                    with: .color(barColor.opacity(0.72 + Double(frac) * 0.28)),
+                    style: StrokeStyle(lineWidth: barWidth, lineCap: .butt)
+                )
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private var resolvedBandLevels: [CGFloat]? {
+        if let bandLevels, bandLevels.count >= OrbEqualizerMotion.barCount {
+            return bandLevels
+        }
+        guard reactsToMusic, reactiveBus.snapshot.isActive else { return nil }
+        return reactiveBus.snapshot.bands
     }
 }
 
 extension OrbRadialBarEqualizerView {
+    /// Shared display tuning for live-music radial bars (discovery + resident hero).
+    enum LiveMusicTuning {
+        static let liveAudioGain: CGFloat = 2.75
+        static let liveLevelExponent: CGFloat = 0.46
+        static let barAmplitudeFloor: CGFloat = 0.035
+        static let barReach: CGFloat = 0.54
+        static let neighbourMix: CGFloat = 0.1
+    }
+
     static func outwardPad(for diskDiameter: CGFloat) -> CGFloat {
         diskDiameter * 0.30
     }

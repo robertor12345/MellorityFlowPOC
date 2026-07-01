@@ -6,6 +6,7 @@ struct CenteredScrollScreen<Content: View>: View {
     var backTitle: String = "Back"
     var backAccessibilityLabel: String?
     var onBack: (() -> Void)?
+    var onLogout: (() -> Void)?
     @ViewBuilder var content: () -> Content
 
     private let scrollSpace = "centeredScroll"
@@ -25,11 +26,12 @@ struct CenteredScrollScreen<Content: View>: View {
                 .frame(maxWidth: .infinity, minHeight: geo.size.height)
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                if let onBack {
-                    FlowTopBackBar(
-                        title: backTitle,
-                        accessibilityLabel: backAccessibilityLabel,
-                        action: onBack
+                if onBack != nil || onLogout != nil {
+                    FlowTopStaffNavBar(
+                        backTitle: backTitle,
+                        backAccessibilityLabel: backAccessibilityLabel,
+                        onBack: onBack,
+                        onLogout: onLogout
                     )
                 }
             }

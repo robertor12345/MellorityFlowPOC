@@ -2,13 +2,17 @@ import Foundation
 
 /// POC gate for care-home supervisor access — work email + PIN, scoped to organisation & homes.
 enum SupervisorAuth {
+    static let pinDigitCount = PinInputSpec.digitCount
+
     static func validate(email: String, pin: String) -> (account: SupervisorAccount?, error: String?) {
         let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let code = pin.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !normalizedEmail.isEmpty else { return (nil, "Enter your work email.") }
         guard normalizedEmail.contains("@") else { return (nil, "Enter a valid work email address.") }
-        guard code.count >= 4 else { return (nil, "PIN must be at least four digits.") }
+        guard code.count == pinDigitCount else {
+            return (nil, "Enter your \(pinDigitCount)-digit PIN.")
+        }
 
         guard let domain = normalizedEmail.split(separator: "@").last.map(String.init)?.lowercased() else {
             return (nil, "Enter a valid work email address.")
@@ -21,7 +25,7 @@ enum SupervisorAuth {
         guard let account = CareTenancyMockData.supervisors.first(where: {
             $0.email.lowercased() == normalizedEmail && $0.pin == code
         }) else {
-            return (nil, "Email or PIN didn’t match. Try max@sunrise-care.co.uk or alex@sunrise-care.co.uk with PIN 1234.")
+            return (nil, "Email or PIN didn’t match. Try max@sunrise-care.co.uk (supervisor) or alex@sunrise-care.co.uk (home admin) with PIN 123456.")
         }
 
         return (account, nil)

@@ -36,6 +36,12 @@ struct SupervisorAccount: Identifiable, Equatable {
     var pin: String
 }
 
+extension SupervisorRole {
+    var isHomeAdmin: Bool {
+        self == .homeLead || self == .orgAdmin
+    }
+}
+
 enum CareRosterDisplayMode: String, CaseIterable, Identifiable {
     case cards
     case compact
@@ -320,7 +326,7 @@ enum CareTenancyMockData {
             displayName: "Max",
             role: .supervisor,
             homeIds: [mapleLodgeId],
-            pin: "1234"
+            pin: "123456"
         ),
         SupervisorAccount(
             id: supervisorAlexId,
@@ -329,7 +335,7 @@ enum CareTenancyMockData {
             displayName: "Alex",
             role: .homeLead,
             homeIds: [mapleLodgeId, riversideHouseId],
-            pin: "1234"
+            pin: "123456"
         ),
     ]
 
@@ -341,28 +347,112 @@ enum CareTenancyMockData {
     }
 
     static func supplementalRecords() -> [CareSessionRecord] {
-        let now = Date()
-        return generatedMapleLodgeResidents().enumerated().compactMap { index, resident -> CareSessionRecord? in
-            let daysAgo: Int? = switch index % 5 {
-            case 0: nil
-            case 1: 2
-            case 2: 5
-            case 3: 9
-            default: 16
+        insightsDemoRecords()
+    }
+
+    /// Rich 14-day demo history — upward calm / wellbeing trends for admin insights.
+    static func insightsDemoRecords(now: Date = Date()) -> [CareSessionRecord] {
+        let heroIds: Set<UUID> = [
+            CareStaffMockData.elena,
+            CareStaffMockData.james,
+            CareStaffMockData.sam,
+        ]
+        let patients = allPatients().filter { !heroIds.contains($0.id) }
+
+        let moodByProgress: [(threshold: Double, label: String)] = [
+            (0.0, "Anxious, Tired"),
+            (0.25, "Restless"),
+            (0.45, "Quieter"),
+            (0.65, "Calm"),
+            (0.82, "Settled"),
+            (0.92, "Peaceful, Engaged"),
+        ]
+
+        // Bias toward recent days so home-wide session volume and reach climb over the fortnight.
+        let daySlots: [Int] = [
+            13, 12, 12, 11, 11, 10, 10, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3,
+            2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+        ]
+
+        var records: [CareSessionRecord] = []
+        var slotIndex = 0
+
+        for (patientIndex, patient) in patients.enumerated() {
+            let sessionCount = 2 + (patientIndex % 3)
+            for sessionIndex in 0 ..< sessionCount {
+                let daysAgo: Int
+                if sessionIndex == sessionCount - 1 {
+                    daysAgo = [0, 1, 2, 3][patientIndex % 4]
+                } else {
+                    daysAgo = daySlots[slotIndex % daySlots.count]
+                    slotIndex += 1 + (patientIndex % 2)
+                }
+
+                let recency = 1.0 - (Double(daysAgo) / 13.0)
+                let sessionArc = sessionCount > 1
+                    ? Double(sessionIndex) / Double(sessionCount - 1)
+                    : 1.0
+                let progress = min(1.0, recency * 0.55 + sessionArc * 0.45)
+                let variance = Double((patientIndex + sessionIndex) % 5)
+
+                let calmPercent = min(93, max(58, Int(56 + progress * 30 + variance)))
+                let moodRating = min(9, max(5, Int(5 + progress * 3.8)))
+                let alertness = min(9, max(5, Int(5 + progress * 3.2)))
+                let emotional = min(9, max(5, Int(5 + progress * 3.6)))
+                let lucidity = min(9, max(5, Int(6 + progress * 2.8)))
+                let settledness = min(92, max(52, Int(52 + progress * 36 + variance)))
+                let engagement = min(90, max(48, Int(48 + progress * 38 + variance * 0.6)))
+                let comfort = min(94, max(58, Int(58 + progress * 32)))
+
+                let moodSummary = moodByProgress.last { progress >= $0.threshold }?.label ?? "Calm"
+
+                let staffNote: String? = progress >= 0.75
+                    ? positiveStaffNote(for: patient.displayName, index: patientIndex + sessionIndex)
+                    : (progress < 0.35 ? "Building rapport — shorter visit; will repeat gentle intro." : nil)
+
+                records.append(
+                    CareSessionRecord(
+                        id: UUID(uuidString: String(format: "60000000-0000-4000-8000-%012x", records.count + 1))!,
+                        patientId: patient.id,
+                        date: now.addingTimeInterval(-Double(daysAgo) * 86_400 - Double(sessionIndex) * 3_600),
+                        moodSummary: moodSummary,
+                        calmPercent: calmPercent,
+                        staffNote: staffNote,
+                        settledness: settledness,
+                        engagement: engagement,
+                        comfortTolerance: comfort,
+                        moodRating: moodRating,
+                        alertnessRating: alertness,
+                        emotionalStateRating: emotional,
+                        lucidityRating: lucidity,
+                        sessionDurationSeconds: Int(480 + progress * 420),
+                        residentGenrePlayCount: 2 + Int(progress * 4),
+                        residentTrackChangeCount: sessionIndex == 0 ? 1 : 2,
+                        residentImmersiveEntryCount: progress >= 0.6 ? 1 : 0,
+                        sessionTimeOfDay: sessionIndex.isMultiple(of: 2) ? "Afternoon" : "Late morning",
+                        preSessionState: progress < 0.4 ? "Withdrawn / low engagement" : "Mild restlessness",
+                        sessionContextSummary: "Lights dimmed · Resident-led",
+                        residentLedSession: true,
+                        distressOrPRNNearby: false,
+                        lightsDimmed: true
+                    )
+                )
             }
-            guard let daysAgo else { return nil }
-            return CareSessionRecord(
-                id: UUID(uuidString: String(format: "60000000-0000-4000-8000-%012x", index + 1))!,
-                patientId: resident.id,
-                date: now.addingTimeInterval(-Double(daysAgo) * 86_400),
-                moodSummary: index.isMultiple(of: 2) ? "Calm" : "Anxious, Tired",
-                calmPercent: 60 + (index % 30),
-                staffNote: nil,
-                settledness: 55 + (index % 35),
-                engagement: 50 + (index % 40),
-                comfortTolerance: 65 + (index % 25)
-            )
         }
+
+        return records
+    }
+
+    private static func positiveStaffNote(for name: String, index: Int) -> String {
+        let notes = [
+            "\(name) more settled than prior visit — calm score trending up.",
+            "Visible relaxation by second track; carer ratings improved vs last session.",
+            "Engaged with music longer; wellbeing markers strongest this fortnight.",
+            "Family noted brighter affect after session — maintain this playlist.",
+            "PRN not required; agitation eased within first five minutes.",
+            "Sustained eye contact and softer breathing — session impact positive.",
+        ]
+        return notes[index % notes.count]
     }
 
     private static func namedMapleLodgeResidents() -> [CarePatientProfile] {

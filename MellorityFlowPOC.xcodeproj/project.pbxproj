@@ -11,6 +11,9 @@
 		07F779D6550C21828C49CE7F /* LaunchIntroOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE778633F8794B8B0AD01A4 /* LaunchIntroOverlay.swift */; };
 		090B3D543F873537850D36FA /* SupervisorAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */; };
 		7CC8A1B2D3E4F5A6B7C8D9E0 /* CareTenancyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD9B2C3E4F5A6B7C8D9E0F1 /* CareTenancyModels.swift */; };
+		A1B2C3D4E5F60718293A4B6D /* CareHomeAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B6D7E /* CareHomeAnalytics.swift */; };
+		C7D8E9F0A1B2C3D4E5F60718 /* SixDigitPinInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E9F0A1B2C3D4E5F6071829 /* SixDigitPinInput.swift */; };
+		C3D4E5F60718293A4B6D7E8F /* CareHomeAdminScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718293A4B6D7E8F90 /* CareHomeAdminScreens.swift */; };
 		0CD0423EBB0A418530DD92C7 /* DiscoveryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C74CB3706ED1807454D4A26 /* DiscoveryModels.swift */; };
 		0D5F61F88E976BB8433C98AB /* SimplifiedFlowScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FDF6F31EE0C864E0C1DE18F /* SimplifiedFlowScreens.swift */; };
 		0FCBA4CF867F01D255D0EFC5 /* CalmMotionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797BF377E50486923A75204F /* CalmMotionViews.swift */; };
@@ -98,6 +101,9 @@
 		797BF377E50486923A75204F /* CalmMotionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmMotionViews.swift; sourceTree = "<group>"; };
 		7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareStaffModels.swift; sourceTree = "<group>"; };
 		8DD9B2C3E4F5A6B7C8D9E0F1 /* CareTenancyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareTenancyModels.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B6D7E /* CareHomeAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareHomeAnalytics.swift; sourceTree = "<group>"; };
+		D8E9F0A1B2C3D4E5F6071829 /* SixDigitPinInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SixDigitPinInput.swift; sourceTree = "<group>"; };
+		D4E5F60718293A4B6D7E8F90 /* CareHomeAdminScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareHomeAdminScreens.swift; sourceTree = "<group>"; };
 		7C9979DB1CACE630F2B4042F /* OrbRenderBudget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbRenderBudget.swift; sourceTree = "<group>"; };
 		83D2D4736E44E432F36496A7 /* ResidentMusicModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentMusicModel.swift; sourceTree = "<group>"; };
 		861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupervisorAuth.swift; sourceTree = "<group>"; };
@@ -189,6 +195,7 @@
 				381A145E7552BBCE67E3A2AA /* CareSessionSentiment.swift */,
 				7AD9AA06DEA3E6E31827C784 /* CareStaffModels.swift */,
 				8DD9B2C3E4F5A6B7C8D9E0F1 /* CareTenancyModels.swift */,
+				B2C3D4E5F60718293A4B6D7E /* CareHomeAnalytics.swift */,
 				EAC5F095407AE14CB9B2C797 /* CenteredScrollScreen.swift */,
 				A1B2C3D4E5F60718293A4B5C /* ScrollContentEdgeFade.swift */,
 				EB45B845D070101D7353A9E8 /* DiscoveryEraMedia.swift */,
@@ -225,6 +232,7 @@
 				BB55EE66FF7788AA99CC00EE /* ResidentPlaylistComfort.swift */,
 				9628293E0EF2CEC6CE9BF180 /* SessionPOCState.swift */,
 				BB22CC33DD44EE55FF6677AA /* StreamAudioCache.swift */,
+				D8E9F0A1B2C3D4E5F6071829 /* SixDigitPinInput.swift */,
 				861CDA631F0A04C28F7CE8FA /* SupervisorAuth.swift */,
 			);
 			path = Core;
@@ -235,6 +243,7 @@
 			children = (
 				F8FEE2044B449233F8B57F98 /* CaptureScreens.swift */,
 				F36F6CE06F46E7B1282377F8 /* CareStaffScreens.swift */,
+				D4E5F60718293A4B6D7E8F90 /* CareHomeAdminScreens.swift */,
 				664E34C1455EB02B0D1B46BC /* DiscoveryScreens.swift */,
 				6F8929C3F568014B1C0239D4 /* ExperienceScreens.swift */,
 				B1D07377628E076323E2BC08 /* GroupSessionScreens.swift */,
@@ -330,7 +339,9 @@
 				00F9DB181D64C7B8BEAAFBAF /* CareSessionSentiment.swift in Sources */,
 				D6671F82F92FF6D63E543CC7 /* CareStaffModels.swift in Sources */,
 				7CC8A1B2D3E4F5A6B7C8D9E0 /* CareTenancyModels.swift in Sources */,
+				A1B2C3D4E5F60718293A4B6D /* CareHomeAnalytics.swift in Sources */,
 				8E0C3FFDF7961AB665E8487C /* CareStaffScreens.swift in Sources */,
+				C3D4E5F60718293A4B6D7E8F /* CareHomeAdminScreens.swift in Sources */,
 				AC9B320E18F3949B71ABBF3C /* CenteredScrollScreen.swift in Sources */,
 				B1E2F3A4C5D6E7F8091A2B3 /* ScrollContentEdgeFade.swift in Sources */,
 				6BC188E40862914153BF5263 /* DiscoveryEraMedia.swift in Sources */,
@@ -380,6 +391,7 @@
 				EA6F7464DCB01DE2FE788E42 /* SessionPOCState.swift in Sources */,
 				0D5F61F88E976BB8433C98AB /* SimplifiedFlowScreens.swift in Sources */,
 				ECBF72F0A1B6B0F73B5EA246 /* SplashScreenView.swift in Sources */,
+				C7D8E9F0A1B2C3D4E5F60718 /* SixDigitPinInput.swift in Sources */,
 				090B3D543F873537850D36FA /* SupervisorAuth.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
